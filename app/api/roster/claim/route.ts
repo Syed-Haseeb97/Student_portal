@@ -24,6 +24,9 @@ export async function POST(request: Request) {
 
     const staffIdentity = await db.collection("staff").doc(identity.uid).get();
     if (staffIdentity.exists) {
+      if (normalizeEmail(staffIdentity.get("email") ?? "") !== email) {
+        return NextResponse.json({ error: "The signed-in email does not match the email on the provisioned staff account." }, { status: 403 });
+      }
       if (staffIdentity.get("active") !== true || !["lecturer", "admin"].includes(String(staffIdentity.get("role")))) {
         return NextResponse.json({ error: "This staff account is inactive or incorrectly provisioned. Contact the portal administrator." }, { status: 403 });
       }
