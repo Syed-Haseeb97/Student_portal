@@ -46,7 +46,7 @@ All admin endpoints require an active `staff/{uid}` document with `role: "admin"
 
 ### `POST /api/admin/academic-data`
 
-Atomic import/update of up to 200 rows per request. Import in dependency order: courses, offerings, enrollments, assignments. The entire request fails if validation or authorization fails.
+Atomic import/update of up to 100 rows per request. Import in dependency order: courses, offerings, enrollments, assignments. The entire request fails if validation or authorization fails.
 
 Courses:
 
