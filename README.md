@@ -4,27 +4,30 @@ A mobile-first student portal for IIIT Tiruchirappalli, starting with subject-wi
 
 ## Current status
 
-Early application scaffold. The homepage uses synthetic preview data only. Authentication, roster matching, database migrations, RLS, lecturer workflows, and production deployment are not yet verified as working.
+The homepage remains a synthetic-data visual preview. A Firebase integration is being built on `feature/firebase-attendance-backend`: browser/Admin SDK initialization, passwordless institutional email-link helpers, a server-side roster-claim endpoint, attendance session endpoints, and deny-by-default Firestore rules. This branch is not yet a production-ready or institution-authorized system.
 
 ## Stack
 
 - Next.js App Router + TypeScript
-- Tailwind CSS v4
-- Supabase Auth and PostgreSQL
-- PostgreSQL Row Level Security (RLS)
+- Firebase Authentication (email link) and Cloud Firestore
+- Firebase Admin SDK for trusted server routes only
+- Firebase Emulator Suite for local security testing
 - Vercel (planned)
 
-## Confirmed attendance rules
+## Attendance rules
 
-- The 75% threshold applies independently to each subject.
-- Each class session has its own attendance submission.
-- Multiple sessions of one subject on one day remain separate.
-- Only completed sessions count by default; scheduled and cancelled sessions are excluded.
-- Do not use an aggregate across subjects to determine compliance.
+- The 75% threshold applies independently to each course offering.
+- Each class session has its own ID; multiple sessions of one subject on one day count separately.
+- Only completed sessions count. Scheduled and cancelled sessions are excluded.
+- A session can be completed only with exactly one present/absent mark for every active enrollee.
+- No aggregate across subjects determines compliance.
+- Completed-session corrections must use a separately authorized, reasoned and audited process. That workflow is not yet implemented.
+
+See [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md) and [Firebase architecture plan](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md) on the planning branch.
 
 ## Local setup
 
-Requires a current Node.js LTS release and npm.
+Requires Node.js 22+ and npm.
 
 ```bash
 npm install
@@ -35,12 +38,26 @@ npm run dev
 
 On Windows PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`.
 
-The homepage can render without Supabase credentials. Authentication and database features must not be enabled until a Supabase project is configured and its migrations and policies have been reviewed and tested.
+Fill the public Firebase web configuration from a **separate portal Firebase project**. Set `FIREBASE_SERVICE_ACCOUNT_JSON` and `FIREBASE_ADMIN_PROJECT_ID` only in local untracked environment variables or deployment secrets. Never commit service-account JSON, `.env.local`, or real student records. Add the local redirect domain to Firebase Auth's authorized domains and enable Email/Password plus Email link sign-in.
 
-## Security
+## Firestore setup
 
-Never commit `.env.local`, credentials, or real student records. The publishable key is browser-safe; RLS is still mandatory. The service-role key bypasses RLS and must stay server-side. Use synthetic data until an institutional pilot is authorized.
+```bash
+npx firebase-tools emulators:start --only auth,firestore
+```
 
-## Verification
+Deploy reviewed rules and indexes only after creating the intended portal Firebase project and confirming the project ID:
 
-The source tree has not yet been installed or built in a network-enabled environment. Do not interpret this scaffold as a verified production application.
+```bash
+npx firebase-tools deploy --only firestore:rules,firestore:indexes --project YOUR_PORTAL_PROJECT_ID
+```
+
+Do not deploy the rules or enable a real roster until emulator authorization tests pass. All roster and staff records must be provisioned through trusted server-side workflows. The initial administrator bootstrap remains a manual, documented setup task and must never be open to public requests.
+
+## Roster
+
+Use [the roster import template](docs/roster-import-template.csv) as a schema example only. Its rows are fake examples, not real records. Import only an institute-approved roster. Roll number, batch, and programme are stored explicitly; the app does not infer programme from a roll-number prefix.
+
+## Verification status
+
+Source files have been written to a feature branch, but no dependency install, lint, TypeScript check, unit test, production build, or Firestore Emulator rules test has been run in this environment. Do not use this branch with real student records until these checks and a security review are complete.
