@@ -77,12 +77,12 @@ export async function POST(request: Request) {
           active: row.active,
           ...(oldRoster.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
           updatedAt: FieldValue.serverTimestamp(),
-        });
+        }, { merge: true });
         transaction.set(emailRefs[i]!, {
           emailNormalized: row.email,
           rollNumber: row.rollNumber,
           updatedAt: FieldValue.serverTimestamp(),
-        });
+        }, { merge: true });
       }
       transaction.create(auditRef, {
         action: "roster.imported",
