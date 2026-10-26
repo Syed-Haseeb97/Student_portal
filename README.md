@@ -63,7 +63,7 @@ Run the production build:
 npm run build
 ```
 
-CI runs these checks on pull requests targeting `main` and pushes to `main` or the configured backend feature branches. Emulator tests use the demo project ID and synthetic documents; they do not create a live Firebase project.
+CI runs these checks on pull requests targeting `main` and pushes to `main`. Emulator tests use the demo project ID and synthetic documents; they do not create a live Firebase project.
 
 ## Environment contract
 
@@ -73,9 +73,9 @@ No Firebase project configuration, production rule deployment, real roster uploa
 
 ## Follow-ups before any real pilot
 
-1. Triage and resolve dependency audit advisories without unsafe blind major-version downgrades.
+1. Add a reviewed npm lockfile before relying on reproducible production builds; the current dependency audit reports zero vulnerabilities.
 2. Review the first-admin provisioning runbook with the institution.
-3. Validate the academic-data import and completed-session correction endpoints with synthetic fixtures and a focused security review.
+3. Extend route-level integration tests to the session lifecycle and staff provisioning endpoints, then complete a focused security review.
 4. Wire the frontend to the student dashboard API and authenticated admin/lecturer endpoints.
 5. Obtain and import the institute-approved roster and academic catalog only after explicit authorization.
 6. Verify institutional policy and operational workflows with authorized stakeholders.
