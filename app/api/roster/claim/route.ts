@@ -22,6 +22,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A verified @iiitt.ac.in email is required." }, { status: 403 });
     }
 
+    const staffIdentity = await db.collection("staff").doc(identity.uid).get();
+    if (staffIdentity.exists) {
+      if (staffIdentity.get("active") !== true || !["lecturer", "admin"].includes(String(staffIdentity.get("role")))) {
+        return NextResponse.json({ error: "This staff account is inactive or incorrectly provisioned. Contact the portal administrator." }, { status: 403 });
+      }
+      return NextResponse.json({ ok: true, role: staffIdentity.get("role") });
+    }
+
     const roster = await db.collection("studentRoster")
       .where("emailNormalized", "==", email)
       .where("active", "==", true)
