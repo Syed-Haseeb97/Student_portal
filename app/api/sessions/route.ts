@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,12 @@ function validDate(value: unknown): value is string {
 export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const body = await request.json().catch(() => null) as { offeringId?: unknown; sessionDate?: unknown; startTime?: unknown; endTime?: unknown; room?: unknown } | null;
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    if (parsed.reason === "too_large") return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+  const body = parsed.value as { offeringId?: unknown; sessionDate?: unknown; startTime?: unknown; endTime?: unknown; room?: unknown } | null;
   if (!body || typeof body.offeringId !== "string" || !/^[A-Za-z0-9-]{1,100}$/.test(body.offeringId) ||
       !validDate(body.sessionDate)) {
     return NextResponse.json({ error: "Provide a valid offeringId and sessionDate (YYYY-MM-DD)." }, { status: 400 });

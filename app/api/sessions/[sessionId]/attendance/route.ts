@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export const runtime = "nodejs";
 const MAX_ENROLLED_STUDENTS_PER_SUBMISSION = 450;
@@ -20,7 +21,12 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
   if (!/^[A-Za-z0-9_-]{1,150}$/.test(sessionId)) {
     return NextResponse.json({ error: "Invalid session ID." }, { status: 400 });
   }
-  const body = await request.json().catch(() => null) as { marks?: unknown } | null;
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    if (parsed.reason === "too_large") return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+  const body = parsed.value as { marks?: unknown } | null;
   if (!body || !Array.isArray(body.marks) || body.marks.length < 1 || body.marks.length > MAX_ENROLLED_STUDENTS_PER_SUBMISSION) {
     return NextResponse.json({ error: `marks must contain 1–${MAX_ENROLLED_STUDENTS_PER_SUBMISSION} attendance entries.` }, { status: 400 });
   }

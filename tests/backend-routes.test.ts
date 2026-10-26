@@ -105,6 +105,53 @@ test("admin academic import and completed-session correction routes enforce auth
   });
 
   const oversizedBody = " ".repeat(1_000_001);
+  const oversizedMutationResponses = await Promise.all([
+    staffRoute.POST(rawRequest("/api/admin/staff", adminToken, oversizedBody)),
+    sessionRoute.POST(rawRequest("/api/sessions", lecturerToken, oversizedBody)),
+    attendanceRoute.POST(
+      rawRequest("/api/sessions/test-session/attendance", lecturerToken, oversizedBody),
+      { params: Promise.resolve({ sessionId: "test-session" }) },
+    ),
+    cancelRoute.POST(
+      rawRequest("/api/sessions/test-session/cancel", lecturerToken, oversizedBody),
+      { params: Promise.resolve({ sessionId: "test-session" }) },
+    ),
+    correctionRoute.POST(
+      rawRequest("/api/admin/attendance/test-attendance/correction", adminToken, oversizedBody),
+      { params: Promise.resolve({ attendanceId: "test-attendance" }) },
+    ),
+  ]);
+  for (const response of oversizedMutationResponses) {
+    assert.equal(response.status, 413);
+    assert.deepEqual(await response.json(), { error: "Request body is too large." });
+  }
+
+  const malformedMutationResponses = await Promise.all([
+    staffRoute.POST(rawRequest("/api/admin/staff", adminToken, "{")),
+    sessionRoute.POST(rawRequest("/api/sessions", lecturerToken, "{")),
+    attendanceRoute.POST(
+      rawRequest("/api/sessions/test-session/attendance", lecturerToken, "{"),
+      { params: Promise.resolve({ sessionId: "test-session" }) },
+    ),
+    cancelRoute.POST(
+      rawRequest("/api/sessions/test-session/cancel", lecturerToken, "{"),
+      { params: Promise.resolve({ sessionId: "test-session" }) },
+    ),
+    correctionRoute.POST(
+      rawRequest("/api/admin/attendance/test-attendance/correction", adminToken, "{"),
+      { params: Promise.resolve({ attendanceId: "test-attendance" }) },
+    ),
+  ]);
+  for (const response of malformedMutationResponses) {
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "Request body must be valid JSON." });
+  }
+
+  const unauthorizedOversizedMutation = await staffRoute.POST(rawRequest(
+    "/api/admin/staff", null, oversizedBody,
+  ));
+  assert.equal(unauthorizedOversizedMutation.status, 401);
+
   const oversizedWithoutLength = await rosterImportRoute.POST(rawRequest(
     "/api/admin/roster/import", adminToken, oversizedBody,
   ));

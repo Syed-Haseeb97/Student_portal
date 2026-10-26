@@ -1,6 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 import { normalizeEmail, INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 
 export const runtime = "nodejs";
@@ -12,7 +13,12 @@ function tokenFrom(request: Request) {
 export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const body = await request.json().catch(() => null) as { email?: unknown; role?: unknown; active?: unknown } | null;
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    if (parsed.reason === "too_large") return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+  const body = parsed.value as { email?: unknown; role?: unknown; active?: unknown } | null;
   const email = typeof body?.email === "string" ? normalizeEmail(body.email) : "";
   if (!INSTITUTIONAL_EMAIL_PATTERN.test(email) ||
       !["lecturer", "admin"].includes(String(body?.role)) ||

@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export const runtime = "nodejs";
 function tokenFrom(request: Request) {
@@ -14,7 +15,12 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const { sessionId } = await context.params;
   if (!/^[A-Za-z0-9_-]{1,150}$/.test(sessionId)) return NextResponse.json({ error: "Invalid session ID." }, { status: 400 });
-  const body = await request.json().catch(() => null) as { reason?: unknown } | null;
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    if (parsed.reason === "too_large") return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+  const body = parsed.value as { reason?: unknown } | null;
   const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
   if (reason.length < 5 || reason.length > 300) {
     return NextResponse.json({ error: "Provide a cancellation reason between 5 and 300 characters." }, { status: 400 });

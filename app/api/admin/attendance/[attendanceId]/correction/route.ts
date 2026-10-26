@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,12 @@ export async function POST(request: Request, context: { params: Promise<{ attend
   if (!/^[A-Za-z0-9_-]{1,300}$/.test(attendanceId)) {
     return NextResponse.json({ error: "Invalid attendance ID." }, { status: 400 });
   }
-  const body = await request.json().catch(() => null) as { mark?: unknown; reason?: unknown } | null;
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    if (parsed.reason === "too_large") return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+  const body = parsed.value as { mark?: unknown; reason?: unknown } | null;
   const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
   if (!body || !["present", "absent"].includes(String(body.mark)) || reason.length < 5 || reason.length > 300) {
     return NextResponse.json({ error: "Provide a present/absent mark and a correction reason between 5 and 300 characters." }, { status: 400 });
