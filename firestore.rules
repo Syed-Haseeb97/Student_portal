@@ -10,7 +10,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
     function activeProfile() {
-      return profileExists() && profile().active == true;
+      return profileExists()
+        && profile().active == true
+        && profile().rosterId is string
+        && exists(/databases/$(database)/documents/studentRoster/$(profile().rosterId))
+        && get(/databases/$(database)/documents/studentRoster/$(profile().rosterId)).data.active == true;
     }
     function isAdmin() {
       return signedIn()
