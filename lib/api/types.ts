@@ -1,12 +1,13 @@
 /**
- * IIIT Tiruchirappalli Student Portal
- * Core API & Domain Types
- *
- * Aligned with docs/BACKEND_API_CONTRACT.md, docs/ROSTER_AND_ATTENDANCE_RULES.md,
- * and backend branch verification at commit cb197892.
+ * Shared API and domain types for the IIIT Tiruchirappalli Student Portal.
+ * Dashboard fields follow docs/BACKEND_API_CONTRACT.md.
  */
 
 export type UserRole = "student" | "lecturer" | "admin";
+
+export interface ApiErrorResponse {
+  error: string;
+}
 
 /**
  * The dashboard API returns "compliant" | "shortfall" | "no_data".

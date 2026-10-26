@@ -37,7 +37,7 @@ The source of truth is an approved administrator-provided CSV. Required columns:
 - Attendance marks store student UID, roster ID, offering ID, session ID/date, mark, recorder UID, and timestamp.
 - Students may read only their own marks. Active lecturers may read marks for assigned offerings. Admin access is audited.
 - Lecturer access is scoped to active teaching assignments. Admins provision offerings, enrollments, assignments, and staff roles.
-- The lecturer dashboard's "today" count uses the campus timezone (Asia/Kolkata) and counts distinct scheduled sessions.
+- If a lecturer dashboard adds a "today" count, it should use the campus timezone (Asia/Kolkata) and count distinct scheduled sessions. No lecturer dashboard API or UI currently implements this behavior.
 
 ## Implemented on this feature branch
 

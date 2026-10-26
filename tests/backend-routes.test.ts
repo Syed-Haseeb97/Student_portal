@@ -202,6 +202,12 @@ test("admin academic import and completed-session correction routes enforce auth
   assert.equal(claimResponse.status, 200);
   assert.equal((await db.collection("userProfiles").doc(claimUid).get()).get("rosterId"), claimRollNumber);
 
+  const emptyDashboardResponse = await dashboardRoute.GET(new Request("http://localhost/api/student/dashboard", {
+    headers: { authorization: `Bearer ${claimToken}` },
+  }));
+  assert.equal(emptyDashboardResponse.status, 200);
+  assert.deepEqual((await emptyDashboardResponse.json() as { summaries: unknown[] }).summaries, []);
+
   const courseId = `course${suffix}`;
   const importResponse = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
     kind: "courses", rows: [{ id: courseId, code: "CSE101", title: "Synthetic course", active: true }],
@@ -234,6 +240,13 @@ test("admin academic import and completed-session correction routes enforce auth
   }));
   assert.equal(enrollmentImport.status, 200);
   assert.equal((await db.collection("enrollments").doc(`${offeringId}_${studentUid}`).get()).get("rosterId"), rosterId);
+  const duplicateEnrollmentImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "enrollments", rows: [
+      { offeringId, studentUid, active: true },
+      { offeringId, studentUid, active: true },
+    ],
+  }));
+  assert.equal(duplicateEnrollmentImport.status, 400);
 
   const assignmentImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
     kind: "assignments", rows: [{ offeringId, lecturerUid, active: true }],
@@ -279,6 +292,26 @@ test("admin academic import and completed-session correction routes enforce auth
     sessionId: dashboardSessionId, offeringId: shortfallOfferingId, sessionDate: "2026-10-26",
     studentUid, mark: "absent",
   });
+  // Duplicate legacy rows for the same session must count once.
+  await db.collection("attendance").doc(`duplicateMark${suffix}`).set({
+    sessionId: dashboardSessionId, offeringId: shortfallOfferingId, sessionDate: "2026-10-26",
+    studentUid, mark: "absent",
+  });
+  // A malformed legacy mark cannot assign a completed session to another offering.
+  const mismatchedSessionId = `mismatchedSession${suffix}`;
+  await db.collection("sessions").doc(mismatchedSessionId).set({
+    offeringId, state: "completed", sessionDate: "2026-10-27",
+  });
+  await db.collection("attendance").doc(`mismatchedMark${suffix}`).set({
+    sessionId: mismatchedSessionId, offeringId: shortfallOfferingId, sessionDate: "2026-10-27",
+    studentUid, mark: "present",
+  });
+  // Older incomplete academic catalog data remains readable with documented null/fallback fields.
+  const incompleteOfferingId = `incompleteOffering${suffix}`;
+  await db.collection("courseOfferings").doc(incompleteOfferingId).set({ active: true });
+  await db.collection("enrollments").doc(`${incompleteOfferingId}_${studentUid}`).set({
+    offeringId: incompleteOfferingId, studentUid, active: true,
+  });
   // Historical marks without an active enrollment must not recreate an offering.
   await db.collection("attendance").doc(`orphanSession${suffix}_${studentUid}`).set({
     sessionId: `orphanSession${suffix}`, offeringId: `inactiveOffering${suffix}`,
@@ -316,6 +349,11 @@ test("admin academic import and completed-session correction routes enforce auth
     attended: 0, missed: 1, total: 1, percentage: 0, status: "shortfall",
     thresholdPercent: 75, latestSessionDate: "2026-10-26",
   });
+  assert.deepEqual(dashboard.summaries.find((summary) => summary.offeringId === incompleteOfferingId), {
+    offeringId: incompleteOfferingId, courseId: null, courseCode: null, courseTitle: incompleteOfferingId, term: null,
+    attended: 0, missed: 0, total: 0, percentage: null, status: "no_data",
+    thresholdPercent: 75, latestSessionDate: null,
+  });
   assert.equal(dashboard.summaries.some((summary) => summary.offeringId === `inactiveOffering${suffix}`), false);
   assert.equal(dashboard.summaries.some((summary) => summary.offeringId === retiredOfferingId), false);
 
@@ -346,12 +384,34 @@ test("admin academic import and completed-session correction routes enforce auth
   }));
   assert.equal(ambiguousSession.status, 400);
 
+  const impossibleDate = await sessionRoute.POST(request("/api/sessions", lecturerToken, {
+    offeringId, sessionDate: "2026-02-30", startTime: "09:00",
+  }));
+  assert.equal(impossibleDate.status, 400);
+  const invalidWallClockTime = await sessionRoute.POST(request("/api/sessions", lecturerToken, {
+    offeringId, sessionDate: "2026-10-27", startTime: "9:00",
+  }));
+  assert.equal(invalidWallClockTime.status, 400);
+
   const createSession = await sessionRoute.POST(request("/api/sessions", lecturerToken, {
     offeringId, sessionDate: "2026-10-27", startTime: "09:00", endTime: "10:00", room: "Synthetic Room",
   }));
   assert.equal(createSession.status, 201);
   const createdSession = await createSession.json() as { sessionId: string; state: string };
   assert.equal(createdSession.state, "scheduled");
+
+  const duplicateAttendance = await attendanceRoute.POST(
+    request(`/api/sessions/${createdSession.sessionId}/attendance`, lecturerToken, {
+      marks: [
+        { studentUid, mark: "present" },
+        { studentUid, mark: "absent" },
+      ],
+    }),
+    { params: Promise.resolve({ sessionId: createdSession.sessionId }) },
+  );
+  assert.equal(duplicateAttendance.status, 400);
+  assert.equal((await db.collection("sessions").doc(createdSession.sessionId).get()).get("state"), "scheduled");
+  assert.equal((await db.collection("attendance").doc(`${createdSession.sessionId}_${studentUid}`).get()).exists, false);
 
   const submitAttendance = await attendanceRoute.POST(
     request(`/api/sessions/${createdSession.sessionId}/attendance`, lecturerToken, {

@@ -78,3 +78,57 @@ test("API client: real mode denies missing token without silent fallback to mock
     process.env.NEXT_PUBLIC_ENABLE_MOCK_API = originalEnv;
   }
 });
+
+test("API client: validates the real dashboard contract and normalizes the legacy status alias", async () => {
+  const originalEnv = process.env.NEXT_PUBLIC_ENABLE_MOCK_API;
+  const originalFetch = globalThis.fetch;
+  process.env.NEXT_PUBLIC_ENABLE_MOCK_API = "false";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    student: { uid: "synthetic-student", rollNumber: null, batch: null, programme: null },
+    policy: { thresholdPercent: 75, countsOnlyCompletedSessions: true },
+    summaries: [{
+      offeringId: "synthetic-offering", courseId: null, courseCode: null, courseTitle: "Synthetic course", term: null,
+      attended: 2, missed: 2, total: 4, percentage: 50, status: "below_threshold",
+      thresholdPercent: 75, latestSessionDate: null,
+    }],
+    generatedAt: new Date().toISOString(),
+  }), { headers: { "content-type": "application/json" } });
+
+  try {
+    const result = await getStudentDashboard("synthetic-token");
+    assert.equal(result.status, 200);
+    assert.equal(result.isMock, false);
+    assert.equal(result.data?.student.rollNumber, null);
+    assert.equal(result.data?.summaries[0]?.courseId, null);
+    assert.equal(result.data?.summaries[0]?.status, "shortfall");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NEXT_PUBLIC_ENABLE_MOCK_API = originalEnv;
+  }
+});
+
+test("API client: rejects unknown attendance statuses instead of hiding them as no_data", async () => {
+  const originalEnv = process.env.NEXT_PUBLIC_ENABLE_MOCK_API;
+  const originalFetch = globalThis.fetch;
+  process.env.NEXT_PUBLIC_ENABLE_MOCK_API = "false";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    student: { uid: "synthetic-student", rollNumber: "261161", batch: "2026", programme: "CSE" },
+    policy: { thresholdPercent: 75, countsOnlyCompletedSessions: true },
+    summaries: [{
+      offeringId: "synthetic-offering", courseId: "synthetic-course", courseCode: "CSE101", courseTitle: "Synthetic course", term: "2026-S1",
+      attended: 0, missed: 1, total: 1, percentage: 0, status: "attending",
+      thresholdPercent: 75, latestSessionDate: "2026-10-26",
+    }],
+    generatedAt: new Date().toISOString(),
+  }), { headers: { "content-type": "application/json" } });
+
+  try {
+    const result = await getStudentDashboard("synthetic-token");
+    assert.equal(result.status, 502);
+    assert.equal(result.data, undefined);
+    assert.equal(result.error, "Malformed dashboard response: fields do not match the attendance API contract.");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.NEXT_PUBLIC_ENABLE_MOCK_API = originalEnv;
+  }
+});

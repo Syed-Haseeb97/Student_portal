@@ -3,11 +3,18 @@ import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { evaluate, DEFAULT_POLICY } from "@/lib/attendance/calc";
+import type { AttendanceStatus, StudentDashboardData } from "@/lib/api/types";
 
 export const runtime = "nodejs";
 
 function tokenFrom(request: Request) {
   return /^Bearer (.+)$/.exec(request.headers.get("authorization") ?? "")?.[1] ?? null;
+}
+
+function validSessionDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 /** Return attendance summaries only for the signed-in student's own roster-linked account. */
@@ -54,7 +61,7 @@ export async function GET(request: Request) {
     const sessionIds = [...new Set(marksSnapshot.docs
       .map((doc) => doc.get("sessionId"))
       .filter((sessionId): sessionId is string => typeof sessionId === "string" && sessionId.length > 0))];
-    const sessionStates = new Map<string, string>();
+    const sessionDetails = new Map<string, { state: string; offeringId: string; sessionDate: string | null }>();
     const sessions = db.collection("sessions");
     // Firestore supports up to 30 document IDs in an "in" query; batch to
     // avoid issuing an unbounded number of concurrent reads for long histories.
@@ -63,7 +70,15 @@ export async function GET(request: Request) {
       const snapshot = await sessions.where(FieldPath.documentId(), "in", batch).get();
       for (const session of snapshot.docs) {
         const state = session.get("state");
-        if (typeof state === "string") sessionStates.set(session.id, state);
+        const offeringId = session.get("offeringId");
+        if (typeof state === "string" && typeof offeringId === "string") {
+          const sessionDate = session.get("sessionDate");
+          sessionDetails.set(session.id, {
+            state,
+            offeringId,
+            sessionDate: validSessionDate(sessionDate) ? sessionDate : null,
+          });
+        }
       }
     }
 
@@ -74,17 +89,35 @@ export async function GET(request: Request) {
         grouped.set(offeringId, grouped.get(offeringId) ?? { attended: 0, missed: 0, latestDate: null });
       }
     }
+    const marksBySession = new Map<string, { offeringId: string; mark: "present" | "absent"; sessionDate: string | null }>();
+    const ambiguousSessionMarks = new Set<string>();
     for (const doc of marksSnapshot.docs) {
       const data = doc.data();
       if (typeof data.offeringId !== "string" || typeof data.sessionId !== "string" ||
-          sessionStates.get(data.sessionId) !== "completed" ||
           !["present", "absent"].includes(String(data.mark))) continue;
+      const session = sessionDetails.get(data.sessionId);
+      if (!session || session.state !== "completed" || session.offeringId !== data.offeringId) continue;
+      const mark = data.mark as "present" | "absent";
+      const existing = marksBySession.get(data.sessionId);
+      if (existing && (existing.offeringId !== data.offeringId || existing.mark !== mark)) {
+        ambiguousSessionMarks.add(data.sessionId);
+        continue;
+      }
+      if (existing) continue;
+      marksBySession.set(data.sessionId, {
+        offeringId: data.offeringId,
+        mark,
+        sessionDate: session.sessionDate,
+      });
+    }
+    for (const [sessionId, data] of marksBySession) {
+      if (ambiguousSessionMarks.has(sessionId)) continue;
       // The dashboard represents current active enrollments only. Historical marks for removed/deactivated enrollments must not recreate an inactive offering.
       const counts = grouped.get(data.offeringId);
       if (!counts) continue;
       if (data.mark === "present") counts.attended++;
       else counts.missed++;
-      if (typeof data.sessionDate === "string" && (!counts.latestDate || data.sessionDate > counts.latestDate)) {
+      if (data.sessionDate && (!counts.latestDate || data.sessionDate > counts.latestDate)) {
         counts.latestDate = data.sessionDate;
       }
       grouped.set(data.offeringId, counts);
@@ -99,6 +132,7 @@ export async function GET(request: Request) {
       const course = courseId ? await db.collection("courses").doc(courseId).get() : null;
       const total = counts.attended + counts.missed;
       const result = evaluate(counts.attended, total, DEFAULT_POLICY);
+      const status: AttendanceStatus = result.status === "below_threshold" ? "shortfall" : result.status;
       return {
         offeringId,
         courseId: courseId || null,
@@ -110,7 +144,7 @@ export async function GET(request: Request) {
         missed: counts.missed,
         total,
         percentage: result.percentage,
-        status: result.status === "below_threshold" ? "shortfall" : result.status,
+        status,
         thresholdPercent: DEFAULT_POLICY.thresholdPercent,
         latestSessionDate: counts.latestDate,
       };
@@ -121,7 +155,7 @@ export async function GET(request: Request) {
       (b.status === "shortfall" ? 0 : b.status === "compliant" ? 1 : 2) ||
       (a.courseCode ?? a.courseTitle).localeCompare(b.courseCode ?? b.courseTitle));
 
-    return NextResponse.json({
+    const response: StudentDashboardData = {
       student: {
         uid: identity.uid,
         // The approved roster is the source of truth; cached profile fields can
@@ -133,7 +167,8 @@ export async function GET(request: Request) {
       policy: { thresholdPercent: DEFAULT_POLICY.thresholdPercent, countsOnlyCompletedSessions: true },
       summaries,
       generatedAt: new Date().toISOString(),
-    });
+    };
+    return NextResponse.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("Firebase ID token")) {

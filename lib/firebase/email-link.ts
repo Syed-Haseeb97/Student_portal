@@ -7,6 +7,7 @@ import {
   type UserCredential,
 } from "firebase/auth";
 import { getFirebaseClient } from "@/lib/firebase/client";
+import type { ApiErrorResponse } from "@/lib/api/types";
 
 const EMAIL_DOMAIN = "@iiitt.ac.in";
 
@@ -53,7 +54,7 @@ export async function completeInstitutionalSignIn(
   });
   if (!response.ok) {
     await auth.signOut();
-    const body = await response.json().catch(() => null) as { error?: string } | null;
+    const body = await response.json().catch(() => null) as Partial<ApiErrorResponse> | null;
     throw new Error(body?.error ?? "Your account could not be matched to the approved student roster.");
   }
   return credential;

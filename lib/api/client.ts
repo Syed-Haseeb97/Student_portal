@@ -12,6 +12,66 @@ import type { ApiResponse, StudentDashboardData, CourseSummary } from "./types";
 import { normalizeAttendanceStatus } from "./types";
 import { SYNTHETIC_STUDENT, SYNTHETIC_EMPTY_STUDENT } from "./mock-data";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNullableString(value: unknown) {
+  return value === null || typeof value === "string";
+}
+
+function isDateOnly(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function parseDashboardData(body: unknown): StudentDashboardData | null {
+  if (!isRecord(body) || !isRecord(body.student) || !isRecord(body.policy) || !Array.isArray(body.summaries)) return null;
+
+  const student = body.student;
+  if (typeof student.uid !== "string" || !student.uid ||
+      !isNullableString(student.rollNumber) || !isNullableString(student.batch) ||
+      !isNullableString(student.programme) ||
+      (student.name !== undefined && !isNullableString(student.name)) ||
+      (student.email !== undefined && !isNullableString(student.email))) return null;
+
+  const policy = body.policy;
+  if (policy.thresholdPercent !== 75 || policy.countsOnlyCompletedSessions !== true) return null;
+  if (typeof body.generatedAt !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(body.generatedAt) ||
+      !Number.isFinite(Date.parse(body.generatedAt)) || new Date(body.generatedAt).toISOString() !== body.generatedAt) return null;
+
+  const summaries: CourseSummary[] = [];
+  for (const item of body.summaries) {
+    if (!isRecord(item) || typeof item.offeringId !== "string" || !item.offeringId ||
+        !isNullableString(item.courseId) || !isNullableString(item.courseCode) ||
+        typeof item.courseTitle !== "string" || !isNullableString(item.term) ||
+        !Number.isInteger(item.attended) || (item.attended as number) < 0 ||
+        !Number.isInteger(item.missed) || (item.missed as number) < 0 ||
+        !Number.isInteger(item.total) || (item.total as number) < 0 ||
+        (item.attended as number) + (item.missed as number) !== item.total ||
+        (item.percentage !== null && (typeof item.percentage !== "number" || !Number.isFinite(item.percentage) || item.percentage < 0 || item.percentage > 100)) ||
+        !["compliant", "shortfall", "no_data", "below_threshold"].includes(String(item.status)) ||
+        item.thresholdPercent !== 75 ||
+        (item.latestSessionDate !== undefined && item.latestSessionDate !== null && !isDateOnly(item.latestSessionDate))) return null;
+
+    const status = normalizeAttendanceStatus(String(item.status));
+    if ((item.total === 0 && (item.percentage !== null || status !== "no_data")) ||
+        (item.total !== 0 && (item.percentage === null || status === "no_data" ||
+          (status === "compliant") !== ((item.percentage as number) >= 75)))) return null;
+    summaries.push({ ...item, status } as CourseSummary);
+  }
+
+  return {
+    ...body,
+    student: student as unknown as StudentDashboardData["student"],
+    policy: policy as unknown as StudentDashboardData["policy"],
+    summaries,
+    generatedAt: body.generatedAt,
+  } as StudentDashboardData;
+}
+
 export function isMockModeEnabled(): boolean {
   if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_ENABLE_MOCK_API) {
     if (process.env.NEXT_PUBLIC_ENABLE_MOCK_API === "true") return true;
@@ -129,34 +189,18 @@ export async function getStudentDashboard(
       };
     }
 
-    // Validate expected shape: { student, policy, summaries }
-    const parsed = body as Partial<StudentDashboardData>;
-    if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      !parsed.student ||
-      !parsed.policy ||
-      !Array.isArray(parsed.summaries)
-    ) {
+    const parsed = parseDashboardData(body);
+    if (!parsed) {
       return {
         status: 502,
-        error: "Malformed dashboard response: missing student, policy, or summaries fields.",
+        error: "Malformed dashboard response: fields do not match the attendance API contract.",
         isMock: false,
       };
     }
 
-    // Normalize each summary's status to ensure compatibility with backend (which might emit "below_threshold")
-    const normalizedSummaries: CourseSummary[] = parsed.summaries.map((s) => ({
-      ...s,
-      status: normalizeAttendanceStatus(s.status),
-    }));
-
     return {
       status: 200,
-      data: {
-        ...parsed,
-        summaries: normalizedSummaries,
-      } as StudentDashboardData,
+      data: parsed,
       isMock: false,
     };
   } catch (err) {
