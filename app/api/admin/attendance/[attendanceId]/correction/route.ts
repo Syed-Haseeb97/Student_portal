@@ -18,7 +18,7 @@ export async function POST(request: Request, context: { params: Promise<{ attend
   }
   const body = await request.json().catch(() => null) as { mark?: unknown; reason?: unknown } | null;
   const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
-  if (!["present", "absent"].includes(String(body?.mark)) || reason.length < 5 || reason.length > 300) {
+  if (!body || !["present", "absent"].includes(String(body.mark)) || reason.length < 5 || reason.length > 300) {
     return NextResponse.json({ error: "Provide a present/absent mark and a correction reason between 5 and 300 characters." }, { status: 400 });
   }
 
