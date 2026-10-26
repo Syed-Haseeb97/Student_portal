@@ -67,6 +67,7 @@ test("unverified or non-institutional identities cannot read student attendance"
   const external = env.authenticatedContext("studentA", {
     email: "student@example.com", email_verified: true,
   }).firestore();
+  await assertFails(getDoc(doc(unverified, "userProfiles/studentA")));
   await assertFails(getDoc(doc(unverified, "attendance/sessionA_studentA")));
   await assertFails(getDoc(doc(external, "attendance/sessionA_studentA")));
 });
