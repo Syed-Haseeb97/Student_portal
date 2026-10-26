@@ -80,7 +80,7 @@ Courses:
 { "kind": "courses", "rows": [{ "id": "cs101", "code": "CS101", "title": "Introduction to Programming", "credits": 4, "active": true }] }
 ```
 
-Offerings reference an existing active course:
+Offering IDs must use letters, digits, or hyphens only (no underscores), because the ID prefixes compound enrollment and assignment document IDs. Offerings reference an existing active course:
 
 ```json
 { "kind": "offerings", "rows": [{ "id": "cs101-2026s1", "courseId": "cs101", "term": "2026-S1", "batch": "2026", "programme": "CSE", "active": true }] }
