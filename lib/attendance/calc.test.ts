@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { evaluate, formatPercent, summarizeByCourse, coursesBelowThreshold, type SessionAttendance } from "./calc";
+import { evaluate, formatPercent, summarizeByCourse, coursesBelowThreshold, calculateGuidance, type SessionAttendance } from "./calc";
 const row = (sessionId: string, offeringId: string, mark: "present" | "absent" | null, sessionState: SessionAttendance["sessionState"] = "completed"): SessionAttendance => ({ sessionId, offeringId, mark, sessionState });
 
 test("attendance is calculated independently per subject", () => {
@@ -62,4 +62,26 @@ test("attendance policy and counts reject invalid values", () => {
   assert.throws(() => evaluate(1, 1, { thresholdPercent: 101, eligibleStates: ["completed"] }), RangeError);
   assert.throws(() => evaluate(2, 1), RangeError);
   assert.throws(() => evaluate(-1, 2), RangeError);
+});
+
+test("guidance correctly computes recovery sessions and permissible absences", () => {
+  // 6/10 = 60%, needs 6 consecutive sessions to reach 12/16 = 75%
+  const shortfall = calculateGuidance(6, 10, 75);
+  assert.equal(shortfall.sessionsToRecover, 6);
+  assert.equal(shortfall.sessionsCanMiss, 0);
+
+  // 18/20 = 90%, can afford 4 misses (18/24 = 75%)
+  const compliant = calculateGuidance(18, 20, 75);
+  assert.equal(compliant.sessionsToRecover, 0);
+  assert.equal(compliant.sessionsCanMiss, 4);
+
+  // 3/4 = 75%, right on the margin: 0 misses allowed
+  const exact = calculateGuidance(3, 4, 75);
+  assert.equal(exact.sessionsToRecover, 0);
+  assert.equal(exact.sessionsCanMiss, 0);
+
+  // 0 total sessions: 0 for both
+  const noData = calculateGuidance(0, 0, 75);
+  assert.equal(noData.sessionsToRecover, 0);
+  assert.equal(noData.sessionsCanMiss, 0);
 });

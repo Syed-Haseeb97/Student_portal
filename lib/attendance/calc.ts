@@ -37,3 +37,29 @@ export function summarizeByCourse(records: readonly SessionAttendance[], policy 
 }
 export function coursesBelowThreshold(summaries: readonly CourseAttendanceSummary[]) { return summaries.filter((summary) => summary.status === "below_threshold"); }
 export function formatPercent(value: number | null) { return value === null ? "—" : `${(Math.floor(value * 10 + 1e-9) / 10).toFixed(1)}%`; }
+
+export interface AttendanceGuidance {
+  /** Number of upcoming consecutive sessions the student must attend to reach or restore thresholdPercent. 0 if compliant or no data. */
+  sessionsToRecover: number;
+  /** Number of upcoming sessions the student can afford to miss while remaining >= thresholdPercent. 0 if in shortfall or on the margin. */
+  sessionsCanMiss: number;
+}
+
+export function calculateGuidance(
+  attended: number,
+  total: number,
+  thresholdPercent = 75
+): AttendanceGuidance {
+  if (total <= 0 || attended < 0 || total < attended) {
+    return { sessionsToRecover: 0, sessionsCanMiss: 0 };
+  }
+  const thresholdFraction = thresholdPercent / 100;
+  if (attended * 100 < thresholdPercent * total) {
+    const rawX = (thresholdFraction * total - attended) / (1 - thresholdFraction);
+    const sessionsToRecover = Math.max(0, Math.ceil(rawX - 1e-9));
+    return { sessionsToRecover, sessionsCanMiss: 0 };
+  }
+  const rawY = (attended - thresholdFraction * total) / thresholdFraction;
+  const sessionsCanMiss = Math.max(0, Math.floor(rawY + 1e-9));
+  return { sessionsToRecover: 0, sessionsCanMiss };
+}

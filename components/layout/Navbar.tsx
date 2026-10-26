@@ -20,7 +20,7 @@ export function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="border-b border-line bg-canvas/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
+    <header className="border-b border-line bg-canvas/85 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo & Branding */}
@@ -28,8 +28,8 @@ export function Navbar({
             href="/"
             className="flex items-center gap-3 group focus-visible:outline-accent"
           >
-            <div className="grid size-10 place-items-center rounded-xl bg-accent text-canvas font-black text-sm tracking-tight shadow-xs transition-transform group-hover:scale-105">
-              II
+            <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-accent to-accent/80 text-canvas font-black text-xs tracking-wider shadow-xs transition-transform group-hover:scale-105">
+              IIITT
             </div>
             <div>
               <div className="flex items-center gap-2">

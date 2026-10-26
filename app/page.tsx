@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { AttendanceProgress } from "@/components/ui/AttendanceProgress";
+import { calculateGuidance } from "@/lib/attendance/calc";
 import { SYNTHETIC_STUDENT } from "@/lib/api/mock-data";
-import { ArrowRight, BookOpen, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, AlertTriangle, ShieldCheck, Calendar } from "lucide-react";
 
 export default function HomePage() {
   const { student, policy, summaries } = SYNTHETIC_STUDENT;
@@ -69,7 +70,7 @@ export default function HomePage() {
               </Badge>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-4xl font-bold tracking-tight text-ink">
+              <span className="text-4xl font-bold tracking-tight text-ink tabular-nums">
                 {policy.thresholdPercent}%
               </span>
               <span className="text-sm font-normal text-muted">minimum per course</span>
@@ -83,19 +84,19 @@ export default function HomePage() {
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-line/60">
               <div className="p-2.5 rounded-xl bg-surface border border-line">
                 <p className="text-[11px] text-muted">On Track</p>
-                <p className="text-base sm:text-lg font-semibold text-accent">
+                <p className="text-base sm:text-lg font-semibold text-accent tabular-nums">
                   {compliantCount} {compliantCount === 1 ? "Course" : "Courses"}
                 </p>
               </div>
               <div className="p-2.5 rounded-xl bg-surface border border-line">
                 <p className="text-[11px] text-muted">Action Needed</p>
-                <p className="text-base sm:text-lg font-semibold text-risk">
+                <p className="text-base sm:text-lg font-semibold text-risk tabular-nums">
                   {shortfallCount} {shortfallCount === 1 ? "Course" : "Courses"}
                 </p>
               </div>
               <div className="p-2.5 rounded-xl bg-surface border border-line">
                 <p className="text-[11px] text-muted">Pending</p>
-                <p className="text-base sm:text-lg font-semibold text-muted">
+                <p className="text-base sm:text-lg font-semibold text-muted tabular-nums">
                   {pendingCount} {pendingCount === 1 ? "Course" : "Courses"}
                 </p>
               </div>
@@ -125,11 +126,14 @@ export default function HomePage() {
             const isCompliant = course.status === "compliant";
             const isShortfall = course.status === "shortfall";
             const isNoData = course.status === "no_data";
+            const guidance = calculateGuidance(course.attended, course.total, policy.thresholdPercent);
 
             return (
               <Card
                 key={course.offeringId}
-                className="flex flex-col justify-between hover:border-line/90 transition-all"
+                className={`flex flex-col justify-between hover:border-line/90 transition-all ${
+                  isShortfall ? "border-risk/30 hover:border-risk/50" : ""
+                }`}
               >
                 <div>
                   <CardHeader className="pb-3">
@@ -139,7 +143,7 @@ export default function HomePage() {
                           <BookOpen className="size-3.5 text-accent" />
                           <span>{course.courseCode ?? course.offeringId}</span>
                         </div>
-                        <CardTitle className="mt-1.5 text-base sm:text-lg leading-snug">
+                        <CardTitle className="mt-1.5 text-base sm:text-lg leading-snug line-clamp-2">
                           {course.courseTitle}
                         </CardTitle>
                       </div>
@@ -167,33 +171,60 @@ export default function HomePage() {
                     </CardDescription>
                   </CardHeader>
 
-                  <CardContent className="pt-2">
+                  <CardContent className="pt-1">
                     <div className="flex items-center gap-4">
                       <AttendanceProgress
                         attended={course.attended}
                         total={course.total}
+                        percentage={course.percentage}
                         thresholdPercent={policy.thresholdPercent}
                         variant="circular"
                         size="md"
                       />
 
-                      <div className="space-y-1 text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-muted">Attended:</span>
-                          <span className="font-semibold text-ink">
-                            {course.attended}{" "}
-                            <span className="text-muted font-normal">/ {course.total}</span>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-muted">Missed:</span>
-                          <span className={`font-medium ${course.missed > 0 ? "text-risk" : "text-muted"}`}>
-                            {course.missed} sessions
-                          </span>
-                        </div>
+                      <div className="space-y-1.5 text-xs flex-1 min-w-0">
+                        {course.total === 0 ? (
+                          <p className="text-muted text-[11px] italic py-1 leading-relaxed">
+                            No completed sessions recorded yet for this subject.
+                          </p>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted">Attended:</span>
+                              <span className="font-semibold text-ink tabular-nums">
+                                {course.attended}{" "}
+                                <span className="text-muted font-normal">/ {course.total}</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted">Missed:</span>
+                              <span className={`font-medium tabular-nums ${course.missed > 0 ? "text-risk" : "text-muted"}`}>
+                                {course.missed} {course.missed === 1 ? "session" : "sessions"}
+                              </span>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Guidance Pill */}
+                        {isShortfall && guidance.sessionsToRecover > 0 && (
+                          <div className="p-1.5 rounded-lg bg-risk/10 border border-risk/20 text-[11px] text-risk leading-tight">
+                            Need next <strong>{guidance.sessionsToRecover}</strong> {guidance.sessionsToRecover === 1 ? "class" : "classes"} for 75%
+                          </div>
+                        )}
+                        {isCompliant && (
+                          <div className="p-1.5 rounded-lg bg-accent/10 border border-accent/20 text-[11px] text-accent leading-tight">
+                            {guidance.sessionsCanMiss > 0 ? (
+                              <>Can miss <strong>{guidance.sessionsCanMiss}</strong> {guidance.sessionsCanMiss === 1 ? "class" : "classes"} safely</>
+                            ) : (
+                              <>At requirement (75%)</>
+                            )}
+                          </div>
+                        )}
+
                         {course.latestSessionDate && (
-                          <div className="text-[11px] text-muted/70 pt-0.5">
-                            Last session: {course.latestSessionDate}
+                          <div className="flex items-center gap-1 text-[11px] text-muted/70 pt-0.5">
+                            <Calendar className="size-3 shrink-0" />
+                            <span className="truncate">Last: {course.latestSessionDate}</span>
                           </div>
                         )}
                       </div>
@@ -205,6 +236,7 @@ export default function HomePage() {
                   <AttendanceProgress
                     attended={course.attended}
                     total={course.total}
+                    percentage={course.percentage}
                     thresholdPercent={policy.thresholdPercent}
                     variant="linear"
                     showLabel={false}

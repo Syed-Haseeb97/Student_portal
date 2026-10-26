@@ -9,6 +9,7 @@ export interface AttendanceProgressProps {
   variant?: "circular" | "linear";
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
+  showMarkerBadge?: boolean;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export function AttendanceProgress({
   variant = "circular",
   size = "md",
   showLabel = true,
+  showMarkerBadge = false,
   className = "",
 }: AttendanceProgressProps) {
   const hasData = total > 0;
@@ -32,15 +34,16 @@ export function AttendanceProgress({
       : null;
 
   const isCompliant = percentage !== null && percentage >= thresholdPercent;
+  const isNoData = !hasData || percentage === null;
 
-  const colorClass = !hasData || percentage === null
+  const colorClass = isNoData
     ? "text-muted"
     : isCompliant
     ? "text-accent"
     : "text-risk";
 
-  const strokeColor = !hasData || percentage === null
-    ? "#8b91a3"
+  const strokeColor = isNoData
+    ? "#4b5563"
     : isCompliant
     ? "#2dd4bf"
     : "#fb7185";
@@ -51,8 +54,15 @@ export function AttendanceProgress({
       <div className={`w-full space-y-1.5 ${className}`}>
         {showLabel && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">Attendance</span>
-            <span className={`font-semibold ${colorClass}`}>
+            <span className="text-muted flex items-center gap-1.5">
+              <span>Attendance</span>
+              {showMarkerBadge && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-surface border border-line text-muted/80">
+                  Target: {thresholdPercent}%
+                </span>
+              )}
+            </span>
+            <span className={`font-semibold tabular-nums ${colorClass}`}>
               {formatPercent(percentage)}
             </span>
           </div>
@@ -63,21 +73,21 @@ export function AttendanceProgress({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label={`Attendance progress: ${formatPercent(percentage)}`}
-          className="relative h-2 w-full overflow-hidden rounded-full bg-line"
+          className="relative h-2 w-full overflow-hidden rounded-full bg-raised border border-line/60"
         >
           <div
             className={`h-full transition-all duration-300 rounded-full ${
-              !hasData || percentage === null
-                ? "bg-muted/40"
+              isNoData
+                ? "bg-muted/30"
                 : isCompliant
-                ? "bg-accent"
-                : "bg-risk"
+                ? "bg-accent shadow-[0_0_8px_rgba(45,212,191,0.3)]"
+                : "bg-risk shadow-[0_0_8px_rgba(251,113,133,0.3)]"
             }`}
             style={{ width: `${fillPercent}%` }}
           />
-          {/* 75% Threshold Marker Line */}
+          {/* 75% Threshold Marker Notch */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-ink/40"
+            className="absolute top-0 bottom-0 w-0.5 bg-ink/50 z-10"
             style={{ left: `${thresholdPercent}%` }}
             title={`Required threshold: ${thresholdPercent}%`}
           />
@@ -88,9 +98,9 @@ export function AttendanceProgress({
 
   // Circular gauge variant
   const dimensions = {
-    sm: { size: 48, strokeWidth: 4, textSize: "text-[11px]" },
-    md: { size: 72, strokeWidth: 5.5, textSize: "text-sm font-semibold" },
-    lg: { size: 96, strokeWidth: 7, textSize: "text-lg font-bold" },
+    sm: { size: 52, strokeWidth: 4, textSize: "text-[11px] font-semibold" },
+    md: { size: 76, strokeWidth: 5.5, textSize: "text-sm font-bold" },
+    lg: { size: 100, strokeWidth: 7, textSize: "text-lg font-bold" },
   };
 
   const { size: dim, strokeWidth, textSize } = dimensions[size];
@@ -103,7 +113,7 @@ export function AttendanceProgress({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center ${className}`}
+      className={`relative inline-flex items-center justify-center shrink-0 ${className}`}
       role="progressbar"
       aria-valuenow={percentage ?? 0}
       aria-valuemin={0}
@@ -122,26 +132,38 @@ export function AttendanceProgress({
           cx={dim / 2}
           cy={dim / 2}
           r={radius}
-          stroke="#232734"
+          stroke="#1e222d"
           strokeWidth={strokeWidth}
           fill="none"
         />
         {/* Animated progress arc */}
-        <circle
-          cx={dim / 2}
-          cy={dim / 2}
-          r={radius}
-          stroke={strokeColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          fill="none"
-          className="transition-all duration-500 ease-out"
-        />
+        {isNoData ? (
+          <circle
+            cx={dim / 2}
+            cy={dim / 2}
+            r={radius}
+            stroke="#374151"
+            strokeWidth={strokeWidth}
+            strokeDasharray="4 4"
+            fill="none"
+          />
+        ) : (
+          <circle
+            cx={dim / 2}
+            cy={dim / 2}
+            r={radius}
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            fill="none"
+            className="transition-all duration-500 ease-out"
+          />
+        )}
       </svg>
-      <div className={`absolute inset-0 flex items-center justify-center ${textSize} ${colorClass}`}>
-        {formatPercent(percentage)}
+      <div className={`absolute inset-0 flex flex-col items-center justify-center ${textSize} tabular-nums ${colorClass}`}>
+        <span>{formatPercent(percentage)}</span>
       </div>
     </div>
   );
