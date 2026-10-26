@@ -9,7 +9,6 @@ import {
 import { getFirebaseClient } from "@/lib/firebase/client";
 
 const EMAIL_DOMAIN = "@iiitt.ac.in";
-const EMAIL_STORAGE_KEY = "iiitt-portal-email-link";
 
 export function normalizeInstitutionalEmail(value: string) {
   return value.trim().toLowerCase();
@@ -28,8 +27,6 @@ export async function sendInstitutionalSignInLink(emailInput: string) {
   if (!redirectUrl) throw new Error("Missing NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL.");
   const { auth } = getFirebaseClient();
   await sendSignInLinkToEmail(auth, email, { url: redirectUrl, handleCodeInApp: true });
-  // Stored only to complete same-device flow; cross-device flow must ask the user again.
-  window.localStorage.setItem(EMAIL_STORAGE_KEY, email);
 }
 
 export function isInstitutionalSignInLink(url: string) {
@@ -45,7 +42,6 @@ export async function completeInstitutionalSignIn(
   const { auth } = getFirebaseClient();
   if (!isSignInWithEmailLink(auth, url)) throw new Error("This is not a valid Firebase sign-in link.");
   const credential = await signInWithEmailLink(auth, email, url);
-  window.localStorage.removeItem(EMAIL_STORAGE_KEY);
   if (!credential.user.emailVerified || !isInstitutionalEmail(credential.user.email ?? "")) {
     await auth.signOut();
     throw new Error("Sign-in requires a verified @iiitt.ac.in email address.");
@@ -63,6 +59,3 @@ export async function completeInstitutionalSignIn(
   return credential;
 }
 
-export function getSavedSignInEmail() {
-  return window.localStorage.getItem(EMAIL_STORAGE_KEY) ?? "";
-}
