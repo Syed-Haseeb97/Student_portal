@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
+import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { validateRosterRows } from "@/lib/roster/validate";
 
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   try {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
-    if (identity.email_verified !== true || !/^[^\\s@]+@iiitt\\.ac\\.in$/i.test(identity.email ?? "")) {
+    if (identity.email_verified !== true || !INSTITUTIONAL_EMAIL_PATTERN.test(identity.email ?? "")) {
       return NextResponse.json({ error: "A verified institutional admin account is required." }, { status: 403 });
     }
     const rosterRefs = rows.map((row) => db.collection("studentRoster").doc(row.rollNumber));
