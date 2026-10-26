@@ -1,29 +1,32 @@
 # IIITT Student Portal
 
-A mobile-first student portal for IIIT Tiruchirappalli, starting with subject-wise attendance and lecturer-recorded class sessions.
+A mobile-first attendance portal MVP for IIIT Tiruchirappalli. The homepage is a visual preview and uses synthetic data only.
 
-## Current status
+## Status and safety boundary
 
-The homepage remains a synthetic-data visual preview. A Firebase integration is being built on `feature/firebase-attendance-backend`: browser/Admin SDK initialization, passwordless institutional email-link screens, roster claim/import endpoints, staff provisioning, attendance session endpoints, emulator rules tests, and deny-by-default Firestore rules. This branch is not yet a production-ready or institution-authorized system.
+The Firebase attendance foundation includes email-link sign-in, a server-side approved-roster claim check, admin-only roster/staff provisioning endpoints, lecturer-scoped session lifecycle routes, Firestore rules/indexes, emulator authorization tests, and CI. This is not a production-authorized system. No live Firebase project, real institutional roster, or production admin is configured as part of this repository work.
+
+**Synthetic data only.** Do not import real student data, create a production admin, deploy Firestore rules, or configure live Firebase resources without explicit human approval and institutional authorization.
 
 ## Stack
 
-- Next.js App Router + TypeScript
-- Firebase Authentication (email link) and Cloud Firestore
-- Firebase Admin SDK for trusted server routes only
-- Firebase Emulator Suite for local security testing
-- Vercel (planned)
+- Next.js App Router, TypeScript, Tailwind CSS v4
+- Firebase Authentication (passwordless email link) and Cloud Firestore
+- Firebase Admin SDK for narrowly scoped trusted server routes only
+- Firebase Emulator Suite for local authorization tests
+- Vercel (planned; not configured here)
 
-## Attendance rules
+## Locked attendance rules
 
-- The 75% threshold applies independently to each course offering.
-- Each class session has its own ID; multiple sessions of one subject on one day count separately.
-- Only completed sessions count. Scheduled and cancelled sessions are excluded.
-- A session can be completed only with exactly one present/absent mark for every active enrollee.
-- No aggregate across subjects determines compliance.
-- Completed-session corrections must use a separately authorized, reasoned and audited process. That workflow is not yet implemented.
+- Verified `@iiitt.ac.in` email plus an active approved-roster match is required. Neither domain verification nor roll-number parsing alone grants access.
+- Roles are server-provisioned; Firestore client writes to protected records are denied.
+- Attendance is calculated per course offering. Exactly 75% is compliant.
+- Only completed sessions count; scheduled and cancelled sessions are excluded.
+- A session can be completed only with exactly one present/absent mark per active enrollee.
+- Cancellation requires a reason and is audited.
+- Completed-session correction workflow, course/enrollment import, and real dashboard wiring are not implemented yet.
 
-See [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md) and [Firebase architecture plan](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md).
+See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md), and [Firebase backend plan](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md). The CSV template contains fake examples only.
 
 ## Local setup
 
@@ -38,26 +41,42 @@ npm run dev
 
 On Windows PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`.
 
-Fill the public Firebase web configuration from a **separate portal Firebase project**. Set `FIREBASE_SERVICE_ACCOUNT_JSON` and `FIREBASE_ADMIN_PROJECT_ID` only in local untracked environment variables or deployment secrets. Never commit service-account JSON, `.env.local`, or real student records. Add the local redirect domain to Firebase Auth's authorized domains and enable Email/Password plus Email link sign-in.
+The synthetic homepage can be reviewed without enabling a real backend. For local auth/backend testing, use the Firebase Emulator Suite and synthetic fixtures. Do not add live credentials to `.env.local` for this task.
 
-## Firestore setup
+## Emulator and checks
 
-```bash
-npx firebase emulators:start --only auth,firestore
-```
-
-Deploy reviewed rules and indexes only after creating the intended portal Firebase project and confirming the project ID:
+Run the unit/lint/type checks:
 
 ```bash
-npx firebase deploy --only firestore:rules,firestore:indexes --project YOUR_PORTAL_PROJECT_ID
+npm run check
 ```
 
-Do not deploy the rules or enable a real roster until emulator authorization tests pass. All roster and staff records must be provisioned through trusted server-side workflows. The initial administrator bootstrap remains a manual, documented setup task and must never be open to public requests.
+Run Firestore authorization tests against the emulator:
 
-## Roster
+```bash
+npx firebase emulators:exec --only firestore --project demo-iiitt-portal "npm run test:rules"
+```
 
-Use [the roster import template](docs/roster-import-template.csv) as a schema example only. Its rows are fake examples, not real records. Import only an institute-approved roster. Roll number, batch, and programme are stored explicitly; the app does not infer programme from a roll-number prefix.
+Run the production build:
 
-## Verification status
+```bash
+npm run build
+```
 
-Source files have been written to a feature branch, but no dependency install, lint, TypeScript check, unit test, production build, or Firestore Emulator rules test has been run in this environment. Do not use this branch with real student records until these checks and a security review are complete.
+CI runs these checks on pull requests targeting `main` and pushes to the configured branches. Emulator tests use the demo project ID and synthetic documents; they do not create a live Firebase project.
+
+## Environment contract
+
+`.env.example` documents public Firebase web configuration and server-only Admin SDK variables. Public web config is not an access-control boundary; Firebase Auth and Firestore rules are mandatory. Keep `FIREBASE_SERVICE_ACCOUNT_JSON` and `FIREBASE_ADMIN_PROJECT_ID` server-side and uncommitted. The Admin SDK helper checks project identity to reduce accidental cross-project use.
+
+No Firebase project configuration, production rule deployment, real roster upload, or real admin bootstrap is included here. Do not run production deployment commands for this MVP phase.
+
+## Follow-ups before any real pilot
+
+1. Triage and resolve the dependency audit advisories, including the reported critical advisory, without unsafe blind major-version downgrades.
+2. Define and review the first-admin provisioning procedure.
+3. Import institution-approved courses, offerings, enrollments, and teaching assignments through a trusted workflow.
+4. Implement a separately authorized, reasoned, audited correction flow for completed sessions.
+5. Wire dashboards to authorized real data only after approval.
+6. Obtain the institute-approved roster and verify all operational policies with authorized stakeholders.
+7. Conduct a focused security review and only then consider a separate, explicitly approved live-project rollout.
