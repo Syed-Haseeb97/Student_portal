@@ -24,9 +24,9 @@ The Firebase attendance foundation includes email-link sign-in, a server-side ap
 - Only completed sessions count; scheduled and cancelled sessions are excluded.
 - A session can be completed only with exactly one present/absent mark per active enrollee.
 - Cancellation requires a reason and is audited.
-- Completed-session correction workflow, course/enrollment import, and real dashboard wiring are not implemented yet.
+- The backend branch includes admin-only course/offering/enrollment/assignment imports, audited completed-session corrections, and a student dashboard API. The frontend is not wired to live data yet, and no production Firebase project or roster is configured.
 
-See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md), and [Firebase backend plan](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md). The CSV template contains fake examples only.
+See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md), [Firebase backend plan](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md), and the [backend API contract](docs/BACKEND_API_CONTRACT.md). The CSV template contains fake examples only.
 
 ## Local setup
 
