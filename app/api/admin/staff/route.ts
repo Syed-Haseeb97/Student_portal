@@ -23,6 +23,9 @@ export async function POST(request: Request) {
   try {
     const { auth, db } = getFirebaseAdmin();
     const actor = await auth.verifyIdToken(token, true);
+    if (actor.email_verified !== true || !INSTITUTIONAL_EMAIL_PATTERN.test(normalizeEmail(actor.email ?? ""))) {
+      return NextResponse.json({ error: "A verified institutional administrator account is required." }, { status: 403 });
+    }
     const actorRef = db.collection("staff").doc(actor.uid);
     const actorDoc = await actorRef.get();
     if (!actorDoc.exists || actorDoc.get("role") !== "admin" || actorDoc.get("active") !== true) {
