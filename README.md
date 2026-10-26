@@ -30,7 +30,7 @@ See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTE
 
 ## Local setup
 
-Requires Node.js 22+ and npm.
+Requires Node.js 24.12+ and npm.
 
 ```bash
 npm install
