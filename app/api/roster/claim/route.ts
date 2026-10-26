@@ -6,9 +6,7 @@ import { normalizeEmail } from "@/lib/roster/validate";
 export const runtime = "nodejs";
 
 function bearerToken(request: Request) {
-  const value = request.headers.get("authorization") ?? "";
-  const match = /^Bearer (.+)$/.exec(value);
-  return match?.[1] ?? null;
+  return /^Bearer (.+)$/.exec(request.headers.get("authorization") ?? "")?.[1] ?? null;
 }
 
 /** Match a verified Firebase identity to an admin-imported roster entry. */
@@ -29,10 +27,10 @@ export async function POST(request: Request) {
       .where("active", "==", true)
       .limit(2)
       .get();
-
     if (roster.size !== 1) {
       return NextResponse.json({ error: "This email is not uniquely matched to an active approved student roster entry. Contact the portal administrator." }, { status: 403 });
     }
+
     const rosterDoc = roster.docs[0]!;
     const rosterData = rosterDoc.data();
     if (typeof rosterData.rollNumber !== "string" || typeof rosterData.batch !== "string" ||
@@ -47,6 +45,9 @@ export async function POST(request: Request) {
     }
     if (existing.exists && existing.get("active") === false) {
       return NextResponse.json({ error: "This portal account has been disabled. Contact the portal administrator." }, { status: 403 });
+    }
+    if (existing.exists && existing.get("role") && existing.get("role") !== "student") {
+      return NextResponse.json({ error: "This identity is already provisioned with a non-student role. Contact the portal administrator." }, { status: 409 });
     }
 
     await profileRef.set({
@@ -68,7 +69,6 @@ export async function POST(request: Request) {
     if (message.includes("Firebase ID token")) {
       return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
     }
-    // Do not return raw server errors or privileged Firebase details to the browser.
     return NextResponse.json({ error: "Unable to verify roster access right now. Please retry." }, { status: 503 });
   }
 }
