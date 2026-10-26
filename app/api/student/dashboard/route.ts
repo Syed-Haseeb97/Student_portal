@@ -46,6 +46,21 @@ export async function GET(request: Request) {
         .where("studentUid", "==", identity.uid)
         .get(),
     ]);
+    // Attendance marks are written atomically with session completion by the
+    // attendance endpoint. Still verify session state when reading so legacy,
+    // imported, or inconsistent marks from scheduled/cancelled sessions never
+    // affect the student's percentage.
+    const sessionIds = [...new Set(marksSnapshot.docs
+      .map((doc) => doc.get("sessionId"))
+      .filter((sessionId): sessionId is string => typeof sessionId === "string" && sessionId.length > 0))];
+    const sessionStates = new Map<string, string>();
+    await Promise.all(sessionIds.map(async (sessionId) => {
+      const session = await db.collection("sessions").doc(sessionId).get();
+      if (session.exists && typeof session.get("state") === "string") {
+        sessionStates.set(sessionId, session.get("state") as string);
+      }
+    }));
+
     const grouped = new Map<string, { attended: number; missed: number; latestDate: string | null }>();
     for (const enrollment of enrollmentsSnapshot.docs) {
       const offeringId = enrollment.get("offeringId");
@@ -56,6 +71,7 @@ export async function GET(request: Request) {
     for (const doc of marksSnapshot.docs) {
       const data = doc.data();
       if (typeof data.offeringId !== "string" || typeof data.sessionId !== "string" ||
+          sessionStates.get(data.sessionId) !== "completed" ||
           !["present", "absent"].includes(String(data.mark))) continue;
       // The dashboard represents current active enrollments only. Historical marks for removed/deactivated enrollments must not recreate an inactive offering.
       const counts = grouped.get(data.offeringId);
