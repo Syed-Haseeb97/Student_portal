@@ -183,6 +183,15 @@ test("admin academic import and completed-session correction routes enforce auth
     sessionId: `orphanSession${suffix}`, offeringId: `inactiveOffering${suffix}`,
     sessionDate: "2026-09-01", studentUid, mark: "present",
   });
+  // Inconsistent legacy data must not count marks from sessions that were never completed.
+  const scheduledLegacySessionId = `scheduledLegacy${suffix}`;
+  await db.collection("sessions").doc(scheduledLegacySessionId).set({
+    offeringId: shortfallOfferingId, state: "scheduled", sessionDate: "2026-10-25",
+  });
+  await db.collection("attendance").doc(`${scheduledLegacySessionId}_${studentUid}`).set({
+    sessionId: scheduledLegacySessionId, offeringId: shortfallOfferingId,
+    sessionDate: "2026-10-25", studentUid, mark: "present",
+  });
 
   const dashboardResponse = await dashboardRoute.GET(new Request("http://localhost/api/student/dashboard", {
     headers: { authorization: `Bearer ${studentToken}` },
