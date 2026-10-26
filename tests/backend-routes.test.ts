@@ -132,6 +132,24 @@ test("admin academic import and completed-session correction routes enforce auth
   assert.equal((await db.collection("staff").doc(newStaffUid).get()).get("role"), "lecturer");
   assert.equal((await db.collection("auditEvents").where("targetUid", "==", newStaffUid).get()).size, 1);
 
+  const shortfallOfferingId = `shortfallOffering${suffix}`;
+  const shortfallOfferingImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "offerings", rows: [{ id: shortfallOfferingId, courseId, term: "2026-S1", batch: "2026", programme: "CSE", active: true }],
+  }));
+  assert.equal(shortfallOfferingImport.status, 200);
+  const shortfallEnrollmentImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "enrollments", rows: [{ offeringId: shortfallOfferingId, studentUid, active: true }],
+  }));
+  assert.equal(shortfallEnrollmentImport.status, 200);
+  const dashboardSessionId = `dashboardSession${suffix}`;
+  await db.collection("sessions").doc(dashboardSessionId).set({
+    offeringId: shortfallOfferingId, state: "completed", sessionDate: "2026-10-26",
+  });
+  await db.collection("attendance").doc(`${dashboardSessionId}_${studentUid}`).set({
+    sessionId: dashboardSessionId, offeringId: shortfallOfferingId, sessionDate: "2026-10-26",
+    studentUid, mark: "absent",
+  });
+
   const dashboardResponse = await dashboardRoute.GET(new Request("http://localhost/api/student/dashboard", {
     headers: { authorization: `Bearer ${studentToken}` },
   }));
@@ -147,6 +165,12 @@ test("admin academic import and completed-session correction routes enforce auth
     offeringId, courseId, courseCode: "CSE101", courseTitle: "Synthetic course", term: "2026-S1",
     attended: 0, missed: 0, total: 0, percentage: null, status: "no_data",
     thresholdPercent: 75, latestSessionDate: null,
+  });
+
+  assert.deepEqual(dashboard.summaries.find((summary) => summary.offeringId === shortfallOfferingId), {
+    offeringId: shortfallOfferingId, courseId, courseCode: "CSE101", courseTitle: "Synthetic course", term: "2026-S1",
+    attended: 0, missed: 1, total: 1, percentage: 0, status: "shortfall",
+    thresholdPercent: 75, latestSessionDate: "2026-10-26",
   });
 
   const forbiddenImport = await academicRoute.POST(request("/api/admin/academic-data", studentToken, {

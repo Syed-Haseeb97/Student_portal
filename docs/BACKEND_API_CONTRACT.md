@@ -54,7 +54,7 @@ Successful response shape:
 }
 ```
 
-The values above are illustrative only. Do not treat them as real student records. Active enrollments with no completed sessions appear with `status: "no_data"`; the approved roster, not cached profile fields, supplies the displayed roll number, batch, and programme.
+The values above are illustrative only. Do not treat them as real student records. `status` is one of `compliant`, `shortfall`, or `no_data`; `shortfall` means attendance is below the 75% threshold. Active enrollments with no completed sessions appear with `status: "no_data"`; the approved roster, not cached profile fields, supplies the displayed roll number, batch, and programme.
 
 ## Admin
 

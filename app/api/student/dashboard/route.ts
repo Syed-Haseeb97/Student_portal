@@ -83,7 +83,7 @@ export async function GET(request: Request) {
         missed: counts.missed,
         total,
         percentage: result.percentage,
-        status: result.status,
+        status: result.status === "below_threshold" ? "shortfall" : result.status,
         thresholdPercent: DEFAULT_POLICY.thresholdPercent,
         latestSessionDate: counts.latestDate,
       };
