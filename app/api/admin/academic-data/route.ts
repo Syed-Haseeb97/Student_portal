@@ -138,11 +138,15 @@ export async function POST(request: Request) {
             if (!profile.exists || profile.get("active") !== true || profile.get("role") !== "student" ||
                 typeof profile.get("rosterId") !== "string") throw new Error("DEPENDENCY:Every enrollee must have an active roster-linked student profile.");
             const roster = await transaction.get(db.collection("studentRoster").doc(String(profile.get("rosterId"))));
-            if (!roster.exists || roster.get("active") !== true) throw new Error("DEPENDENCY:Every enrollee must have an active approved roster entry.");
+            if (!roster.exists || roster.get("active") !== true ||
+                typeof roster.get("emailNormalized") !== "string" ||
+                profile.get("email") !== roster.get("emailNormalized")) {
+              throw new Error("DEPENDENCY:Every enrollee must have an active roster entry matching their claimed identity.");
+            }
             const offering = dependencyDocs[i];
-            if (profile.get("batch") !== offering?.get("batch") ||
-                profile.get("programme") !== offering?.get("programme")) {
-              throw new Error("DEPENDENCY:Student batch and programme must match the course offering.");
+            if (roster.get("batch") !== offering?.get("batch") ||
+                roster.get("programme") !== offering?.get("programme")) {
+              throw new Error("DEPENDENCY:Approved roster batch and programme must match the course offering.");
             }
             if (existingEnrollment?.exists && existingEnrollment.get("studentUid") !== studentUid) {
               throw new Error("CONFLICT:An enrollment ID is already assigned to another student.");
