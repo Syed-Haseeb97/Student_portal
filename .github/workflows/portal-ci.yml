@@ -26,10 +26,10 @@ jobs:
           distribution: temurin
           java-version: "21"
       - run: npm install
-      - name: Report dependency advisories
+      - name: Audit dependencies and block high/critical advisories
         run: |
           npm audit --json > npm-audit.json || true
-          node -e 'const a=require("./npm-audit.json"); console.log("Audit summary:", JSON.stringify(a.metadata?.vulnerabilities)); for (const [name, v] of Object.entries(a.vulnerabilities ?? {})) { console.log(name + ": severity=" + v.severity + ", direct=" + v.isDirect + ", range=" + v.range + ", fix=" + JSON.stringify(v.fixAvailable) + ", via=" + JSON.stringify(v.via)); }'
+          node -e 'const a=require("./npm-audit.json"); const counts=a.metadata?.vulnerabilities ?? {}; console.log("Audit summary:", JSON.stringify(counts)); for (const [name, v] of Object.entries(a.vulnerabilities ?? {})) { console.log(name + ": severity=" + v.severity + ", direct=" + v.isDirect + ", range=" + v.range + ", fix=" + JSON.stringify(v.fixAvailable) + ", via=" + JSON.stringify(v.via)); } if ((counts.high ?? 0) > 0 || (counts.critical ?? 0) > 0) { console.error("Blocking CI: high/critical dependency advisories remain."); process.exit(1); }'
       - run: npm run check
       - run: npx firebase emulators:exec --only firestore --project demo-iiitt-portal "npm run test:rules"
       - run: npm run build
