@@ -90,8 +90,8 @@ export async function GET(request: Request) {
     }));
 
     summaries.sort((a, b) =>
-      (a.status === "below_threshold" ? 0 : a.status === "compliant" ? 1 : 2) -
-      (b.status === "below_threshold" ? 0 : b.status === "compliant" ? 1 : 2) ||
+      (a.status === "shortfall" ? 0 : a.status === "compliant" ? 1 : 2) -
+      (b.status === "shortfall" ? 0 : b.status === "compliant" ? 1 : 2) ||
       (a.courseCode ?? a.courseTitle).localeCompare(b.courseCode ?? b.courseTitle));
 
     return NextResponse.json({
