@@ -44,15 +44,15 @@ test("the roster is never readable from a client", async () => {
 });
 
 test("students can read only their own attendance marks", async () => {
-  const db = env.authenticatedContext("studentA").firestore();
+  const db = env.authenticatedContext("studentA", { email: "studenta@iiitt.ac.in", email_verified: true }).firestore();
   await assertSucceeds(getDoc(doc(db, "attendance/sessionA_studentA")));
   await assertFails(getDoc(doc(db, "attendance/sessionA_studentB")));
   await assertFails(setDoc(doc(db, "attendance/sessionA_studentA"), { mark: "absent" }));
 });
 
 test("assigned lecturers can read their offering but unassigned lecturers cannot", async () => {
-  const assigned = env.authenticatedContext("lecturerA").firestore();
-  const unassigned = env.authenticatedContext("lecturerB").firestore();
+  const assigned = env.authenticatedContext("lecturerA", { email: "lecturera@iiitt.ac.in", email_verified: true }).firestore();
+  const unassigned = env.authenticatedContext("lecturerB", { email: "lecturerb@iiitt.ac.in", email_verified: true }).firestore();
   await assertSucceeds(getDoc(doc(assigned, "sessions/sessionA")));
   await assertSucceeds(getDoc(doc(assigned, "attendance/sessionA_studentA")));
   await assertFails(getDoc(doc(unassigned, "sessions/sessionA")));
@@ -60,7 +60,7 @@ test("assigned lecturers can read their offering but unassigned lecturers cannot
 });
 
 test("clients cannot create or mutate sessions or attendance", async () => {
-  const lecturer = env.authenticatedContext("lecturerA").firestore();
+  const lecturer = env.authenticatedContext("lecturerA", { email: "lecturera@iiitt.ac.in", email_verified: true }).firestore();
   await assertFails(setDoc(doc(lecturer, "sessions/fake"), { offeringId: "offeringA", state: "completed" }));
   await assertFails(setDoc(doc(lecturer, "attendance/fake"), { studentUid: "studentA", mark: "present" }));
 });
@@ -71,7 +71,7 @@ test("deactivating a roster entry revokes student data access", async () => {
       emailNormalized: "studenta@iiitt.ac.in", active: false,
     });
   });
-  const db = env.authenticatedContext("studentA").firestore();
+  const db = env.authenticatedContext("studentA", { email: "studenta@iiitt.ac.in", email_verified: true }).firestore();
   await assertFails(getDoc(doc(db, "courseOfferings/offeringA")));
   await assertFails(getDoc(doc(db, "attendance/sessionA_studentA")));
 });
