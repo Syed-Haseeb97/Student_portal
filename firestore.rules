@@ -66,7 +66,7 @@ service cloud.firestore {
     }
     match /enrollments/{enrollmentId} {
       allow read: if isAdmin()
-        || (signedIn() && resource.data.studentUid == request.auth.uid)
+        || (activeProfile() && resource.data.studentUid == request.auth.uid)
         || (isActiveLecturer() && assigned(resource.data.offeringId));
       allow write: if false;
     }
