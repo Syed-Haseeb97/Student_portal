@@ -8,12 +8,12 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test lib/attendance/calc.test.ts",
+    "test": "tsx --test lib/attendance/calc.test.ts lib/roster/validate.test.ts",
     "check": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.7.0",
-    "@supabase/supabase-js": "^2.57.0",
+    "firebase": "^12.4.0",
+    "firebase-admin": "^13.5.0",
     "lucide-react": "^0.468.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
