@@ -75,9 +75,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, uid: targetUser.uid, role: body.role, active: body.active });
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
+    const firebaseCode = error && typeof error === "object" && "code" in error ? String(error.code) : "";
     if (code === "NOT_ADMIN") return NextResponse.json({ error: "An active administrator role is required." }, { status: 403 });
     if (code === "LAST_ACTIVE_ADMIN") return NextResponse.json({ error: "The last active administrator cannot be demoted or deactivated." }, { status: 409 });
+    if (firebaseCode === "auth/user-not-found") return NextResponse.json({ error: "The target account must already exist and have a verified matching institutional email." }, { status: 409 });
     if (code.includes("Firebase ID token")) return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
-    return NextResponse.json({ error: "Staff provisioning failed. Verify the target account and retry." }, { status: 409 });
+    return NextResponse.json({ error: "Staff provisioning is temporarily unavailable. Retry later." }, { status: 503 });
   }
 }
