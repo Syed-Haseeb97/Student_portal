@@ -81,7 +81,7 @@ service cloud.firestore {
     }
     match /attendance/{attendanceId} {
       allow read: if isAdmin()
-        || (signedIn() && resource.data.studentUid == request.auth.uid)
+        || (activeProfile() && resource.data.studentUid == request.auth.uid)
         || (isActiveLecturer() && assigned(resource.data.offeringId));
       // Attendance submission/correction must validate a whole session and append audit data.
       allow write: if false;
