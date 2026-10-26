@@ -34,10 +34,24 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Your approved roster entry is inactive or no longer matches your account." }, { status: 403 });
     }
 
-    const marksSnapshot = await db.collection("attendance")
-      .where("studentUid", "==", identity.uid)
-      .get();
+    // Seed summaries from active enrollments so a course with zero completed
+    // sessions still appears with a no-data status instead of disappearing.
+    const [enrollmentsSnapshot, marksSnapshot] = await Promise.all([
+      db.collection("enrollments")
+        .where("studentUid", "==", identity.uid)
+        .where("active", "==", true)
+        .get(),
+      db.collection("attendance")
+        .where("studentUid", "==", identity.uid)
+        .get(),
+    ]);
     const grouped = new Map<string, { attended: number; missed: number; latestDate: string | null }>();
+    for (const enrollment of enrollmentsSnapshot.docs) {
+      const offeringId = enrollment.get("offeringId");
+      if (typeof offeringId === "string" && offeringId) {
+        grouped.set(offeringId, grouped.get(offeringId) ?? { attended: 0, missed: 0, latestDate: null });
+      }
+    }
     for (const doc of marksSnapshot.docs) {
       const data = doc.data();
       if (typeof data.offeringId !== "string" || typeof data.sessionId !== "string" ||
@@ -82,9 +96,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       student: {
         uid: identity.uid,
-        rollNumber: typeof profile.get("rollNumber") === "string" ? profile.get("rollNumber") : null,
-        batch: typeof profile.get("batch") === "string" ? profile.get("batch") : null,
-        programme: typeof profile.get("programme") === "string" ? profile.get("programme") : null,
+        // The approved roster is the source of truth; cached profile fields can
+        // become stale when an authorized roster correction is imported.
+        rollNumber: typeof roster.get("rollNumber") === "string" ? roster.get("rollNumber") : null,
+        batch: typeof roster.get("batch") === "string" ? roster.get("batch") : null,
+        programme: typeof roster.get("programme") === "string" ? roster.get("programme") : null,
       },
       policy: { thresholdPercent: DEFAULT_POLICY.thresholdPercent, countsOnlyCompletedSessions: true },
       summaries,
