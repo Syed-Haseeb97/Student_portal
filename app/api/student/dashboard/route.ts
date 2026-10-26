@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { evaluate, DEFAULT_POLICY } from "@/lib/attendance/calc";
 
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   try {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
-    if (identity.email_verified !== true || !/^[^\s@]+@iiitt\.ac\.in$/i.test(identity.email ?? "")) {
+    if (identity.email_verified !== true || !INSTITUTIONAL_EMAIL_PATTERN.test(identity.email ?? "")) {
       return NextResponse.json({ error: "A verified @iiitt.ac.in account is required." }, { status: 403 });
     }
 
