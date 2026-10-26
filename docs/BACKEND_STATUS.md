@@ -14,7 +14,7 @@ This document replaces the original proposal, which described the pre-Firebase s
 
 ## Still required before a real pilot
 
-1. Extend route-level integration coverage to session creation, attendance submission, cancellation, and staff provisioning. Current emulator-backed tests cover academic imports, roster-backed dashboard behavior, and completed-session corrections.
+1. Expand negative/edge-case coverage for duplicate imports, inactive actors, malformed bodies, and concurrent role changes. Current emulator-backed tests exercise roster import/claim, every academic-data kind, staff provisioning, the student dashboard, session creation, attendance submission, cancellation, and completed-session correction.
 2. Complete a human review of transaction behavior, import bounds, error handling, and audit integrity.
 3. Review the first-admin bootstrap runbook with an authorized institutional stakeholder.
 4. Connect the UI to the authenticated APIs (frontend implementation is being handled separately).
