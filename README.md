@@ -24,7 +24,7 @@ The Firebase attendance foundation includes email-link sign-in, a server-side ap
 - Only completed sessions count; scheduled and cancelled sessions are excluded.
 - A session can be completed only with exactly one present/absent mark per active enrollee.
 - Cancellation requires a reason and is audited.
-- The backend branch includes admin-only course/offering/enrollment/assignment imports, audited completed-session corrections, and a student dashboard API. The frontend is not wired to live data yet, and no production Firebase project or roster is configured.
+- The backend branch includes admin-only course/offering/enrollment/assignment imports, audited completed-session corrections, and an authenticated student dashboard API integrated with the frontend client. No production Firebase project or real roster is configured.
 
 See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md), [backend status](docs/BACKEND_STATUS.md), [backend API contract](docs/BACKEND_API_CONTRACT.md), and the [first-admin bootstrap runbook](docs/FIRST_ADMIN_BOOTSTRAP.md). The CSV template contains fake examples only.
 
@@ -75,7 +75,7 @@ No Firebase project configuration, production rule deployment, real roster uploa
 
 1. Review the first-admin provisioning runbook with the institution.
 2. Expand negative/edge-case integration tests for duplicate imports, inactive actors, malformed bodies, and concurrent role changes, then complete a focused security review.
-3. Wire the frontend to the student dashboard API and authenticated admin/lecturer endpoints.
+3. Build out instructor attendance-marking and session creation frontend workflows.
 4. Obtain and import the institute-approved roster and academic catalog only after explicit authorization.
 5. Verify institutional policy and operational workflows with authorized stakeholders.
 6. Consider a live pilot only after a focused security review and separate, explicit approval.
