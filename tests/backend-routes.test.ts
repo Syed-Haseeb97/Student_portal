@@ -21,7 +21,7 @@ process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 process.env.GCLOUD_PROJECT = projectId;
 
 test("admin academic import and completed-session correction routes enforce auth and audit writes", async () => {
-  const [{ getFirebaseAdmin }, academicRoute, correctionRoute, dashboardRoute, sessionRoute, attendanceRoute, cancelRoute, staffRoute] = await Promise.all([
+  const [{ getFirebaseAdmin }, academicRoute, correctionRoute, dashboardRoute, sessionRoute, attendanceRoute, cancelRoute, staffRoute, rosterImportRoute, rosterClaimRoute] = await Promise.all([
     import("../lib/firebase/admin"),
     import("../app/api/admin/academic-data/route"),
     import("../app/api/admin/attendance/[attendanceId]/correction/route"),
@@ -30,6 +30,8 @@ test("admin academic import and completed-session correction routes enforce auth
     import("../app/api/sessions/[sessionId]/attendance/route"),
     import("../app/api/sessions/[sessionId]/cancel/route"),
     import("../app/api/admin/staff/route"),
+    import("../app/api/admin/roster/import/route"),
+    import("../app/api/roster/claim/route"),
   ]);
   const { auth, db } = getFirebaseAdmin();
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
@@ -37,16 +39,20 @@ test("admin academic import and completed-session correction routes enforce auth
   const studentUid = `student${suffix}`;
   const lecturerUid = `lecturer${suffix}`;
   const newStaffUid = `newstaff${suffix}`;
+  const claimUid = `claim${suffix}`;
   const adminEmail = `admin${suffix}@iiitt.ac.in`;
   const studentEmail = `student${suffix}@iiitt.ac.in`;
   const lecturerEmail = `lecturer${suffix}@iiitt.ac.in`;
   const newStaffEmail = `newstaff${suffix}@iiitt.ac.in`;
+  const claimEmail = `claim${suffix}@iiitt.ac.in`;
+  const claimRollNumber = `26${suffix}`;
   const rosterId = `roll${suffix}`;
 
   await auth.createUser({ uid: adminUid, email: adminEmail, emailVerified: true });
   await auth.createUser({ uid: studentUid, email: studentEmail, emailVerified: true });
   await auth.createUser({ uid: lecturerUid, email: lecturerEmail, emailVerified: true });
   await auth.createUser({ uid: newStaffUid, email: newStaffEmail, emailVerified: true });
+  await auth.createUser({ uid: claimUid, email: claimEmail, emailVerified: true });
   await db.collection("staff").doc(adminUid).set({ uid: adminUid, email: adminEmail, role: "admin", active: true });
   await db.collection("staff").doc(lecturerUid).set({ uid: lecturerUid, email: lecturerEmail, role: "lecturer", active: true });
   await db.collection("studentRoster").doc(rosterId).set({
@@ -77,11 +83,23 @@ test("admin academic import and completed-session correction routes enforce auth
   const adminToken = await idToken(adminUid);
   const studentToken = await idToken(studentUid);
   const lecturerToken = await idToken(lecturerUid);
+  const claimToken = await idToken(claimUid);
   const request = (path: string, token: string | null, body: unknown) => new Request(`http://localhost${path}`, {
     method: "POST",
     headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), "content-type": "application/json" },
     body: JSON.stringify(body),
   });
+
+  const rosterImport = await rosterImportRoute.POST(request("/api/admin/roster/import", adminToken, {
+    rows: [{ rollNumber: claimRollNumber, email: claimEmail, batch: "2026", programme: "CSE", active: true }],
+  }));
+  assert.equal(rosterImport.status, 200);
+  assert.equal((await db.collection("studentRoster").doc(claimRollNumber).get()).get("emailNormalized"), claimEmail);
+  assert.equal((await db.collection("auditEvents").where("action", "==", "roster.imported").get()).size, 1);
+
+  const claimResponse = await rosterClaimRoute.POST(request("/api/roster/claim", claimToken, {}));
+  assert.equal(claimResponse.status, 200);
+  assert.equal((await db.collection("userProfiles").doc(claimUid).get()).get("rosterId"), claimRollNumber);
 
   const courseId = `course${suffix}`;
   const importResponse = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
