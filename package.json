@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test lib/attendance/calc.test.ts lib/roster/validate.test.ts",
     "check": "npm run lint && npm run typecheck && npm test",
-    "test:rules": "tsx --test tests/firestore-rules.test.ts"
+    "test:rules": "tsx --test tests/firestore-rules.test.ts",
+    "test:api": "node --conditions=react-server --import tsx --test tests/backend-routes.test.ts"
   },
   "dependencies": {
     "firebase": "^13.1.0",
