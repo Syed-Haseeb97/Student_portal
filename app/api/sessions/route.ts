@@ -29,6 +29,9 @@ export async function POST(request: Request) {
   if (body.endTime !== undefined && (typeof body.endTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.endTime))) {
     return NextResponse.json({ error: "endTime must use 24-hour HH:MM format." }, { status: 400 });
   }
+  if (typeof body.startTime === "string" && typeof body.endTime === "string" && body.endTime <= body.startTime) {
+    return NextResponse.json({ error: "endTime must be later than startTime." }, { status: 400 });
+  }
   if (body.room !== undefined && (typeof body.room !== "string" || body.room.trim().length > 80)) {
     return NextResponse.json({ error: "room must be at most 80 characters." }, { status: 400 });
   }
