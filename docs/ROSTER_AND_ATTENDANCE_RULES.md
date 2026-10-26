@@ -1,49 +1,46 @@
 # Finalized MVP Roster and Attendance Rules
 
-These are the implementation defaults for the first MVP. They are not a substitute for an institute-approved roster export or formal academic policy.
+These are implementation defaults for the first MVP. They are not a substitute for an institute-approved roster export or formal academic policy.
 
 ## Roster contract
 
-The source of truth is an approved administrator-provided CSV. Required columns:
+The source of truth is an approved administrator-provided CSV. Required columns: `rollNumber,email,batch,programme,active`.
 
-`rollNumber,email,batch,programme,active`
-
-- `rollNumber`: canonical roll number, stored as text to preserve leading zeroes and historical formats.
+- `rollNumber`: canonical roll number stored as text to preserve leading zeroes and historical formats.
 - `email`: unique institutional email, normalized to lowercase and required to end exactly in `@iiitt.ac.in`.
-- `batch`: four-digit entry year (for example `2026`), explicitly supplied, never inferred from roll number.
+- `batch`: four-digit entry year, explicitly supplied and never inferred from roll number.
 - `programme`: institute-approved programme/branch label, explicitly supplied.
 - `active`: `true`/`false` or `1`/`0`.
-- One active roster entry per email and per roll number. Duplicate normalized values must fail validation.
-- Inactive entries cannot claim portal access.
-- Unknown, missing, duplicate, or malformed values fail the import; never partially import a file silently.
-- The sample rows in `roster-import-template.csv` are examples only and are not real student records.
-
-Roster import must eventually support dry-run output, row-numbered errors, and a transaction/batched write strategy. It must be an authenticated admin-only server operation; no browser writes to `studentRoster`.
+- Duplicate normalized emails or roll numbers fail validation. Inactive entries cannot claim portal access.
+- The sample rows in `roster-import-template.csv` are fake examples only.
+- The admin-only import endpoint accepts already-parsed JSON rows from an approved CSV, limited to 200 rows per atomic request. It validates the entire batch before writing and rejects email/roll conflicts. Email changes for existing roll numbers require separate review. Imports are audited.
+- The first administrator must be provisioned manually in the Firebase Console before the import endpoint can be used. Never expose a public admin-bootstrap endpoint.
 
 ## Sign-in and identity binding
 
-- Use Firebase passwordless email-link sign-in.
-- Require a verified email matching `@iiitt.ac.in` exactly.
-- After Firebase sign-in, a server route verifies the ID token and checks the private roster for exactly one active match.
-- No match or duplicate match means deny access. Never create a student profile from user-entered roll number/branch.
-- Profile and role fields are server-owned. Student sign-in always creates/maintains only the `student` role.
-- Lecturers and administrators are provisioned through a trusted admin-only workflow. Email domain is not proof of staff status.
-- Cross-device email-link completion must ask for the same email again; never trust an email passed in the URL.
+- Use Firebase passwordless email-link sign-in and require a verified email matching `@iiitt.ac.in` exactly.
+- After sign-in, a server route verifies the Firebase ID token and checks the private roster for exactly one active match.
+- No match or duplicate match means deny access. Never create a student profile from user-entered roll number or programme.
+- Profile and role fields are server-owned. Student sign-in only maintains the `student` role.
+- Lecturers and administrators must be provisioned through a trusted workflow; email domain is not proof of staff status.
+- Cross-device email-link completion asks for the same email again and never trusts an email passed in the URL.
 
 ## Attendance policy
 
-- Attendance is evaluated separately for each course offering in a term/semester.
+- Calculate attendance separately per course offering in each term/semester.
 - `present / (present + absent) * 100`; exactly 75% is compliant.
-- Each session has a distinct ID. Multiple sessions of the same course on one date count separately.
-- Only completed sessions count in the denominator. Scheduled and cancelled sessions do not.
+- Each session has a distinct ID. Multiple sessions of the same subject on one date count separately.
+- Only completed sessions count. Scheduled and cancelled sessions are excluded.
 - A session can be completed only when every active enrollee has exactly one mark, either present or absent. Missing marks block submission; they are never assumed present.
-- A session is not editable after completion through the normal lecturer flow.
-- Corrections require a separately authorized correction workflow with a non-empty reason and immutable before/after audit metadata. Until that workflow is implemented, corrections require admin intervention; never edit Firestore manually without recording an audit event.
-- Each attendance mark stores the student UID, roster ID, offering ID, session ID, date, mark, recorder UID, and timestamp.
-- Students may read only their own attendance. Assigned lecturers may read attendance for their assigned offerings. Admin access is audited.
-- Lecturer access is scoped to active teaching assignments. Admins provision course offerings, enrollments, assignments, and roles.
-- The lecturer dashboard's "today" count means distinct scheduled sessions for the local campus date; duplicate course sessions remain separate.
+- A completed session is immutable through the normal lecturer flow.
+- Corrections require a separate authorized workflow, a non-empty reason, and immutable before/after audit metadata. Until that workflow exists, corrections require administrator intervention and a recorded audit event.
+- Attendance marks store student UID, roster ID, offering ID, session ID/date, mark, recorder UID, and timestamp.
+- Students may read only their own marks. Active lecturers may read marks for assigned offerings. Admin access is audited.
+- Lecturer access is scoped to active teaching assignments. Admins provision offerings, enrollments, assignments, and staff roles.
+- The lecturer dashboard's "today" count uses the campus timezone (Asia/Kolkata) and counts distinct scheduled sessions.
 
-## Current implementation boundary
+## Implemented on this feature branch
 
-The first Firebase integration adds browser/admin SDK setup, email-link sign-in helpers, roster-claim endpoint, private roster rules, deny-by-default Firestore rules, index/emulator config, and CSV validation. A trusted roster-import endpoint, staff provisioning UI, session creation/submission routes, correction workflow, and rules-emulator tests remain required before a real pilot.
+Firebase browser/Admin SDK setup, email-link sign-in screens/helpers, roster-claim endpoint, admin-only atomic roster import endpoint, session creation endpoint, complete attendance submission endpoint, deny-by-default Firestore rules, indexes/emulator config, and CSV row validation.
+
+Still required before a real pilot: course/offering/enrollment import, staff provisioning/bootstrap process, attendance correction endpoint, Firestore Emulator authorization tests, UI wiring to real attendance data, and the actual institute-approved roster. Do not use real student records until those items are complete and reviewed.
