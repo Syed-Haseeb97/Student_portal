@@ -21,6 +21,8 @@ function emailHash(email: string) {
 export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (contentLength > 1_000_000) return NextResponse.json({ error: "Roster import payload is too large." }, { status: 413 });
   const body = await request.json().catch(() => null) as { rows?: unknown } | null;
   if (!body || !Array.isArray(body.rows) || body.rows.length < 1 || body.rows.length > MAX_ROWS_PER_IMPORT ||
       body.rows.some((row) => !row || typeof row !== "object" || Array.isArray(row))) {
