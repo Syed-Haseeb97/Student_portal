@@ -8,7 +8,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feature/firebase-attendance-backend]
+    branches: [main, feature/firebase-attendance-backend, backend/attendance-foundation]
 
 permissions:
   contents: read
