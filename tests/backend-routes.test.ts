@@ -239,6 +239,14 @@ test("admin academic import and completed-session correction routes enforce auth
   assert.equal(forbiddenImport.status, 403);
   assert.equal((await db.collection("courses").doc(`blocked${suffix}`).get()).exists, false);
 
+  const ambiguousOfferingId = `invalid_offering${suffix}`;
+  const ambiguousOffering = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "offerings",
+    rows: [{ id: ambiguousOfferingId, courseId, term: "2026-S1", batch: "2026", programme: "CSE", active: true }],
+  }));
+  assert.equal(ambiguousOffering.status, 400);
+  assert.equal((await db.collection("courseOfferings").doc(ambiguousOfferingId).get()).exists, false);
+
   const missingDependencyId = `invalidOffering${suffix}`;
   const invalidDependency = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
     kind: "offerings",
