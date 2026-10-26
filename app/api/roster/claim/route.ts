@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
     const email = normalizeEmail(identity.email ?? "");
-    if (identity.email_verified !== true || !/^[^\\s@]+@iiitt\\.ac\\.in$/.test(email)) {
+    if (identity.email_verified !== true || !/^[^\s@]+@iiitt\.ac\.in$/.test(email)) {
       return NextResponse.json({ error: "A verified @iiitt.ac.in email is required." }, { status: 403 });
     }
 
