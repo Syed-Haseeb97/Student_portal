@@ -64,3 +64,14 @@ test("clients cannot create or mutate sessions or attendance", async () => {
   await assertFails(setDoc(doc(lecturer, "sessions/fake"), { offeringId: "offeringA", state: "completed" }));
   await assertFails(setDoc(doc(lecturer, "attendance/fake"), { studentUid: "studentA", mark: "present" }));
 });
+
+test("deactivating a roster entry revokes student data access", async () => {
+  await env.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "studentRoster/261161"), {
+      emailNormalized: "studenta@iiitt.ac.in", active: false,
+    });
+  });
+  const db = env.authenticatedContext("studentA").firestore();
+  await assertFails(getDoc(doc(db, "courseOfferings/offeringA")));
+  await assertFails(getDoc(doc(db, "attendance/sessionA_studentA")));
+});
