@@ -13,7 +13,7 @@ export async function POST(request: Request, context: { params: Promise<{ attend
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const { attendanceId } = await context.params;
-  if (!/^[A-Za-z0-9_-]{1,240}$/.test(attendanceId)) {
+  if (!/^[A-Za-z0-9_-]{1,300}$/.test(attendanceId)) {
     return NextResponse.json({ error: "Invalid attendance ID." }, { status: 400 });
   }
   const body = await request.json().catch(() => null) as { mark?: unknown; reason?: unknown } | null;
@@ -25,6 +25,9 @@ export async function POST(request: Request, context: { params: Promise<{ attend
   try {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
+    if (identity.email_verified !== true || !/^[^\\s@]+@iiitt\\.ac\\.in$/i.test(identity.email ?? "")) {
+      return NextResponse.json({ error: "A verified institutional administrator account is required." }, { status: 403 });
+    }
     const attendanceRef = db.collection("attendance").doc(attendanceId);
     const staffRef = db.collection("staff").doc(identity.uid);
     const auditRef = db.collection("auditEvents").doc();
