@@ -1,0 +1,6 @@
+export function getPublicEnv() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !publishableKey) throw new Error("Missing Supabase public environment variables. Copy .env.example to .env.local.");
+  return { url, publishableKey };
+}

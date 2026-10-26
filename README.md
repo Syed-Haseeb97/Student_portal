@@ -1,23 +1,46 @@
-# IIIT Trichy Student Portal
+# IIITT Student Portal
 
-Mobile-first attendance portal. See `docs/architecture.md` for decisions and open questions.
+A mobile-first student portal for IIIT Tiruchirappalli, starting with subject-wise attendance and lecturer-recorded class sessions.
 
-## Setup
-1. Node 22+. Run `npm install`.
-2. Copy `.env.example` to `.env.local` and fill in your Supabase project values. Use a dev project, never production, and never commit `.env.local`.
-3. `npm run dev`
+## Current status
 
-## Checks
-`npm run check` runs lint, typecheck and unit tests. `npm test` alone needs no install.
+Early application scaffold. The homepage uses synthetic preview data only. Authentication, roster matching, database migrations, RLS, lecturer workflows, and production deployment are not yet verified as working.
 
-## Database (Stage 3)
-Needs Docker. Local database only, never production.
+## Stack
+
+- Next.js App Router + TypeScript
+- Tailwind CSS v4
+- Supabase Auth and PostgreSQL
+- PostgreSQL Row Level Security (RLS)
+- Vercel (planned)
+
+## Confirmed attendance rules
+
+- The 75% threshold applies independently to each subject.
+- Each class session has its own attendance submission.
+- Multiple sessions of one subject on one day remain separate.
+- Only completed sessions count by default; scheduled and cancelled sessions are excluded.
+- Do not use an aggregate across subjects to determine compliance.
+
+## Local setup
+
+Requires a current Node.js LTS release and npm.
+
+```bash
+npm install
+cp .env.example .env.local
+npm run check
+npm run dev
 ```
-npx supabase init          # once; creates supabase/config.toml, keeps existing files
-npm run db:start
-npm run db:reset           # applies migrations + synthetic seed.sql
-npm run db:test            # pgTAP authorization and attendance tests
-```
 
-## Status
-Stages 1-3 written. Auth, routes and UI for lecturers/students come in Stages 4-5. Synthetic data only.
+On Windows PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`.
+
+The homepage can render without Supabase credentials. Authentication and database features must not be enabled until a Supabase project is configured and its migrations and policies have been reviewed and tested.
+
+## Security
+
+Never commit `.env.local`, credentials, or real student records. The publishable key is browser-safe; RLS is still mandatory. The service-role key bypasses RLS and must stay server-side. Use synthetic data until an institutional pilot is authorized.
+
+## Verification
+
+The source tree has not yet been installed or built in a network-enabled environment. Do not interpret this scaffold as a verified production application.
