@@ -57,7 +57,9 @@ export async function GET(request: Request) {
       const data = doc.data();
       if (typeof data.offeringId !== "string" || typeof data.sessionId !== "string" ||
           !["present", "absent"].includes(String(data.mark))) continue;
-      const counts = grouped.get(data.offeringId) ?? { attended: 0, missed: 0, latestDate: null };
+      // The dashboard represents current active enrollments only. Historical marks for removed/deactivated enrollments must not recreate an inactive offering.
+      const counts = grouped.get(data.offeringId);
+      if (!counts) continue;
       if (data.mark === "present") counts.attended++;
       else counts.missed++;
       if (typeof data.sessionDate === "string" && (!counts.latestDate || data.sessionDate > counts.latestDate)) {
