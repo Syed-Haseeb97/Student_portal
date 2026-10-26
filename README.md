@@ -73,10 +73,10 @@ No Firebase project configuration, production rule deployment, real roster uploa
 
 ## Follow-ups before any real pilot
 
-1. Triage and resolve the dependency audit advisories, including the reported critical advisory, without unsafe blind major-version downgrades.
+1. Triage and resolve dependency audit advisories without unsafe blind major-version downgrades.
 2. Define and review the first-admin provisioning procedure.
-3. Import institution-approved courses, offerings, enrollments, and teaching assignments through a trusted workflow.
-4. Implement a separately authorized, reasoned, audited correction flow for completed sessions.
-5. Wire dashboards to authorized real data only after approval.
-6. Obtain the institute-approved roster and verify all operational policies with authorized stakeholders.
-7. Conduct a focused security review and only then consider a separate, explicitly approved live-project rollout.
+3. Validate the academic-data import and completed-session correction endpoints with synthetic fixtures and a focused security review.
+4. Wire the frontend to the student dashboard API and authenticated admin/lecturer endpoints.
+5. Obtain and import the institute-approved roster and academic catalog only after explicit authorization.
+6. Verify institutional policy and operational workflows with authorized stakeholders.
+7. Consider a live pilot only after a focused security review and separate, explicit approval.
