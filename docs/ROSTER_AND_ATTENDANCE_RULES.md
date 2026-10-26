@@ -41,6 +41,6 @@ The source of truth is an approved administrator-provided CSV. Required columns:
 
 ## Implemented on this feature branch
 
-Firebase browser/Admin SDK setup, email-link sign-in screens/helpers, roster-claim endpoint, admin-only atomic roster import endpoint, session creation endpoint, complete attendance submission endpoint, deny-by-default Firestore rules, indexes/emulator config, and CSV row validation.
+Firebase browser/Admin SDK setup, email-link sign-in screens/helpers, roster-claim endpoint, admin-only atomic roster import endpoint, session creation, audited cancellation and complete attendance submission endpoints, deny-by-default Firestore rules, indexes/emulator config, and CSV row validation.
 
 Still required before a real pilot: first-admin bootstrap, course/offering/enrollment import, attendance correction endpoint, UI wiring to real attendance data, and the actual institute-approved roster. Firestore Emulator authorization tests are now included in CI, but their run must pass before any real data is used. Do not use real student records until those items are complete and reviewed.
