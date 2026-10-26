@@ -81,9 +81,11 @@ test("admin academic import and completed-session correction routes enforce auth
   await db.collection("courseOfferings").doc(offeringId).set({
     courseId, term: "2026-S1", batch: "2026", programme: "CSE", active: true,
   });
-  await db.collection("enrollments").doc(`${offeringId}_${studentUid}`).set({
-    offeringId, studentUid, rosterId, active: true,
-  });
+  const enrollmentImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "enrollments", rows: [{ offeringId, studentUid, active: true }],
+  }));
+  assert.equal(enrollmentImport.status, 200);
+  assert.equal((await db.collection("enrollments").doc(`${offeringId}_${studentUid}`).get()).get("rosterId"), rosterId);
   const dashboardResponse = await dashboardRoute.GET(new Request("http://localhost/api/student/dashboard", {
     headers: { authorization: `Bearer ${studentToken}` },
   }));
