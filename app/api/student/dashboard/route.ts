@@ -90,9 +90,12 @@ export async function GET(request: Request) {
       grouped.set(data.offeringId, counts);
     }
 
-    const summaries = await Promise.all([...grouped.entries()].map(async ([offeringId, counts]) => {
+    const summaries = (await Promise.all([...grouped.entries()].map(async ([offeringId, counts]) => {
       const offering = await db.collection("courseOfferings").doc(offeringId).get();
-      const courseId = offering.exists && typeof offering.get("courseId") === "string" ? offering.get("courseId") as string : "";
+      // Deactivating an offering does not automatically rewrite every enrollment.
+      // Fail closed here so retired offerings do not remain on the current dashboard.
+      if (!offering.exists || offering.get("active") !== true) return null;
+      const courseId = typeof offering.get("courseId") === "string" ? offering.get("courseId") as string : "";
       const course = courseId ? await db.collection("courses").doc(courseId).get() : null;
       const total = counts.attended + counts.missed;
       const result = evaluate(counts.attended, total, DEFAULT_POLICY);
@@ -102,7 +105,7 @@ export async function GET(request: Request) {
         courseCode: course?.exists && typeof course.get("code") === "string" ? course.get("code") as string : null,
         courseTitle: course?.exists && typeof course.get("title") === "string" ? course.get("title") as string :
           (course?.exists && typeof course.get("name") === "string" ? course.get("name") as string : offeringId),
-        term: offering?.exists && typeof offering.get("term") === "string" ? offering.get("term") as string : null,
+        term: typeof offering.get("term") === "string" ? offering.get("term") as string : null,
         attended: counts.attended,
         missed: counts.missed,
         total,
@@ -111,7 +114,7 @@ export async function GET(request: Request) {
         thresholdPercent: DEFAULT_POLICY.thresholdPercent,
         latestSessionDate: counts.latestDate,
       };
-    }));
+    }))).filter((summary) => summary !== null);
 
     summaries.sort((a, b) =>
       (a.status === "shortfall" ? 0 : a.status === "compliant" ? 1 : 2) -
