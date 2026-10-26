@@ -16,7 +16,7 @@ export function normalizeInstitutionalEmail(value: string) {
 }
 
 export function isInstitutionalEmail(value: string) {
-  return /^[^\\s@]+@iiitt\\.ac\\.in$/i.test(value.trim());
+  return /^[^\s@]+@iiitt\.ac\.in$/i.test(value.trim());
 }
 
 export async function sendInstitutionalSignInLink(emailInput: string) {
