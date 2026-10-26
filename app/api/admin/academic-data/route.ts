@@ -90,6 +90,9 @@ export async function POST(request: Request) {
   try {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
+    if (identity.email_verified !== true || !/^[^\\s@]+@iiitt\\.ac\\.in$/i.test(identity.email ?? "")) {
+      return NextResponse.json({ error: "A verified institutional administrator account is required." }, { status: 403 });
+    }
     const refs = rows.map((row) => {
       const collection = kind === "courses" ? "courses" : kind === "offerings" ? "courseOfferings" :
         kind === "enrollments" ? "enrollments" : "teachingAssignments";
@@ -124,6 +127,11 @@ export async function POST(request: Request) {
               typeof profile.get("rosterId") !== "string") throw new Error("DEPENDENCY:Every enrollee must have an active roster-linked student profile.");
           const roster = await transaction.get(db.collection("studentRoster").doc(String(profile.get("rosterId"))));
           if (!roster.exists || roster.get("active") !== true) throw new Error("DEPENDENCY:Every enrollee must have an active approved roster entry.");
+          const offering = dependencyDocs[i];
+          if (row.active === true && (profile.get("batch") !== offering?.get("batch") ||
+              profile.get("programme") !== offering?.get("programme"))) {
+            throw new Error("DEPENDENCY:Student batch and programme must match the course offering.");
+          }
           if (row.active === true && targetDocs[i]?.exists && targetDocs[i]?.get("studentUid") !== studentUid) {
             throw new Error("CONFLICT:An enrollment ID is already assigned to another student.");
           }
