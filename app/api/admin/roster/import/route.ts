@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
     if (code === "NOT_ADMIN") return NextResponse.json({ error: "An active administrator role is required." }, { status: 403 });
-    if (code.startsWith("EMAIL_CHANGE_REQUIRES_REVIEW:"))
+    if (code.startsWith("EMAIL_CHANGE_REQUIRES_REVIEW:")) {
       return NextResponse.json({ error: "A roster email change requires a separately reviewed admin correction; no rows were imported." }, { status: 409 });
     }
     if (code.startsWith("EMAIL_ALREADY_ASSIGNED:")) {
