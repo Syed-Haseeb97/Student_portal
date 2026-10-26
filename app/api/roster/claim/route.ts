@@ -1,7 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
-import { normalizeEmail } from "@/lib/roster/validate";
+import { INSTITUTIONAL_EMAIL_PATTERN, normalizeEmail } from "@/lib/roster/validate";
 
 export const runtime = "nodejs";
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
     const email = normalizeEmail(identity.email ?? "");
-    if (identity.email_verified !== true || !/^[^\s@]+@iiitt\.ac\.in$/.test(email)) {
+    if (identity.email_verified !== true || !INSTITUTIONAL_EMAIL_PATTERN.test(email)) {
       return NextResponse.json({ error: "A verified @iiitt.ac.in email is required." }, { status: 403 });
     }
 
