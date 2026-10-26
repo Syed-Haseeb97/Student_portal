@@ -57,8 +57,9 @@ test("admin academic import and completed-session correction routes enforce auth
       "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=demo-api-key",
       { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: customToken, returnSecureToken: true }) },
     );
-    assert.equal(response.ok, true, `Auth emulator token exchange failed: ${await response.text()}`);
-    const payload = await response.json() as { idToken: string };
+    const responseText = await response.text();
+    assert.equal(response.ok, true, `Auth emulator token exchange failed: ${responseText}`);
+    const payload = JSON.parse(responseText) as { idToken: string };
     return payload.idToken;
   }
 
