@@ -43,13 +43,13 @@ Fill the public Firebase web configuration from a **separate portal Firebase pro
 ## Firestore setup
 
 ```bash
-npx firebase-tools emulators:start --only auth,firestore
+npx firebase emulators:start --only auth,firestore
 ```
 
 Deploy reviewed rules and indexes only after creating the intended portal Firebase project and confirming the project ID:
 
 ```bash
-npx firebase-tools deploy --only firestore:rules,firestore:indexes --project YOUR_PORTAL_PROJECT_ID
+npx firebase deploy --only firestore:rules,firestore:indexes --project YOUR_PORTAL_PROJECT_ID
 ```
 
 Do not deploy the rules or enable a real roster until emulator authorization tests pass. All roster and staff records must be provisioned through trusted server-side workflows. The initial administrator bootstrap remains a manual, documented setup task and must never be open to public requests.
