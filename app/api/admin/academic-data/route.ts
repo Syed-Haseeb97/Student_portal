@@ -114,33 +114,56 @@ export async function POST(request: Request) {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i]!;
         const dependency = dependencyDocs[i];
-        if (kind === "offerings" && (!dependency?.exists || dependency.get("active") !== true)) {
-          throw new Error("DEPENDENCY:Every offering must reference an active course.");
-        }
-        if ((kind === "enrollments" || kind === "assignments") && (!dependency?.exists || dependency.get("active") !== true)) {
-          throw new Error("DEPENDENCY:Every record must reference an active course offering.");
+        if (kind === "offerings") {
+          if (row.active === true && (!dependency?.exists || dependency.get("active") !== true)) {
+            throw new Error("DEPENDENCY:An active offering must reference an active course.");
+          }
+          if (row.active === false && !targetDocs[i]?.exists) {
+            throw new Error("CONFLICT:Cannot deactivate a course offering that does not exist.");
+          }
         }
         if (kind === "enrollments") {
           const studentUid = String(row.studentUid);
-          const profile = await transaction.get(db.collection("userProfiles").doc(studentUid));
-          if (!profile.exists || profile.get("active") !== true || profile.get("role") !== "student" ||
-              typeof profile.get("rosterId") !== "string") throw new Error("DEPENDENCY:Every enrollee must have an active roster-linked student profile.");
-          const roster = await transaction.get(db.collection("studentRoster").doc(String(profile.get("rosterId"))));
-          if (!roster.exists || roster.get("active") !== true) throw new Error("DEPENDENCY:Every enrollee must have an active approved roster entry.");
-          const offering = dependencyDocs[i];
-          if (row.active === true && (profile.get("batch") !== offering?.get("batch") ||
-              profile.get("programme") !== offering?.get("programme"))) {
-            throw new Error("DEPENDENCY:Student batch and programme must match the course offering.");
+          const existingEnrollment = targetDocs[i];
+          if (row.active === false) {
+            if (!existingEnrollment?.exists || existingEnrollment.get("studentUid") !== studentUid) {
+              throw new Error("CONFLICT:Cannot deactivate an enrollment that does not exist.");
+            }
+          } else {
+            if (!dependency?.exists || dependency.get("active") !== true) {
+              throw new Error("DEPENDENCY:Every active enrollment must reference an active course offering.");
+            }
+            const profile = await transaction.get(db.collection("userProfiles").doc(studentUid));
+            if (!profile.exists || profile.get("active") !== true || profile.get("role") !== "student" ||
+                typeof profile.get("rosterId") !== "string") throw new Error("DEPENDENCY:Every enrollee must have an active roster-linked student profile.");
+            const roster = await transaction.get(db.collection("studentRoster").doc(String(profile.get("rosterId"))));
+            if (!roster.exists || roster.get("active") !== true) throw new Error("DEPENDENCY:Every enrollee must have an active approved roster entry.");
+            const offering = dependencyDocs[i];
+            if (profile.get("batch") !== offering?.get("batch") ||
+                profile.get("programme") !== offering?.get("programme")) {
+              throw new Error("DEPENDENCY:Student batch and programme must match the course offering.");
+            }
+            if (existingEnrollment?.exists && existingEnrollment.get("studentUid") !== studentUid) {
+              throw new Error("CONFLICT:An enrollment ID is already assigned to another student.");
+            }
+            row.rosterId = profile.get("rosterId");
           }
-          if (row.active === true && targetDocs[i]?.exists && targetDocs[i]?.get("studentUid") !== studentUid) {
-            throw new Error("CONFLICT:An enrollment ID is already assigned to another student.");
-          }
-          row.rosterId = profile.get("rosterId");
         }
         if (kind === "assignments") {
-          const lecturer = await transaction.get(db.collection("staff").doc(String(row.lecturerUid)));
-          if (!lecturer.exists || lecturer.get("role") !== "lecturer" || lecturer.get("active") !== true) {
-            throw new Error("DEPENDENCY:Teaching assignments require an active lecturer account.");
+          const lecturerUid = String(row.lecturerUid);
+          const existingAssignment = targetDocs[i];
+          if (row.active === false) {
+            if (!existingAssignment?.exists || existingAssignment.get("lecturerUid") !== lecturerUid) {
+              throw new Error("CONFLICT:Cannot deactivate an assignment that does not exist.");
+            }
+          } else {
+            if (!dependency?.exists || dependency.get("active") !== true) {
+              throw new Error("DEPENDENCY:Every active assignment must reference an active course offering.");
+            }
+            const lecturer = await transaction.get(db.collection("staff").doc(lecturerUid));
+            if (!lecturer.exists || lecturer.get("role") !== "lecturer" || lecturer.get("active") !== true) {
+              throw new Error("DEPENDENCY:Active teaching assignments require an active lecturer account.");
+            }
           }
         }
       }
