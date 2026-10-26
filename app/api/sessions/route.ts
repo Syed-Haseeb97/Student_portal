@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   const body = await request.json().catch(() => null) as { offeringId?: unknown; sessionDate?: unknown; startTime?: unknown; endTime?: unknown; room?: unknown } | null;
-  if (!body || typeof body.offeringId !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(body.offeringId) ||
+  if (!body || typeof body.offeringId !== "string" || !/^[A-Za-z0-9-]{1,100}$/.test(body.offeringId) ||
       !validDate(body.sessionDate)) {
     return NextResponse.json({ error: "Provide a valid offeringId and sessionDate (YYYY-MM-DD)." }, { status: 400 });
   }
