@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 
 export const runtime = "nodejs";
-const MAX_ROWS = 200;
+const MAX_ROWS = 100;
 const ID = /^[A-Za-z0-9_-]{1,100}$/;
 
 type Kind = "courses" | "offerings" | "enrollments" | "assignments";
