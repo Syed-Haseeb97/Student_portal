@@ -14,7 +14,7 @@ function validDate(value: unknown): value is string {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-/** Create a distinct scheduled session for an assigned course offering. */
+/** Create a distinct scheduled session for an active assigned course offering. */
 export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
@@ -42,20 +42,21 @@ export async function POST(request: Request) {
     const staffRef = db.collection("staff").doc(identity.uid);
     const assignmentRef = db.collection("teachingAssignments").doc(`${body.offeringId}_${identity.uid}`);
     const offeringRef = db.collection("courseOfferings").doc(body.offeringId);
-    const [staff, assignment, offering] = await Promise.all([staffRef.get(), assignmentRef.get(), offeringRef.get()]);
-    const isAdmin = staff.exists && staff.get("active") === true && staff.get("role") === "admin";
-    const isAssignedLecturer = staff.exists && staff.get("active") === true && staff.get("role") === "lecturer" &&
-      assignment.exists && assignment.get("active") === true;
-    if (!isAdmin && !isAssignedLecturer) {
-      return NextResponse.json({ error: "You are not authorized to schedule sessions for this offering." }, { status: 403 });
-    }
-    if (!offering.exists || offering.get("active") !== true) {
-      return NextResponse.json({ error: "The course offering is missing or inactive." }, { status: 404 });
-    }
+    const sessionRef = db.collection("sessions").doc();
+    const auditRef = db.collection("auditEvents").doc();
 
-    const ref = db.collection("sessions").doc();
     await db.runTransaction(async (transaction) => {
-      transaction.create(ref, {
+      const [staff, assignment, offering] = await Promise.all([
+        transaction.get(staffRef), transaction.get(assignmentRef), transaction.get(offeringRef),
+      ]);
+      const isAdmin = staff.exists && staff.get("active") === true && staff.get("role") === "admin";
+      const isAssignedLecturer = staff.exists && staff.get("active") === true && staff.get("role") === "lecturer" &&
+        assignment.exists && assignment.get("active") === true;
+      if (!isAdmin && !isAssignedLecturer) throw new Error("NOT_AUTHORIZED");
+      if (!offering.exists || offering.get("active") !== true) throw new Error("OFFERING_INACTIVE");
+
+      const now = FieldValue.serverTimestamp();
+      transaction.create(sessionRef, {
         offeringId: body.offeringId,
         sessionDate: body.sessionDate,
         ...(body.startTime ? { startTime: body.startTime } : {}),
@@ -63,20 +64,24 @@ export async function POST(request: Request) {
         ...(typeof body.room === "string" && body.room.trim() ? { room: body.room.trim() } : {}),
         state: "scheduled",
         createdBy: identity.uid,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
       });
-      transaction.create(db.collection("auditEvents").doc(), {
+      transaction.create(auditRef, {
         action: "session.created",
         actorUid: identity.uid,
-        sessionId: ref.id,
+        sessionId: sessionRef.id,
         offeringId: body.offeringId,
         sessionDate: body.sessionDate,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: now,
       });
     });
-    return NextResponse.json({ ok: true, sessionId: ref.id, state: "scheduled" }, { status: 201 });
-  } catch {
+    return NextResponse.json({ ok: true, sessionId: sessionRef.id, state: "scheduled" }, { status: 201 });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (code === "NOT_AUTHORIZED") return NextResponse.json({ error: "You are not authorized to schedule sessions for this offering." }, { status: 403 });
+    if (code === "OFFERING_INACTIVE") return NextResponse.json({ error: "The course offering is missing or inactive." }, { status: 404 });
+    if (code.includes("Firebase ID token")) return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
     return NextResponse.json({ error: "Unable to create the session. Please retry." }, { status: 503 });
   }
 }
