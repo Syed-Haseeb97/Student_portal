@@ -6,6 +6,22 @@ All endpoints are under the Next.js origin. Protected endpoints require a Fireba
 
 The server verifies the token with Firebase Admin. Never send the Admin service-account JSON to a browser. The separate IIITT Firebase project must be configured before using these endpoints.
 
+## Identity and roster claim
+
+### `POST /api/roster/claim`
+
+Call after Firebase email-link sign-in with the Firebase ID token in the Authorization header. The server requires a verified institutional email and exactly one active approved roster match. The request body does not choose a roll number, roster ID, or role. A matching student profile is created or refreshed from the roster; an already-provisioned staff account receives its server-owned role.
+
+### `POST /api/admin/roster/import`
+
+Admin-only atomic import of 1–200 approved roster rows:
+
+```json
+{ "rows": [{ "rollNumber": "261161", "email": "student@iiitt.ac.in", "batch": "2026", "programme": "CSE", "active": true }] }
+```
+
+All rows are validated before writing. Roll numbers and normalized emails must be unique; changing the email for an existing roll number requires a separately reviewed correction. The import writes the roster, private email index, and an audit event in one transaction.
+
 ## Student
 
 ### `GET /api/student/dashboard`
@@ -38,11 +54,21 @@ Successful response shape:
 }
 ```
 
-The values above are illustrative only. Do not treat them as real student records.
+The values above are illustrative only. Do not treat them as real student records. Active enrollments with no completed sessions appear with `status: "no_data"`; the approved roster, not cached profile fields, supplies the displayed roll number, batch, and programme.
 
 ## Admin
 
 All admin endpoints require an active `staff/{uid}` document with `role: "admin"`.
+
+### `POST /api/admin/staff`
+
+Provision an existing Firebase Authentication account as staff:
+
+```json
+{ "email": "lecturer@iiitt.ac.in", "role": "lecturer", "active": true }
+```
+
+The target Auth account must already exist with a verified matching institutional email. The change and audit event are transactional. An administrator cannot change their own role through this endpoint. The first administrator is bootstrapped manually according to [the runbook](FIRST_ADMIN_BOOTSTRAP.md).
 
 ### `POST /api/admin/academic-data`
 
