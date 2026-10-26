@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test lib/attendance/calc.test.ts lib/roster/validate.test.ts",
-    "check": "npm run lint && npm run typecheck && npm test"
+    "check": "npm run lint && npm run typecheck && npm test",
+    "test:rules": "tsx --test tests/firestore-rules.test.ts"
   },
   "dependencies": {
     "firebase": "^12.4.0",
@@ -28,7 +29,9 @@
     "eslint-config-next": "^16.0.0",
     "tailwindcss": "^4.1.0",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase-tools": "^14.0.0"
   },
   "engines": {
     "node": ">=22"
