@@ -33,7 +33,7 @@ The source of truth is an approved administrator-provided CSV. Required columns:
 - Only completed sessions count. Scheduled and cancelled sessions are excluded.
 - A session can be completed only when every active enrollee has exactly one mark, either present or absent. Missing marks block submission; they are never assumed present.
 - A completed session is immutable through the normal lecturer flow.
-- Corrections require a separate authorized workflow, a non-empty reason, and immutable before/after audit metadata. Until that workflow exists, corrections require administrator intervention and a recorded audit event.
+- Corrections are restricted to the admin-only completed-session correction endpoint, require a non-empty reason, and write immutable before/after audit metadata in the same transaction.
 - Attendance marks store student UID, roster ID, offering ID, session ID/date, mark, recorder UID, and timestamp.
 - Students may read only their own marks. Active lecturers may read marks for assigned offerings. Admin access is audited.
 - Lecturer access is scoped to active teaching assignments. Admins provision offerings, enrollments, assignments, and staff roles.
@@ -41,6 +41,6 @@ The source of truth is an approved administrator-provided CSV. Required columns:
 
 ## Implemented on this feature branch
 
-Firebase browser/Admin SDK setup, email-link sign-in screens/helpers, roster-claim endpoint, admin-only atomic roster import endpoint, session creation, audited cancellation and complete attendance submission endpoints, deny-by-default Firestore rules, indexes/emulator config, and CSV row validation.
+Firebase browser/Admin SDK setup, email-link sign-in screens/helpers, roster-claim endpoint, admin-only atomic roster import and academic-data import endpoints, session creation, audited cancellation and complete attendance submission endpoints, an admin-only audited correction endpoint, a student attendance dashboard API, deny-by-default Firestore rules, indexes/emulator config, and CSV row validation.
 
-Still required before a real pilot: first-admin bootstrap, course/offering/enrollment import, attendance correction endpoint, UI wiring to real attendance data, and the actual institute-approved roster. Firestore Emulator authorization tests are now included in CI, but their run must pass before any real data is used. Do not use real student records until those items are complete and reviewed.
+Still required before a real pilot: first-admin bootstrap, synthetic integration tests for academic imports and corrections, frontend wiring to the dashboard API, and the actual institute-approved roster. Firestore Emulator authorization tests are now included in CI, but their run must pass before any real data is used. Do not use real student records until those items are complete and reviewed.
