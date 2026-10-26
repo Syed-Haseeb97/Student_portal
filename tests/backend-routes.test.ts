@@ -109,9 +109,11 @@ test("admin academic import and completed-session correction routes enforce auth
   assert.equal((await db.collection("courses").doc(courseId).get()).get("title"), "Synthetic course");
 
   const offeringId = `offering${suffix}`;
-  await db.collection("courseOfferings").doc(offeringId).set({
-    courseId, term: "2026-S1", batch: "2026", programme: "CSE", active: true,
-  });
+  const offeringImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "offerings", rows: [{ id: offeringId, courseId, term: "2026-S1", batch: "2026", programme: "CSE", active: true }],
+  }));
+  assert.equal(offeringImport.status, 200);
+  assert.equal((await db.collection("courseOfferings").doc(offeringId).get()).get("courseId"), courseId);
   const enrollmentImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
     kind: "enrollments", rows: [{ offeringId, studentUid, active: true }],
   }));
