@@ -1,4 +1,4 @@
-export const INSTITUTIONAL_EMAIL_PATTERN = /^[^\\s@]+@iiitt\\.ac\\.in$/i;
+export const INSTITUTIONAL_EMAIL_PATTERN = /^[^\s@]+@iiitt\.ac\.in$/i;
 
 export interface RosterRow {
   rollNumber: string;
