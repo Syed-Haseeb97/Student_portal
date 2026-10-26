@@ -4,6 +4,7 @@ import { formatPercent } from "@/lib/attendance/calc";
 export interface AttendanceProgressProps {
   attended: number;
   total: number;
+  percentage?: number | null; // Authoritative percentage from backend or calculation
   thresholdPercent?: number; // default 75
   variant?: "circular" | "linear";
   size?: "sm" | "md" | "lg";
@@ -14,6 +15,7 @@ export interface AttendanceProgressProps {
 export function AttendanceProgress({
   attended,
   total,
+  percentage: propPercentage,
   thresholdPercent = 75,
   variant = "circular",
   size = "md",
@@ -21,23 +23,30 @@ export function AttendanceProgress({
   className = "",
 }: AttendanceProgressProps) {
   const hasData = total > 0;
-  const percentage = hasData ? (attended / total) * 100 : null;
+  // Use authoritative percentage if provided, otherwise compute if total > 0
+  const percentage =
+    propPercentage !== undefined
+      ? propPercentage
+      : hasData
+      ? (attended / total) * 100
+      : null;
+
   const isCompliant = percentage !== null && percentage >= thresholdPercent;
 
-  const colorClass = !hasData
+  const colorClass = !hasData || percentage === null
     ? "text-muted"
     : isCompliant
     ? "text-accent"
     : "text-risk";
 
-  const strokeColor = !hasData
+  const strokeColor = !hasData || percentage === null
     ? "#8b91a3"
     : isCompliant
     ? "#2dd4bf"
     : "#fb7185";
 
   if (variant === "linear") {
-    const fillPercent = Math.min(100, Math.max(0, percentage ?? 0));
+    const fillPercent = percentage !== null ? Math.min(100, Math.max(0, percentage)) : 0;
     return (
       <div className={`w-full space-y-1.5 ${className}`}>
         {showLabel && (
@@ -58,7 +67,7 @@ export function AttendanceProgress({
         >
           <div
             className={`h-full transition-all duration-300 rounded-full ${
-              !hasData
+              !hasData || percentage === null
                 ? "bg-muted/40"
                 : isCompliant
                 ? "bg-accent"

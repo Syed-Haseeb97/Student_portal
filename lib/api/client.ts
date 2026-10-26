@@ -32,7 +32,7 @@ export type MockScenario = "normal" | "empty" | "unauthorized" | "error";
  * Fetch student dashboard attendance and policy data.
  * - When mock mode is active, returns synthetic student data marked with isMock: true.
  * - When in real API mode, requires a valid ID token and calls GET /api/student/dashboard.
- *   Does NOT fall back to synthetic data on failure, preserving error fidelity.
+ *   Does NOT fall back to synthetic data on failure, preserving error fidelity without leaking raw internals.
  */
 export async function getStudentDashboard(
   idToken?: string,
@@ -95,15 +95,20 @@ export async function getStudentDashboard(
       } catch {
         return {
           status: response.status || 502,
-          error: "Malformed JSON response received from portal server",
+          error: "Malformed JSON response received from portal server.",
           isMock: false,
         };
       }
     } else {
       const text = await response.text().catch(() => "");
+      const isHtml = text.trim().startsWith("<") || text.includes("<html");
+      const safeError = isHtml || !text.trim()
+        ? `Server returned an unexpected response (status ${response.status}).`
+        : text.trim().slice(0, 200);
+
       return {
         status: response.status || 502,
-        error: text || `Server returned non-JSON response with HTTP status ${response.status}`,
+        error: safeError,
         isMock: false,
       };
     }
@@ -135,7 +140,7 @@ export async function getStudentDashboard(
     ) {
       return {
         status: 502,
-        error: "Malformed dashboard response: missing student, policy, or summaries fields",
+        error: "Malformed dashboard response: missing student, policy, or summaries fields.",
         isMock: false,
       };
     }

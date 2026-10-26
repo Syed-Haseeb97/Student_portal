@@ -68,7 +68,6 @@ export function StudentDashboardView({
     let active = true;
 
     if (!initialData) {
-      // Async fetch to prevent synchronous setState during effect mount
       (async () => {
         const res = await getStudentDashboard(idToken, {
           mockScenario,
@@ -155,7 +154,7 @@ export function StudentDashboardView({
                   setMockScenario(scenario);
                   loadDashboard(scenario);
                 }}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
                   mockScenario === scenario
                     ? "bg-accent/15 border-accent text-accent"
                     : "bg-canvas border-line text-muted hover:text-ink hover:border-line/80"
@@ -349,12 +348,12 @@ export function StudentDashboardView({
                 </p>
               </div>
 
-              {/* Filter Tabs */}
+              {/* Filter Tabs with Accessible Focus Outline */}
               <div className="flex items-center gap-1.5 bg-surface p-1 rounded-xl border border-line text-xs">
                 <button
                   type="button"
                   onClick={() => setActiveFilter("all")}
-                  className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
                     activeFilter === "all"
                       ? "bg-raised text-ink border border-line"
                       : "text-muted hover:text-ink"
@@ -365,7 +364,7 @@ export function StudentDashboardView({
                 <button
                   type="button"
                   onClick={() => setActiveFilter("compliant")}
-                  className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
                     activeFilter === "compliant"
                       ? "bg-accent/15 text-accent border border-accent/30"
                       : "text-muted hover:text-ink"
@@ -376,7 +375,7 @@ export function StudentDashboardView({
                 <button
                   type="button"
                   onClick={() => setActiveFilter("shortfall")}
-                  className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
                     activeFilter === "shortfall"
                       ? "bg-risk/15 text-risk border border-risk/30"
                       : "text-muted hover:text-ink"
@@ -388,7 +387,7 @@ export function StudentDashboardView({
                   <button
                     type="button"
                     onClick={() => setActiveFilter("no_data")}
-                    className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
                       activeFilter === "no_data"
                         ? "bg-raised text-muted border border-line"
                         : "text-muted hover:text-ink"
@@ -457,29 +456,38 @@ export function StudentDashboardView({
                           <AttendanceProgress
                             attended={course.attended}
                             total={course.total}
+                            percentage={course.percentage}
                             thresholdPercent={data.policy.thresholdPercent}
                             variant="circular"
                             size="md"
                           />
 
                           <div className="space-y-1 text-xs">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-muted">Attended:</span>
-                              <span className="font-semibold text-ink">
-                                {course.attended}{" "}
-                                <span className="text-muted font-normal">/ {course.total}</span>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-muted">Missed:</span>
-                              <span
-                                className={`font-medium ${
-                                  course.missed > 0 ? "text-risk" : "text-muted"
-                                }`}
-                              >
-                                {course.missed} sessions
-                              </span>
-                            </div>
+                            {course.total === 0 ? (
+                              <p className="text-muted text-[11px] italic py-1">
+                                No completed sessions held yet for this subject.
+                              </p>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-muted">Attended:</span>
+                                  <span className="font-semibold text-ink">
+                                    {course.attended}{" "}
+                                    <span className="text-muted font-normal">/ {course.total}</span>
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-muted">Missed:</span>
+                                  <span
+                                    className={`font-medium ${
+                                      course.missed > 0 ? "text-risk" : "text-muted"
+                                    }`}
+                                  >
+                                    {course.missed} sessions
+                                  </span>
+                                </div>
+                              </>
+                            )}
                             {course.latestSessionDate && (
                               <div className="text-[11px] text-muted/70 pt-0.5">
                                 Last class: {course.latestSessionDate}
@@ -494,6 +502,7 @@ export function StudentDashboardView({
                       <AttendanceProgress
                         attended={course.attended}
                         total={course.total}
+                        percentage={course.percentage}
                         thresholdPercent={data.policy.thresholdPercent}
                         variant="linear"
                         showLabel={false}
