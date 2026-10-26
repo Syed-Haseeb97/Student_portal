@@ -14,9 +14,9 @@ This document replaces the original proposal, which described the pre-Firebase s
 
 ## Still required before a real pilot
 
-1. Complete endpoint-level integration and authorization tests using synthetic emulator data.
-2. Review transaction behavior, import bounds, error handling, and audit integrity.
-3. Decide and document the first-admin provisioning runbook.
+1. Extend route-level integration coverage to session creation, attendance submission, cancellation, and staff provisioning. Current emulator-backed tests cover academic imports, roster-backed dashboard behavior, and completed-session corrections.
+2. Complete a human review of transaction behavior, import bounds, error handling, and audit integrity.
+3. Review the first-admin bootstrap runbook with an authorized institutional stakeholder.
 4. Connect the UI to the authenticated APIs (frontend implementation is being handled separately).
 5. Obtain institution-approved roster and academic data through authorized channels.
 6. Configure a separate production Firebase project and deployment secrets only with explicit human approval.
