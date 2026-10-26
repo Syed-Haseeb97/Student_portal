@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeEmail, normalizeRollNumber, validateRosterRow } from "./validate";
+import { normalizeEmail, normalizeRollNumber, validateRosterRow, validateRosterRows } from "./validate";
 
 test("normalizes roster identity fields without inferring data from roll number", () => {
   assert.equal(normalizeEmail(" Student@IIITT.AC.IN "), "student@iiitt.ac.in");
@@ -24,4 +24,10 @@ test("rejects unsupported active flag", () => {
   assert.throws(() => validateRosterRow({
     rollNumber: "261161", email: "student@iiitt.ac.in", batch: "2026", programme: "CSE", active: "yes",
   }), /active/);
+});
+
+test("whole-file validation rejects duplicate normalized emails and roll numbers", () => {
+  const base = { rollNumber: "261161", email: "student@iiitt.ac.in", batch: "2026", programme: "CSE", active: true };
+  assert.throws(() => validateRosterRows([base, { ...base, rollNumber: "261162" }]), /Duplicate email/);
+  assert.throws(() => validateRosterRows([base, { ...base, email: "other@iiitt.ac.in" }]), /Duplicate roll number/);
 });
