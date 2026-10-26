@@ -178,6 +178,11 @@ test("admin academic import and completed-session correction routes enforce auth
     sessionId: dashboardSessionId, offeringId: shortfallOfferingId, sessionDate: "2026-10-26",
     studentUid, mark: "absent",
   });
+  // Historical marks without an active enrollment must not recreate an offering.
+  await db.collection("attendance").doc(`orphanSession${suffix}_${studentUid}`).set({
+    sessionId: `orphanSession${suffix}`, offeringId: `inactiveOffering${suffix}`,
+    sessionDate: "2026-09-01", studentUid, mark: "present",
+  });
 
   const dashboardResponse = await dashboardRoute.GET(new Request("http://localhost/api/student/dashboard", {
     headers: { authorization: `Bearer ${studentToken}` },
@@ -201,6 +206,7 @@ test("admin academic import and completed-session correction routes enforce auth
     attended: 0, missed: 1, total: 1, percentage: 0, status: "shortfall",
     thresholdPercent: 75, latestSessionDate: "2026-10-26",
   });
+  assert.equal(dashboard.summaries.some((summary) => summary.offeringId === `inactiveOffering${suffix}`), false);
 
   const forbiddenImport = await academicRoute.POST(request("/api/admin/academic-data", studentToken, {
     kind: "courses", rows: [{ id: `blocked${suffix}`, code: "BLOCKED", title: "Must not exist", active: true }],
