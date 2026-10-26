@@ -22,6 +22,9 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
   try {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
+    if (identity.email_verified !== true || !/^[^\\s@]+@iiitt\\.ac\\.in$/i.test(identity.email ?? "")) {
+      return NextResponse.json({ error: "A verified institutional staff account is required." }, { status: 403 });
+    }
     const sessionRef = db.collection("sessions").doc(sessionId);
     const staffRef = db.collection("staff").doc(identity.uid);
     await db.runTransaction(async (transaction) => {
