@@ -255,6 +255,11 @@ test("admin academic import and completed-session correction routes enforce auth
   assert.equal(invalidDependency.status, 409);
   assert.equal((await db.collection("courseOfferings").doc(missingDependencyId).get()).exists, false);
 
+  const ambiguousSession = await sessionRoute.POST(request("/api/sessions", lecturerToken, {
+    offeringId: "ambiguous_offering", sessionDate: "2026-10-27",
+  }));
+  assert.equal(ambiguousSession.status, 400);
+
   const createSession = await sessionRoute.POST(request("/api/sessions", lecturerToken, {
     offeringId, sessionDate: "2026-10-27", startTime: "09:00", endTime: "10:00", room: "Synthetic Room",
   }));
