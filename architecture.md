@@ -40,4 +40,4 @@ The approved CSV contract is `rollNumber,email,batch,programme,active`. Validate
 
 CI runs lint, TypeScript checks, unit tests, Firestore Emulator authorization tests, and a production build. A successful CI run verifies the tested code path but does not substitute for a human security review or production configuration.
 
-Remaining: triage dependency audit advisories, first-admin bootstrap procedure, approved roster ingestion, course/offering/enrollment import, completed-session correction workflow, live attendance dashboard wiring, and institution-approved operational policy. Do not create live Firebase resources, deploy rules, or use real student records without explicit human approval.
+Remaining: triage dependency audit advisories, validate the new academic-data import and completed-session correction endpoints with synthetic fixtures, define the first-admin bootstrap procedure, wire the frontend to the student dashboard API, obtain institution-approved roster/academic data, and complete a focused security review before any live pilot. Do not create live Firebase resources, deploy rules, or use real student records without explicit human approval.
