@@ -23,7 +23,7 @@ The homepage remains a synthetic-data visual preview. A Firebase integration is 
 - No aggregate across subjects determines compliance.
 - Completed-session corrections must use a separately authorized, reasoned and audited process. That workflow is not yet implemented.
 
-See [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md) and [Firebase architecture plan](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md) on the planning branch.
+See [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md) and [Firebase architecture plan](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md).
 
 ## Local setup
 
