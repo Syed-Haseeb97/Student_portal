@@ -31,5 +31,5 @@ jobs:
           npm audit --json > npm-audit.json || true
           node -e 'const a=require("./npm-audit.json"); const counts=a.metadata?.vulnerabilities ?? {}; console.log("Audit summary:", JSON.stringify(counts)); for (const [name, v] of Object.entries(a.vulnerabilities ?? {})) { console.log(name + ": severity=" + v.severity + ", direct=" + v.isDirect + ", range=" + v.range + ", fix=" + JSON.stringify(v.fixAvailable) + ", via=" + JSON.stringify(v.via)); } if ((counts.high ?? 0) > 0 || (counts.critical ?? 0) > 0) { console.error("Blocking CI: high/critical dependency advisories remain."); process.exit(1); }'
       - run: npm run check
-      - run: npx firebase emulators:exec --only firestore --project demo-iiitt-portal "npm run test:rules"
+      - run: npx firebase emulators:exec --only auth,firestore --project demo-iiitt-portal "npm run test:rules && npm run test:api"
       - run: npm run build
