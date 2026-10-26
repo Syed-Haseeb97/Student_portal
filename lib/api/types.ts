@@ -2,16 +2,17 @@
  * IIIT Tiruchirappalli Student Portal
  * Core API & Domain Types
  *
- * Aligned with docs/BACKEND_API_CONTRACT.md and docs/ROSTER_AND_ATTENDANCE_RULES.md.
+ * Aligned with docs/BACKEND_API_CONTRACT.md, docs/ROSTER_AND_ATTENDANCE_RULES.md,
+ * and backend branch verification at commit cb197892.
  */
 
 export type UserRole = "student" | "lecturer" | "admin";
 
 /**
- * Attendance status in API contract is "compliant" | "shortfall" | "no_data".
- * The calculation engine and backend route also emit "below_threshold" as an alias for "shortfall".
+ * The dashboard API returns "compliant" | "shortfall" | "no_data".
+ * The normalizer accepts the calculation engine's legacy "below_threshold" value.
  */
-export type AttendanceStatus = "compliant" | "shortfall" | "below_threshold" | "no_data";
+export type AttendanceStatus = "compliant" | "shortfall" | "no_data";
 
 export type NormalizedAttendanceStatus = "compliant" | "shortfall" | "no_data";
 
@@ -75,9 +76,47 @@ export interface SessionRecord {
   cancelReason?: string | null;
 }
 
+export interface RosterClaimResponse {
+  ok: boolean;
+  role?: UserRole;
+  error?: string;
+}
+
+export interface SessionCreatePayload {
+  offeringId: string;
+  sessionDate: string; // YYYY-MM-DD
+  startTime?: string;
+  endTime?: string;
+  room?: string;
+}
+
+export interface AttendanceSubmissionPayload {
+  marks: Array<{
+    studentUid: string;
+    mark: AttendanceMark;
+  }>;
+}
+
+export interface SessionCancelPayload {
+  reason: string; // 5-300 characters
+}
+
 export interface AttendanceCorrectionPayload {
   mark: AttendanceMark;
   reason: string; // 5-300 characters
+}
+
+export interface StaffProvisionPayload {
+  email: string;
+  role: "lecturer" | "admin";
+  active: boolean;
+}
+
+export type AcademicDataKind = "courses" | "offerings" | "enrollments" | "assignments";
+
+export interface AcademicDataImportPayload {
+  kind: AcademicDataKind;
+  rows: Array<Record<string, unknown>>;
 }
 
 export interface ApiResponse<T> {
