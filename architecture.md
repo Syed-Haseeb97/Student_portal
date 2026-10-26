@@ -34,7 +34,7 @@ The approved CSV contract is `rollNumber,email,batch,programme,active`. Validate
 - A session can be completed only with exactly one `present` or `absent` mark for every active enrollee. Missing, duplicate, or out-of-scope marks must not complete the session.
 - Attendance is calculated independently per course offering/term. Exactly 75% is compliant: `present / (present + absent) >= 0.75`.
 - Only completed sessions count; scheduled and cancelled sessions are excluded.
-- Completed-session corrections are not implemented. Any future correction flow must be separately authorized, reasoned, and audited.
+- Completed-session corrections are restricted to the admin-only correction endpoint; each correction requires a reason and writes before/after values to an audit event in the same transaction. Validate this endpoint with synthetic fixtures before any pilot.
 
 ## Verification and remaining work
 
