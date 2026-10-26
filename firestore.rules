@@ -30,13 +30,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/enrollments/$(offeringId + '_' + request.auth.uid)).data.active == true;
     }
     function assigned(offeringId) {
-      return signedIn()
+      return isActiveLecturer()
         && exists(/databases/$(database)/documents/teachingAssignments/$(offeringId + '_' + request.auth.uid))
         && get(/databases/$(database)/documents/teachingAssignments/$(offeringId + '_' + request.auth.uid)).data.active == true;
     }
 
-    // Roster is private and is only accessed by trusted server routes using Admin SDK.
+    // Roster and email index are private; trusted server routes only.
     match /studentRoster/{rosterId} {
+      allow read, write: if false;
+    }
+    match /rosterEmailIndex/{emailHash} {
       allow read, write: if false;
     }
 
@@ -45,52 +48,44 @@ service cloud.firestore {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow write: if false;
     }
-
     match /staff/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow write: if false;
     }
-
     match /courses/{courseId} {
       allow read: if activeProfile() || isActiveLecturer() || isAdmin();
       allow write: if false;
     }
-
     match /courseOfferings/{offeringId} {
       allow read: if enrolled(offeringId) || assigned(offeringId) || isAdmin();
       allow write: if false;
     }
-
     match /enrollments/{enrollmentId} {
       allow read: if isAdmin()
         || (signedIn() && resource.data.studentUid == request.auth.uid)
         || (isActiveLecturer() && assigned(resource.data.offeringId));
       allow write: if false;
     }
-
     match /teachingAssignments/{assignmentId} {
       allow read: if signedIn() && (resource.data.lecturerUid == request.auth.uid || isAdmin());
       allow write: if false;
     }
-
     match /sessions/{sessionId} {
       allow read: if isAdmin() || assigned(resource.data.offeringId) || enrolled(resource.data.offeringId);
       // Session creation and state transitions use authenticated server routes.
       allow write: if false;
     }
-
     match /attendance/{attendanceId} {
-      allow read: if isAdmin() || (signedIn() && resource.data.studentUid == request.auth.uid)
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.studentUid == request.auth.uid)
         || (isActiveLecturer() && assigned(resource.data.offeringId));
       // Attendance submission/correction must validate a whole session and append audit data.
       allow write: if false;
     }
-
     match /auditEvents/{eventId} {
       allow read: if isAdmin();
       allow write: if false;
     }
-
     match /{document=**} {
       allow read, write: if false;
     }
