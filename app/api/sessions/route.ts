@@ -39,6 +39,9 @@ export async function POST(request: Request) {
   try {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
+    if (identity.email_verified !== true || !/^[^\\s@]+@iiitt\\.ac\\.in$/i.test(identity.email ?? "")) {
+      return NextResponse.json({ error: "A verified institutional staff account is required." }, { status: 403 });
+    }
     const staffRef = db.collection("staff").doc(identity.uid);
     const assignmentRef = db.collection("teachingAssignments").doc(`${body.offeringId}_${identity.uid}`);
     const offeringRef = db.collection("courseOfferings").doc(body.offeringId);
