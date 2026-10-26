@@ -19,4 +19,5 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run check
+      - run: npx firebase emulators:exec --only firestore --project demo-iiitt-portal "npm run test:rules"
       - run: npm run build
