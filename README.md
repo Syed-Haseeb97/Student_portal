@@ -26,7 +26,7 @@ The Firebase attendance foundation includes email-link sign-in, a server-side ap
 - Cancellation requires a reason and is audited.
 - The backend branch includes admin-only course/offering/enrollment/assignment imports, audited completed-session corrections, and a student dashboard API. The frontend is not wired to live data yet, and no production Firebase project or roster is configured.
 
-See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md), [backend status](docs/FIREBASE_ATTENDANCE_BACKEND_PLAN.md), [backend API contract](docs/BACKEND_API_CONTRACT.md), and the [first-admin bootstrap runbook](docs/FIRST_ADMIN_BOOTSTRAP.md). The CSV template contains fake examples only.
+See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md), [backend status](docs/BACKEND_STATUS.md), [backend API contract](docs/BACKEND_API_CONTRACT.md), and the [first-admin bootstrap runbook](docs/FIRST_ADMIN_BOOTSTRAP.md). The CSV template contains fake examples only.
 
 ## Local setup
 
