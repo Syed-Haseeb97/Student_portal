@@ -1,3 +1,4 @@
+import { FieldPath } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
@@ -54,12 +55,17 @@ export async function GET(request: Request) {
       .map((doc) => doc.get("sessionId"))
       .filter((sessionId): sessionId is string => typeof sessionId === "string" && sessionId.length > 0))];
     const sessionStates = new Map<string, string>();
-    await Promise.all(sessionIds.map(async (sessionId) => {
-      const session = await db.collection("sessions").doc(sessionId).get();
-      if (session.exists && typeof session.get("state") === "string") {
-        sessionStates.set(sessionId, session.get("state") as string);
+    const sessions = db.collection("sessions");
+    // Firestore supports up to 30 document IDs in an "in" query; batch to
+    // avoid issuing an unbounded number of concurrent reads for long histories.
+    for (let offset = 0; offset < sessionIds.length; offset += 30) {
+      const batch = sessionIds.slice(offset, offset + 30);
+      const snapshot = await sessions.where(FieldPath.documentId(), "in", batch).get();
+      for (const session of snapshot.docs) {
+        const state = session.get("state");
+        if (typeof state === "string") sessionStates.set(session.id, state);
       }
-    }));
+    }
 
     const grouped = new Map<string, { attended: number; missed: number; latestDate: string | null }>();
     for (const enrollment of enrollmentsSnapshot.docs) {
