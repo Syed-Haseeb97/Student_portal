@@ -33,3 +33,33 @@ test("duplicate session IDs are rejected", () => {
 test("display helper never rounds a failing 74.96% up to 75.0%", () => {
   assert.equal(formatPercent(74.96), "74.9%"); assert.equal(formatPercent(75), "75.0%"); assert.equal(formatPercent(null), "—");
 });
+
+
+test("two sessions of one offering on the same date count separately", () => {
+  const sameDay = [
+    { ...row("morning", "CSE101", "present"), sessionDate: "2026-10-26" },
+    { ...row("afternoon", "CSE101", "absent"), sessionDate: "2026-10-26" },
+  ];
+  const result = summarizeByCourse(sameDay)[0];
+  assert.equal(result?.attended, 1);
+  assert.equal(result?.missed, 1);
+  assert.equal(result?.total, 2);
+  assert.equal(result?.percentage, 50);
+});
+
+test("an offering with no completed sessions has no_data", () => {
+  const result = summarizeByCourse([
+    row("future", "CSE101", null, "scheduled"),
+    row("cancelled", "CSE101", "absent", "cancelled"),
+  ])[0];
+  assert.equal(result?.status, "no_data");
+  assert.equal(result?.percentage, null);
+  assert.equal(result?.total, 0);
+});
+
+test("attendance policy and counts reject invalid values", () => {
+  assert.equal(evaluate(7, 10, { thresholdPercent: 65, eligibleStates: ["completed"] }).status, "compliant");
+  assert.throws(() => evaluate(1, 1, { thresholdPercent: 101, eligibleStates: ["completed"] }), RangeError);
+  assert.throws(() => evaluate(2, 1), RangeError);
+  assert.throws(() => evaluate(-1, 2), RangeError);
+});
