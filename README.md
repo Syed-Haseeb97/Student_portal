@@ -51,10 +51,10 @@ Run the unit/lint/type checks:
 npm run check
 ```
 
-Run Firestore authorization tests against the emulator:
+Run Firestore authorization tests and protected-route integration tests against synthetic Firebase Auth/Firestore emulators:
 
 ```bash
-npx firebase emulators:exec --only firestore --project demo-iiitt-portal "npm run test:rules"
+npx firebase emulators:exec --only auth,firestore --project demo-iiitt-portal "npm run test:rules && npm run test:api"
 ```
 
 Run the production build:
