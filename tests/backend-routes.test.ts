@@ -170,6 +170,21 @@ test("admin academic import and completed-session correction routes enforce auth
     kind: "enrollments", rows: [{ offeringId: shortfallOfferingId, studentUid, active: true }],
   }));
   assert.equal(shortfallEnrollmentImport.status, 200);
+
+  const retiredOfferingId = `retiredOffering${suffix}`;
+  const retiredOfferingImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "offerings", rows: [{ id: retiredOfferingId, courseId, term: "2025-S2", batch: "2026", programme: "CSE", active: true }],
+  }));
+  assert.equal(retiredOfferingImport.status, 200);
+  const retiredEnrollmentImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "enrollments", rows: [{ offeringId: retiredOfferingId, studentUid, active: true }],
+  }));
+  assert.equal(retiredEnrollmentImport.status, 200);
+  const deactivateRetiredOffering = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
+    kind: "offerings", rows: [{ id: retiredOfferingId, courseId, term: "2025-S2", batch: "2026", programme: "CSE", active: false }],
+  }));
+  assert.equal(deactivateRetiredOffering.status, 200);
+
   const dashboardSessionId = `dashboardSession${suffix}`;
   await db.collection("sessions").doc(dashboardSessionId).set({
     offeringId: shortfallOfferingId, state: "completed", sessionDate: "2026-10-26",
@@ -216,6 +231,7 @@ test("admin academic import and completed-session correction routes enforce auth
     thresholdPercent: 75, latestSessionDate: "2026-10-26",
   });
   assert.equal(dashboard.summaries.some((summary) => summary.offeringId === `inactiveOffering${suffix}`), false);
+  assert.equal(dashboard.summaries.some((summary) => summary.offeringId === retiredOfferingId), false);
 
   const forbiddenImport = await academicRoute.POST(request("/api/admin/academic-data", studentToken, {
     kind: "courses", rows: [{ id: `blocked${suffix}`, code: "BLOCKED", title: "Must not exist", active: true }],
