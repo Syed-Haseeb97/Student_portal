@@ -43,3 +43,18 @@ export function validateRosterRow(input: Record<string, unknown>): RosterRow {
   }
   return { rollNumber, email, batch, programme, active };
 }
+
+/** Validate a complete import before any writes are attempted. */
+export function validateRosterRows(inputs: readonly Record<string, unknown>[]) {
+  if (inputs.length < 1) throw new Error("The roster import must contain at least one row.");
+  const rows = inputs.map(validateRosterRow);
+  const emails = new Set<string>();
+  const rolls = new Set<string>();
+  for (const row of rows) {
+    if (emails.has(row.email)) throw new Error(`Duplicate email in import: ${row.email}`);
+    if (rolls.has(row.rollNumber)) throw new Error(`Duplicate roll number in import: ${row.rollNumber}`);
+    emails.add(row.email);
+    rolls.add(row.rollNumber);
+  }
+  return rows;
+}
