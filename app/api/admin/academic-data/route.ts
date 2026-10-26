@@ -46,7 +46,7 @@ function normalizedRows(kind: Kind, rawRows: unknown[]): Row[] {
       const term = requiredString(row.term, "term", 40);
       const batch = requiredString(row.batch, "batch", 4);
       const programme = requiredString(row.programme, "programme", 80);
-      if (!ID.test(id) || !ID.test(courseId) || !/^20\d{2}$/.test(batch)) throw new Error("INVALID:Offering id/courseId or batch is invalid.");
+      if (!OFFERING_ID.test(id) || !ID.test(courseId) || !/^20\d{2}$/.test(batch)) throw new Error("INVALID:Offering id must use letters, digits, or hyphens; courseId or batch is invalid.");
       return { id, courseId, term, batch, programme, active: activeFlag(row.active) };
     }
     if (kind === "enrollments") {
