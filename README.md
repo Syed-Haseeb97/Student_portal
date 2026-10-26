@@ -33,7 +33,7 @@ See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTE
 Requires Node.js 24.12+ and npm.
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run check
 npm run dev
@@ -73,10 +73,9 @@ No Firebase project configuration, production rule deployment, real roster uploa
 
 ## Follow-ups before any real pilot
 
-1. Add a reviewed npm lockfile before relying on reproducible production builds; the current dependency audit reports zero vulnerabilities.
-2. Review the first-admin provisioning runbook with the institution.
-3. Expand negative/edge-case integration tests for duplicate imports, inactive actors, malformed bodies, and concurrent role changes, then complete a focused security review.
-4. Wire the frontend to the student dashboard API and authenticated admin/lecturer endpoints.
-5. Obtain and import the institute-approved roster and academic catalog only after explicit authorization.
-6. Verify institutional policy and operational workflows with authorized stakeholders.
-7. Consider a live pilot only after a focused security review and separate, explicit approval.
+1. Review the first-admin provisioning runbook with the institution.
+2. Expand negative/edge-case integration tests for duplicate imports, inactive actors, malformed bodies, and concurrent role changes, then complete a focused security review.
+3. Wire the frontend to the student dashboard API and authenticated admin/lecturer endpoints.
+4. Obtain and import the institute-approved roster and academic catalog only after explicit authorization.
+5. Verify institutional policy and operational workflows with authorized stakeholders.
+6. Consider a live pilot only after a focused security review and separate, explicit approval.
