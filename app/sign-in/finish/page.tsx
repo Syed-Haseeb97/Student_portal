@@ -1,32 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  completeInstitutionalSignIn,
-  getSavedSignInEmail,
-  isInstitutionalSignInLink,
-} from "@/lib/firebase/email-link";
+import { useState } from "react";
+import { completeInstitutionalSignIn } from "@/lib/firebase/email-link";
 
 export default function FinishSignInPage() {
   const [email, setEmail] = useState("");
-  const [isLink, setIsLink] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("Checking sign-in link…");
+  const [message, setMessage] = useState("Enter the same institutional email address that received the one-time sign-in link.");
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    try {
-      const valid = isInstitutionalSignInLink(window.location.href);
-      setIsLink(valid);
-      if (!valid) setMessage("This link is invalid or expired. Request a new sign-in link.");
-      else {
-        setEmail(getSavedSignInEmail());
-        setMessage("Confirm the same institutional email address used to request this link.");
-      }
-    } catch {
-      setMessage("Firebase is not configured yet. Add the portal project's public environment values and try again.");
-    }
-  }, []);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,7 +33,7 @@ export default function FinishSignInPage() {
         <label className="block text-sm font-medium" htmlFor="email">Institutional email</label>
         <input id="email" type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)}
           placeholder="you@iiitt.ac.in" className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm outline-none focus:border-accent" />
-        <button type="submit" disabled={!isLink || busy || success} className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-canvas disabled:opacity-60">
+        <button type="submit" disabled={busy || success} className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-canvas disabled:opacity-60">
           {busy ? "Verifying…" : success ? "Verified" : "Verify and continue"}
         </button>
       </form>
