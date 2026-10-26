@@ -1,43 +1,43 @@
 # Architecture and decisions
 
-## Confirmed requirements
+## Scope and status
 
-- IIIT Trichy student portal, initially attendance-focused.
-- Supabase Auth magic link or email OTP, verified institutional `@iiitt.ac.in` email, and approved-roster matching.
-- At least 75% attendance independently for each subject.
-- Every class session has its own attendance submission; multiple same-day sessions are separate.
-- Assigned lecturers create sessions, including ahead of time.
-- Multiple lecturers may be assigned to an offering.
-- Students see only their own attendance; lecturers access only assigned offerings/sections.
-- Dark, mobile-first interface with restrained teal/indigo accents.
+The IIITT Student Portal is an attendance-focused Next.js application. The homepage remains a synthetic preview; Firebase Auth/Firestore backend routes and emulator rules are implemented on the Firebase feature branch. No live Firebase project, production roster, or real admin is configured by this repository workflow.
 
-## Roll-number convention (partially confirmed)
+## Stack
 
-- `261161`: 2026-entry, CSE, roll 61.
-- `261261`: 2026-entry, AI & DS, roll 61.
-- `2613xx`: ECE.
-- `2614xx`: VLSI.
-- `25xxxx`: initial pattern for the senior batch.
+- Next.js App Router, TypeScript, and Tailwind CSS.
+- Firebase Authentication with passwordless email-link sign-in.
+- Cloud Firestore for roster, profiles, staff, courses, offerings, enrollments, teaching assignments, sessions, attendance, and audit events.
+- Firebase Admin SDK only in server routes that require trusted provisioning or atomic multi-document operations.
+- Firestore Emulator Suite for local security rules tests.
+- Vercel is a planned deployment target, not configured here.
 
-The complete branch mapping and historical variation are not confirmed. Preserve roll numbers as strings; do not infer authorization from parsing. The approved roster is the source of truth.
+## Identity and authorization
 
-## Proposed architecture
+- A verified institutional email ending exactly in `@iiitt.ac.in` is necessary but not sufficient for access.
+- A server-side roster claim must also find exactly one active, approved roster entry for the authenticated email.
+- Roll numbers, email prefixes, and programme patterns are never authorization mechanisms. Batch, programme, and roll number are explicit approved-roster fields.
+- Student, lecturer, and admin roles are server-provisioned. Client writes to roster, email index, profiles, staff, sessions, attendance, assignments, enrollments, offerings, and audit events are denied by Firestore rules.
+- Normal reads use Firebase Auth plus Firestore rules. Admin SDK credentials are server-only, narrowly scoped, and guarded against a mismatch between configured project IDs.
+- The portal must use a separate Firebase project from any unrelated application. Never put service-account credentials in browser-visible variables or source control.
 
-Next.js App Router + TypeScript + Tailwind CSS, Supabase Auth and PostgreSQL, explicit server-side authorization and RLS, version-controlled SQL migrations, and Vercel after verification.
+## Roster import
 
-## Attendance calculation
+The approved CSV contract is `rollNumber,email,batch,programme,active`. Validate the whole batch before writes, normalize email and roll number, reject duplicate normalized email/roll values, and process the import atomically. Existing roll-number email changes require separate review. Imports and staff provisioning emit audit events. The included CSV template contains synthetic examples only.
 
-The pure helper counts completed sessions only by default. Scheduled and cancelled sessions are excluded. Threshold defaults to 75% and is configurable. Confirm institute policy before real use.
+## Session lifecycle and attendance
 
-## Security boundaries
+- Sessions have distinct IDs; multiple sessions for the same offering on the same date remain separate.
+- Active lecturers can create and cancel sessions only for active offerings assigned to them. Scheduled sessions may be created in advance.
+- Cancellation requires a non-empty reason and an audit event.
+- A session can be completed only with exactly one `present` or `absent` mark for every active enrollee. Missing, duplicate, or out-of-scope marks must not complete the session.
+- Attendance is calculated independently per course offering/term. Exactly 75% is compliant: `present / (present + absent) >= 0.75`.
+- Only completed sessions count; scheduled and cancelled sessions are excluded.
+- Completed-session corrections are not implemented. Any future correction flow must be separately authorized, reasoned, and audited.
 
-Email verification does not automatically authorize an account. Roles must be explicitly granted. Route redirects alone are not authorization. Service-role credentials bypass RLS and are reserved for narrowly scoped admin operations. Development examples must use synthetic data. SQL and RLS require execution and tests against PostgreSQL before they are considered verified.
+## Verification and remaining work
 
-## Open decisions
+CI runs lint, TypeScript checks, unit tests, Firestore Emulator authorization tests, and a production build. A successful CI run verifies the tested code path but does not substitute for a human security review or production configuration.
 
-- Exact institutional email format and whether it contains a roll number.
-- Full branch-code mapping for all batches.
-- Initial administrator provisioning.
-- Attendance correction and audit workflow.
-- Exceptions to the default completed/cancelled session policy.
-- Whether elective enrollment is required for the first pilot.
+Remaining: triage dependency audit advisories, first-admin bootstrap procedure, approved roster ingestion, course/offering/enrollment import, completed-session correction workflow, live attendance dashboard wiring, and institution-approved operational policy. Do not create live Firebase resources, deploy rules, or use real student records without explicit human approval.

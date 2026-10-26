@@ -12,7 +12,7 @@ export default function HomePage() {
           <div className="grid size-11 place-items-center rounded-2xl bg-accent text-sm font-black text-canvas">II</div>
           <div><p className="text-sm font-semibold tracking-wide">IIITT PORTAL</p><p className="mt-1 text-xs text-muted">Student workspace</p></div>
         </div>
-        <span className="rounded-full border border-line bg-surface px-3 py-2 text-xs text-muted">Preview · synthetic data</span>
+        <div className="flex items-center gap-3"><span className="rounded-full border border-line bg-surface px-3 py-2 text-xs text-muted">Preview · synthetic data</span><a href="/sign-in" className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-canvas">Sign in</a></div>
       </header>
       <section className="grid gap-8 py-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
         <div>

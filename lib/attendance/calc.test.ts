@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { evaluate, formatPercent, summarizeByCourse, coursesBelowThreshold, type SessionAttendance } from "./calc";
-const row = (sessionId: string, courseId: string, mark: "present" | "absent" | null, sessionState: SessionAttendance["sessionState"] = "completed"): SessionAttendance => ({ sessionId, courseId, mark, sessionState });
+const row = (sessionId: string, offeringId: string, mark: "present" | "absent" | null, sessionState: SessionAttendance["sessionState"] = "completed"): SessionAttendance => ({ sessionId, offeringId, mark, sessionState });
 
 test("attendance is calculated independently per subject", () => {
   const records = [
@@ -9,10 +9,10 @@ test("attendance is calculated independently per subject", () => {
     ...Array.from({ length: 7 }, (_, i) => row(`p${i}`, "PHYS", "present")),
     row("p7", "PHYS", "absent"), row("p8", "PHYS", "absent"), row("p9", "PHYS", "absent")
   ];
-  const result = Object.fromEntries(summarizeByCourse(records).map((item) => [item.courseId, item]));
+  const result = Object.fromEntries(summarizeByCourse(records).map((item) => [item.offeringId, item]));
   assert.equal(result.MATH?.percentage, 90);
   assert.equal(result.PHYS?.percentage, 70);
-  assert.deepEqual(coursesBelowThreshold(Object.values(result)).map((item) => item.courseId), ["PHYS"]);
+  assert.deepEqual(coursesBelowThreshold(Object.values(result)).map((item) => item.offeringId), ["PHYS"]);
 });
 test("exactly 75% is compliant and below 75% is not", () => {
   assert.equal(evaluate(3, 4).status, "compliant");
