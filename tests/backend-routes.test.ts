@@ -21,10 +21,11 @@ process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
 process.env.GCLOUD_PROJECT = projectId;
 
 test("admin academic import and completed-session correction routes enforce auth and audit writes", async () => {
-  const [{ getFirebaseAdmin }, academicRoute, correctionRoute] = await Promise.all([
+  const [{ getFirebaseAdmin }, academicRoute, correctionRoute, dashboardRoute] = await Promise.all([
     import("../lib/firebase/admin"),
     import("../app/api/admin/academic-data/route"),
     import("../app/api/admin/attendance/[attendanceId]/correction/route"),
+    import("../app/api/student/dashboard/route"),
   ]);
   const { auth, db } = getFirebaseAdmin();
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
@@ -32,11 +33,23 @@ test("admin academic import and completed-session correction routes enforce auth
   const studentUid = `student${suffix}`;
   const adminEmail = `admin${suffix}@iiitt.ac.in`;
   const studentEmail = `student${suffix}@iiitt.ac.in`;
+  const rosterId = `roll${suffix}`;
 
   await auth.createUser({ uid: adminUid, email: adminEmail, emailVerified: true });
   await auth.createUser({ uid: studentUid, email: studentEmail, emailVerified: true });
   await db.collection("staff").doc(adminUid).set({ uid: adminUid, email: adminEmail, role: "admin", active: true });
-  await db.collection("userProfiles").doc(studentUid).set({ uid: studentUid, email: studentEmail, role: "student", active: true });
+  await db.collection("studentRoster").doc(rosterId).set({
+    rollNumber: "AUTHORITATIVE-" + suffix,
+    emailNormalized: studentEmail,
+    batch: "2026",
+    programme: "CSE",
+    active: true,
+  });
+  // Deliberately stale cached fields: dashboard and import must trust the roster.
+  await db.collection("userProfiles").doc(studentUid).set({
+    uid: studentUid, email: studentEmail, role: "student", active: true, rosterId,
+    rollNumber: "STALE-ROLL", batch: "2025", programme: "ECE",
+  });
 
   async function idToken(uid: string) {
     const customToken = await auth.createCustomToken(uid);
@@ -63,6 +76,30 @@ test("admin academic import and completed-session correction routes enforce auth
   }));
   assert.equal(importResponse.status, 200);
   assert.equal((await db.collection("courses").doc(courseId).get()).get("title"), "Synthetic course");
+
+  const offeringId = `offering${suffix}`;
+  await db.collection("courseOfferings").doc(offeringId).set({
+    courseId, term: "2026-S1", batch: "2026", programme: "CSE", active: true,
+  });
+  await db.collection("enrollments").doc(`${offeringId}_${studentUid}`).set({
+    offeringId, studentUid, rosterId, active: true,
+  });
+  const dashboardResponse = await dashboardRoute.GET(new Request("http://localhost/api/student/dashboard", {
+    headers: { authorization: `Bearer ${studentToken}` },
+  }));
+  assert.equal(dashboardResponse.status, 200);
+  const dashboard = await dashboardResponse.json() as {
+    student: { rollNumber: string | null; batch: string | null; programme: string | null };
+    summaries: Array<{ offeringId: string; status: string; total: number }>;
+  };
+  assert.equal(dashboard.student.rollNumber, "AUTHORITATIVE-" + suffix);
+  assert.equal(dashboard.student.batch, "2026");
+  assert.equal(dashboard.student.programme, "CSE");
+  assert.deepEqual(dashboard.summaries.find((summary) => summary.offeringId === offeringId), {
+    offeringId, courseId, courseCode: "CSE101", courseTitle: "Synthetic course", term: "2026-S1",
+    attended: 0, missed: 0, total: 0, percentage: null, status: "no_data",
+    thresholdPercent: 75, latestSessionDate: null,
+  });
 
   const forbiddenImport = await academicRoute.POST(request("/api/admin/academic-data", studentToken, {
     kind: "courses", rows: [{ id: `blocked${suffix}`, code: "BLOCKED", title: "Must not exist", active: true }],
