@@ -63,7 +63,7 @@ Run the production build:
 npm run build
 ```
 
-CI runs these checks on pull requests targeting `main` and pushes to the configured branches. Emulator tests use the demo project ID and synthetic documents; they do not create a live Firebase project.
+CI runs these checks on pull requests targeting `main` and pushes to `main` or the configured backend feature branches. Emulator tests use the demo project ID and synthetic documents; they do not create a live Firebase project.
 
 ## Environment contract
 
