@@ -6,6 +6,9 @@ import { getFirebaseAdmin } from "@/lib/firebase/admin";
 export const runtime = "nodejs";
 const MAX_ROWS = 100;
 const ID = /^[A-Za-z0-9_-]{1,100}$/;
+// Offering IDs prefix compound enrollment/assignment document IDs, so they
+// must not contain the underscore used as the separator.
+const OFFERING_ID = /^[A-Za-z0-9-]{1,100}$/;
 
 type Kind = "courses" | "offerings" | "enrollments" | "assignments";
 type Row = Record<string, unknown>;
@@ -49,12 +52,12 @@ function normalizedRows(kind: Kind, rawRows: unknown[]): Row[] {
     if (kind === "enrollments") {
       const offeringId = requiredString(row.offeringId, "offeringId", 100);
       const studentUid = requiredString(row.studentUid, "studentUid", 128);
-      if (!ID.test(offeringId) || !ID.test(studentUid)) throw new Error("INVALID:Enrollment offeringId/studentUid is invalid.");
+      if (!OFFERING_ID.test(offeringId) || !ID.test(studentUid)) throw new Error("INVALID:Enrollment offeringId/studentUid is invalid; offeringId must not contain underscores.");
       return { id: `${offeringId}_${studentUid}`, offeringId, studentUid, active: activeFlag(row.active) };
     }
     const offeringId = requiredString(row.offeringId, "offeringId", 100);
     const lecturerUid = requiredString(row.lecturerUid, "lecturerUid", 128);
-    if (!ID.test(offeringId) || !ID.test(lecturerUid)) throw new Error("INVALID:Assignment offeringId/lecturerUid is invalid.");
+    if (!OFFERING_ID.test(offeringId) || !ID.test(lecturerUid)) throw new Error("INVALID:Assignment offeringId/lecturerUid is invalid; offeringId must not contain underscores.");
     return { id: `${offeringId}_${lecturerUid}`, offeringId, lecturerUid, active: activeFlag(row.active) };
   });
   const ids = new Set<string>();
