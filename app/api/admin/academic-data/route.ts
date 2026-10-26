@@ -148,7 +148,7 @@ export async function POST(request: Request) {
       const auditRef = db.collection("auditEvents").doc();
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i]!;
-        const { id, ...data } = row;
+        const data = Object.fromEntries(Object.entries(row).filter(([key]) => key !== "id"));
         transaction.set(refs[i]!, {
           ...data,
           ...(targetDocs[i]?.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
