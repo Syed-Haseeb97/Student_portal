@@ -40,7 +40,9 @@ test("admin academic import and completed-session correction routes enforce auth
   const lecturerUid = `lecturer${suffix}`;
   const newStaffUid = `newstaff${suffix}`;
   const claimUid = `claim${suffix}`;
+  const inactiveAdminUid = `inactiveadmin${suffix}`;
   const adminEmail = `admin${suffix}@iiitt.ac.in`;
+  const inactiveAdminEmail = `inactiveadmin${suffix}@iiitt.ac.in`;
   const studentEmail = `student${suffix}@iiitt.ac.in`;
   const lecturerEmail = `lecturer${suffix}@iiitt.ac.in`;
   const newStaffEmail = `newstaff${suffix}@iiitt.ac.in`;
@@ -53,7 +55,9 @@ test("admin academic import and completed-session correction routes enforce auth
   await auth.createUser({ uid: lecturerUid, email: lecturerEmail, emailVerified: true });
   await auth.createUser({ uid: newStaffUid, email: newStaffEmail, emailVerified: true });
   await auth.createUser({ uid: claimUid, email: claimEmail, emailVerified: true });
+  await auth.createUser({ uid: inactiveAdminUid, email: inactiveAdminEmail, emailVerified: true });
   await db.collection("staff").doc(adminUid).set({ uid: adminUid, email: adminEmail, role: "admin", active: true });
+  await db.collection("staff").doc(inactiveAdminUid).set({ uid: inactiveAdminUid, email: inactiveAdminEmail, role: "admin", active: false });
   await db.collection("staff").doc(lecturerUid).set({ uid: lecturerUid, email: lecturerEmail, role: "lecturer", active: true });
   await db.collection("studentRoster").doc(rosterId).set({
     rollNumber: "AUTHORITATIVE-" + suffix,
@@ -81,6 +85,7 @@ test("admin academic import and completed-session correction routes enforce auth
   }
 
   const adminToken = await idToken(adminUid);
+  const inactiveAdminToken = await idToken(inactiveAdminUid);
   const studentToken = await idToken(studentUid);
   const lecturerToken = await idToken(lecturerUid);
   const claimToken = await idToken(claimUid);
@@ -97,6 +102,17 @@ test("admin academic import and completed-session correction routes enforce auth
   assert.equal((await db.collection("studentRoster").doc(claimRollNumber).get()).get("emailNormalized"), claimEmail);
   assert.equal((await db.collection("auditEvents").where("action", "==", "roster.imported").get()).size, 1);
 
+  const duplicateEmail = `duplicate${suffix}@iiitt.ac.in`;
+  const duplicateRosterImport = await rosterImportRoute.POST(request("/api/admin/roster/import", adminToken, {
+    rows: [
+      { rollNumber: `dupA${suffix}`, email: duplicateEmail, batch: "2026", programme: "CSE", active: true },
+      { rollNumber: `dupB${suffix}`, email: duplicateEmail, batch: "2026", programme: "CSE", active: true },
+    ],
+  }));
+  assert.equal(duplicateRosterImport.status, 400);
+  assert.equal((await db.collection("studentRoster").doc(`dupA${suffix}`).get()).exists, false);
+  assert.equal((await db.collection("studentRoster").doc(`dupB${suffix}`).get()).exists, false);
+
   const claimResponse = await rosterClaimRoute.POST(request("/api/roster/claim", claimToken, {}));
   assert.equal(claimResponse.status, 200);
   assert.equal((await db.collection("userProfiles").doc(claimUid).get()).get("rosterId"), claimRollNumber);
@@ -107,6 +123,19 @@ test("admin academic import and completed-session correction routes enforce auth
   }));
   assert.equal(importResponse.status, 200);
   assert.equal((await db.collection("courses").doc(courseId).get()).get("title"), "Synthetic course");
+
+  const inactiveActorImport = await academicRoute.POST(request("/api/admin/academic-data", inactiveAdminToken, {
+    kind: "courses", rows: [{ id: `inactiveBlocked${suffix}`, code: "INACTIVE", title: "Must not exist", active: true }],
+  }));
+  assert.equal(inactiveActorImport.status, 403);
+  assert.equal((await db.collection("courses").doc(`inactiveBlocked${suffix}`).get()).exists, false);
+
+  const malformedImport = await academicRoute.POST(new Request("http://localhost/api/admin/academic-data", {
+    method: "POST",
+    headers: { authorization: `Bearer ${adminToken}`, "content-type": "application/json" },
+    body: "{",
+  }));
+  assert.equal(malformedImport.status, 400);
 
   const offeringId = `offering${suffix}`;
   const offeringImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {

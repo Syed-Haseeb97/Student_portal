@@ -14,7 +14,7 @@ This document replaces the original proposal, which described the pre-Firebase s
 
 ## Still required before a real pilot
 
-1. Expand negative/edge-case coverage for duplicate imports, inactive actors, malformed bodies, and concurrent role changes. Current emulator-backed tests exercise roster import/claim, every academic-data kind, staff provisioning, the student dashboard, session creation, attendance submission, cancellation, and completed-session correction.
+1. Continue expanding negative/edge-case coverage, especially concurrent role changes. Emulator-backed tests now also verify duplicate-email roster imports are rejected without writes, inactive administrators cannot import academic data, and malformed JSON bodies are rejected. Existing coverage exercises roster import/claim, every academic-data kind, staff provisioning, the student dashboard (including no-data and shortfall statuses), session creation, attendance submission, cancellation, and completed-session correction.
 2. Complete a human review of transaction behavior, import bounds, error handling, and audit integrity.
 3. Review the first-admin bootstrap runbook with an authorized institutional stakeholder.
 4. Connect the UI to the authenticated APIs (frontend implementation is being handled separately).
