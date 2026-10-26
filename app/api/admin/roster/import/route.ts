@@ -39,6 +39,9 @@ export async function POST(request: Request) {
   try {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
+    if (identity.email_verified !== true || !/^[^\\s@]+@iiitt\\.ac\\.in$/i.test(identity.email ?? "")) {
+      return NextResponse.json({ error: "A verified institutional admin account is required." }, { status: 403 });
+    }
     const rosterRefs = rows.map((row) => db.collection("studentRoster").doc(row.rollNumber));
     const emailRefs = rows.map((row) => db.collection("rosterEmailIndex").doc(emailHash(row.email)));
     const auditRef = db.collection("auditEvents").doc();
