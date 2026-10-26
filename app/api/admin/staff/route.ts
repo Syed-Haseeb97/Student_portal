@@ -26,6 +26,14 @@ export async function POST(request: Request) {
     if (actor.email_verified !== true || !INSTITUTIONAL_EMAIL_PATTERN.test(normalizeEmail(actor.email ?? ""))) {
       return NextResponse.json({ error: "A verified institutional administrator account is required." }, { status: 403 });
     }
+    const targetUser = await auth.getUserByEmail(email);
+    if (!targetUser.emailVerified || normalizeEmail(targetUser.email ?? "") !== email) {
+      return NextResponse.json({ error: "The target account must already exist and have a verified matching institutional email." }, { status: 409 });
+    }
+    if (targetUser.uid === actor.uid) {
+      return NextResponse.json({ error: "Administrators cannot change their own staff role through this endpoint." }, { status: 409 });
+    }
+
     const actorRef = db.collection("staff").doc(actor.uid);
     const targetRef = db.collection("staff").doc(targetUser.uid);
 
