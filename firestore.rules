@@ -7,7 +7,12 @@ service cloud.firestore {
       return signedIn()
         && request.auth.token.email_verified == true
         && request.auth.token.email is string
-        && request.auth.token.email.matches('^[^@]+@iiitt[.]ac[.]in
+        && request.auth.token.email.matches('^[^@]+@iiitt[.]ac[.]in$');
+    }
+    function profileExists() {
+      return verifiedInstitutionalIdentity()
+        && exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid));
+    }
     function profile() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
@@ -26,102 +31,7 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'admin';
     }
     function isActiveLecturer() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.active == true
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'lecturer';
-    }
-    function enrolled(offeringId) {
-      return activeProfile()
-        && exists(/databases/$(database)/documents/enrollments/$(offeringId + '_' + request.auth.uid))
-        && get(/databases/$(database)/documents/enrollments/$(offeringId + '_' + request.auth.uid)).data.active == true;
-    }
-    function assigned(offeringId) {
-      return isActiveLecturer()
-        && exists(/databases/$(database)/documents/teachingAssignments/$(offeringId + '_' + request.auth.uid))
-        && get(/databases/$(database)/documents/teachingAssignments/$(offeringId + '_' + request.auth.uid)).data.active == true;
-    }
-
-    // Roster and email index are private; trusted server routes only.
-    match /studentRoster/{rosterId} {
-      allow read, write: if false;
-    }
-    match /rosterEmailIndex/{emailHash} {
-      allow read, write: if false;
-    }
-
-    // Identity/role fields are server-owned. Clients can never create or mutate profiles.
-    match /userProfiles/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
-      allow write: if false;
-    }
-    match /staff/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
-      allow write: if false;
-    }
-    match /courses/{courseId} {
-      allow read: if activeProfile() || isActiveLecturer() || isAdmin();
-      allow write: if false;
-    }
-    match /courseOfferings/{offeringId} {
-      allow read: if enrolled(offeringId) || assigned(offeringId) || isAdmin();
-      allow write: if false;
-    }
-    match /enrollments/{enrollmentId} {
-      allow read: if isAdmin()
-        || (activeProfile() && resource.data.studentUid == request.auth.uid)
-        || (isActiveLecturer() && assigned(resource.data.offeringId));
-      allow write: if false;
-    }
-    match /teachingAssignments/{assignmentId} {
-      allow read: if signedIn() && (resource.data.lecturerUid == request.auth.uid || isAdmin());
-      allow write: if false;
-    }
-    match /sessions/{sessionId} {
-      allow read: if isAdmin() || assigned(resource.data.offeringId) || enrolled(resource.data.offeringId);
-      // Session creation and state transitions use authenticated server routes.
-      allow write: if false;
-    }
-    match /attendance/{attendanceId} {
-      allow read: if isAdmin()
-        || (activeProfile() && resource.data.studentUid == request.auth.uid)
-        || (isActiveLecturer() && assigned(resource.data.offeringId));
-      // Attendance submission/correction must validate a whole session and append audit data.
-      allow write: if false;
-    }
-    match /auditEvents/{eventId} {
-      allow read: if isAdmin();
-      allow write: if false;
-    }
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
-);
-    }
-    function profileExists() {
       return verifiedInstitutionalIdentity()
-        && exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid));
-    }
-    function profile() {
-      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
-    }
-    function activeProfile() {
-      return profileExists()
-        && profile().active == true
-        && profile().rosterId is string
-        && exists(/databases/$(database)/documents/studentRoster/$(profile().rosterId))
-        && get(/databases/$(database)/documents/studentRoster/$(profile().rosterId)).data.active == true;
-    }
-    function isAdmin() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.active == true
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'admin';
-    }
-    function isActiveLecturer() {
-      return signedIn()
         && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
         && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.active == true
         && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'lecturer';
@@ -174,14 +84,12 @@ service cloud.firestore {
     }
     match /sessions/{sessionId} {
       allow read: if isAdmin() || assigned(resource.data.offeringId) || enrolled(resource.data.offeringId);
-      // Session creation and state transitions use authenticated server routes.
       allow write: if false;
     }
     match /attendance/{attendanceId} {
       allow read: if isAdmin()
         || (activeProfile() && resource.data.studentUid == request.auth.uid)
         || (isActiveLecturer() && assigned(resource.data.offeringId));
-      // Attendance submission/correction must validate a whole session and append audit data.
       allow write: if false;
     }
     match /auditEvents/{eventId} {
