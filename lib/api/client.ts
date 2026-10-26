@@ -8,21 +8,25 @@
  * When mock mode is disabled, it strictly enforces authentication and surfaces real API errors.
  */
 
-import type { ApiResponse, StudentDashboardData } from "./types";
-import { SYNTHETIC_STUDENT } from "./mock-data";
+import type { ApiResponse, StudentDashboardData, CourseSummary } from "./types";
+import { normalizeAttendanceStatus } from "./types";
+import { SYNTHETIC_STUDENT, SYNTHETIC_EMPTY_STUDENT } from "./mock-data";
 
 export function isMockModeEnabled(): boolean {
-  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_ENABLE_MOCK_API === "false") {
-    return false;
+  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_ENABLE_MOCK_API) {
+    if (process.env.NEXT_PUBLIC_ENABLE_MOCK_API === "true") return true;
+    if (process.env.NEXT_PUBLIC_ENABLE_MOCK_API === "false") return false;
   }
-  // If Firebase API key is not configured, fall back to mock mode safely
+  // If NEXT_PUBLIC_ENABLE_MOCK_API is not set, check if Firebase config is present
   const hasFirebaseConfig = Boolean(
     typeof process !== "undefined" &&
     process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   );
-  return !hasFirebaseConfig || process.env.NEXT_PUBLIC_ENABLE_MOCK_API === "true";
+  return !hasFirebaseConfig;
 }
+
+export type MockScenario = "normal" | "empty" | "unauthorized" | "error";
 
 /**
  * Fetch student dashboard attendance and policy data.
@@ -31,9 +35,32 @@ export function isMockModeEnabled(): boolean {
  *   Does NOT fall back to synthetic data on failure, preserving error fidelity.
  */
 export async function getStudentDashboard(
-  idToken?: string
+  idToken?: string,
+  options?: { mockScenario?: MockScenario }
 ): Promise<ApiResponse<StudentDashboardData>> {
   if (isMockModeEnabled()) {
+    const scenario = options?.mockScenario ?? "normal";
+    if (scenario === "empty") {
+      return {
+        status: 200,
+        data: SYNTHETIC_EMPTY_STUDENT,
+        isMock: true,
+      };
+    }
+    if (scenario === "unauthorized") {
+      return {
+        status: 403,
+        error: "This email is not uniquely matched to an active approved student roster entry. Contact the portal administrator.",
+        isMock: true,
+      };
+    }
+    if (scenario === "error") {
+      return {
+        status: 503,
+        error: "Unable to load attendance data right now. Please retry.",
+        isMock: true,
+      };
+    }
     return {
       status: 200,
       data: SYNTHETIC_STUDENT,
@@ -82,10 +109,14 @@ export async function getStudentDashboard(
     }
 
     if (!response.ok) {
-      const errorMsg =
-        body && typeof body === "object" && "error" in body && typeof body.error === "string"
-          ? body.error
-          : `Request failed with HTTP status ${response.status}`;
+      let errorMsg = `Request failed with HTTP status ${response.status}`;
+      if (body && typeof body === "object" && "error" in body && typeof body.error === "string") {
+        errorMsg = body.error;
+      } else if (response.status === 401) {
+        errorMsg = "Your sign-in session expired. Sign in again.";
+      } else if (response.status === 403) {
+        errorMsg = "Your account is not linked to an active approved roster entry. Contact the administrator.";
+      }
       return {
         status: response.status,
         error: errorMsg,
@@ -109,9 +140,18 @@ export async function getStudentDashboard(
       };
     }
 
+    // Normalize each summary's status to ensure compatibility with backend (which might emit "below_threshold")
+    const normalizedSummaries: CourseSummary[] = parsed.summaries.map((s) => ({
+      ...s,
+      status: normalizeAttendanceStatus(s.status),
+    }));
+
     return {
       status: 200,
-      data: parsed as StudentDashboardData,
+      data: {
+        ...parsed,
+        summaries: normalizedSummaries,
+      } as StudentDashboardData,
       isMock: false,
     };
   } catch (err) {

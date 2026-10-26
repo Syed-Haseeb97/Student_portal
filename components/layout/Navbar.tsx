@@ -56,18 +56,20 @@ export function Navbar({
             >
               Overview
             </Link>
-            <a
-              href="#courses"
-              className="transition-colors hover:text-ink"
+            <Link
+              href="/dashboard"
+              className={`transition-colors hover:text-ink ${
+                currentPath === "/dashboard" ? "text-accent font-semibold" : ""
+              }`}
             >
-              Enrolled Courses
-            </a>
-            <a
-              href="#policy"
+              Student Dashboard
+            </Link>
+            <Link
+              href="/#policy"
               className="transition-colors hover:text-ink"
             >
               Attendance Policy
-            </a>
+            </Link>
           </nav>
 
           {/* Right actions: Role Tag, Synthetic Badge, Sign In */}
@@ -125,20 +127,20 @@ export function Navbar({
             >
               Overview
             </Link>
-            <a
-              href="#courses"
+            <Link
+              href="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg hover:bg-raised text-muted hover:text-ink"
             >
-              Enrolled Courses
-            </a>
-            <a
-              href="#policy"
+              Student Dashboard
+            </Link>
+            <Link
+              href="/#policy"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg hover:bg-raised text-muted hover:text-ink"
             >
               Attendance Policy
-            </a>
+            </Link>
           </nav>
           <div className="pt-2">
             <Button

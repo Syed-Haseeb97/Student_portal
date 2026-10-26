@@ -18,7 +18,7 @@ export default function HomePage() {
     <AppShell
       currentPath="/"
       userRole="student"
-      userRollNumber={student.rollNumber}
+      userRollNumber={student.rollNumber ?? "261161"}
     >
       {/* Hero Section */}
       <section className="grid gap-8 py-4 sm:py-8 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
@@ -29,7 +29,7 @@ export default function HomePage() {
             </span>
             <span className="text-muted/40">•</span>
             <span className="text-xs text-muted">
-              Batch {student.batch} · {student.programme}
+              Batch {student.batch ?? "2026"} · {student.programme ?? "CSE"}
             </span>
           </div>
 
@@ -46,12 +46,12 @@ export default function HomePage() {
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Button href="/sign-in" variant="primary" size="md">
-              Sign in with Institute Email
+            <Button href="/dashboard" variant="primary" size="md">
+              Open Student Dashboard
               <ArrowRight className="size-4" />
             </Button>
-            <Button href="#courses" variant="secondary" size="md">
-              View Sample Subjects
+            <Button href="/sign-in" variant="secondary" size="md">
+              Sign in with Email
             </Button>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function HomePage() {
               Subject Overview
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-muted">
-              Synthetic preview simulating student enrolled courses in semester {student.batch}-S1.
+              Synthetic preview simulating student enrolled courses in semester {student.batch ?? "2026"}-S1.
             </p>
           </div>
           <Badge variant="preview" size="sm" className="self-start sm:self-auto">
@@ -137,7 +137,7 @@ export default function HomePage() {
                       <div>
                         <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-muted">
                           <BookOpen className="size-3.5 text-accent" />
-                          <span>{course.courseCode}</span>
+                          <span>{course.courseCode ?? course.offeringId}</span>
                         </div>
                         <CardTitle className="mt-1.5 text-base sm:text-lg leading-snug">
                           {course.courseTitle}
@@ -163,7 +163,7 @@ export default function HomePage() {
                       )}
                     </div>
                     <CardDescription className="text-xs">
-                      Term: {course.term}
+                      Term: {course.term ?? "Current Term"}
                     </CardDescription>
                   </CardHeader>
 

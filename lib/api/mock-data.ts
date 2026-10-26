@@ -87,12 +87,34 @@ export const SYNTHETIC_STUDENT: StudentDashboardData = {
       attended: 0,
       missed: 0,
       total: 0,
-      percentage: 0,
+      percentage: null,
       status: "no_data",
       thresholdPercent: 75,
-      latestSessionDate: undefined,
+      latestSessionDate: null,
     },
   ],
+  generatedAt: "2026-10-26T12:00:00.000Z",
+};
+
+/**
+ * Synthetic record for a student with an approved roster profile but zero enrolled courses.
+ * Used for testing empty dashboard state handling.
+ */
+export const SYNTHETIC_EMPTY_STUDENT: StudentDashboardData = {
+  isSynthetic: true,
+  student: {
+    uid: "synthetic-student-261199",
+    rollNumber: "261199",
+    batch: "2026",
+    programme: "ECE",
+    name: "New Student",
+    email: "newstudent@iiitt.ac.in",
+  },
+  policy: {
+    thresholdPercent: 75,
+    countsOnlyCompletedSessions: true,
+  },
+  summaries: [],
   generatedAt: "2026-10-26T12:00:00.000Z",
 };
 

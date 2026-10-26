@@ -7,7 +7,21 @@
 
 export type UserRole = "student" | "lecturer" | "admin";
 
-export type AttendanceStatus = "compliant" | "shortfall" | "no_data";
+/**
+ * Attendance status in API contract is "compliant" | "shortfall" | "no_data".
+ * The calculation engine and backend route also emit "below_threshold" as an alias for "shortfall".
+ */
+export type AttendanceStatus = "compliant" | "shortfall" | "below_threshold" | "no_data";
+
+export type NormalizedAttendanceStatus = "compliant" | "shortfall" | "no_data";
+
+export function normalizeAttendanceStatus(
+  status: AttendanceStatus | string | null | undefined
+): NormalizedAttendanceStatus {
+  if (status === "compliant") return "compliant";
+  if (status === "shortfall" || status === "below_threshold") return "shortfall";
+  return "no_data";
+}
 
 export type SessionStatus = "scheduled" | "completed" | "cancelled";
 
@@ -15,11 +29,11 @@ export type AttendanceMark = "present" | "absent";
 
 export interface StudentIdentity {
   uid: string;
-  rollNumber: string;
-  batch: string;
-  programme: string;
-  name?: string;
-  email?: string;
+  rollNumber: string | null;
+  batch: string | null;
+  programme: string | null;
+  name?: string | null;
+  email?: string | null;
 }
 
 export interface AttendancePolicy {
@@ -29,17 +43,17 @@ export interface AttendancePolicy {
 
 export interface CourseSummary {
   offeringId: string;
-  courseId: string;
-  courseCode: string;
+  courseId: string | null;
+  courseCode: string | null;
   courseTitle: string;
-  term: string;
+  term: string | null;
   attended: number;
   missed: number;
   total: number;
-  percentage: number;
+  percentage: number | null;
   status: AttendanceStatus;
   thresholdPercent: number;
-  latestSessionDate?: string;
+  latestSessionDate?: string | null;
 }
 
 export interface StudentDashboardData {
@@ -54,11 +68,11 @@ export interface SessionRecord {
   id: string;
   offeringId: string;
   sessionDate: string; // YYYY-MM-DD
-  startTime?: string;
-  endTime?: string;
-  room?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  room?: string | null;
   status: SessionStatus;
-  cancelReason?: string;
+  cancelReason?: string | null;
 }
 
 export interface AttendanceCorrectionPayload {

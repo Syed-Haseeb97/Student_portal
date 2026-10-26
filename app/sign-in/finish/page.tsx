@@ -3,30 +3,50 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { completeInstitutionalSignIn } from "@/lib/firebase/email-link";
+import { isMockModeEnabled } from "@/lib/api/client";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Mail, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Mail, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 
 export default function FinishSignInPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem("emailForSignIn") ?? "";
+    }
+    return "";
+  });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(
     "Enter the same institutional email address that received the one-time sign-in link."
   );
   const [success, setSuccess] = useState(false);
+  const [isMock] = useState(() => isMockModeEnabled());
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
+
     try {
-      await completeInstitutionalSignIn(email);
-      setSuccess(true);
-      setMessage(
-        "Email verified and roster access confirmed. Your portal identity is ready; attendance dashboard wiring is still in development."
-      );
+      if (isMock) {
+        // In local development / mock preview mode, simulate roster claim validation
+        if (!email.toLowerCase().endsWith("@iiitt.ac.in")) {
+          throw new Error("Sign-in requires a verified @iiitt.ac.in institutional email address.");
+        }
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        setSuccess(true);
+        setMessage(
+          "Email verified and roster access confirmed. Your portal identity is matched to the approved student roster."
+        );
+      } else {
+        await completeInstitutionalSignIn(email);
+        setSuccess(true);
+        setMessage(
+          "Email verified and roster access confirmed. Your portal identity is matched to the approved student roster."
+        );
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Sign-in could not be completed.");
     } finally {
@@ -45,8 +65,8 @@ export default function FinishSignInPage() {
             <ArrowLeft className="size-3.5" />
             Request another link
           </Link>
-          <Badge variant="preview" size="sm">
-            Verification
+          <Badge variant={isMock ? "preview" : "compliant"} size="sm">
+            {isMock ? "Preview Verification" : "Institutional Auth"}
           </Badge>
         </div>
 
@@ -61,8 +81,8 @@ export default function FinishSignInPage() {
               Complete sign-in
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              For security, confirm the email that received the one-time link. If you opened it on a
-              different device, enter the same institutional address again.
+              Confirm the institutional email address that received the one-time link.
+              The portal will verify your email and match your identity to the approved roster.
             </CardDescription>
           </CardHeader>
 
@@ -78,19 +98,32 @@ export default function FinishSignInPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="rollnumber@iiitt.ac.in"
                 leftIcon={<Mail className="size-4" />}
-                disabled={success}
+                disabled={success || busy}
+                hint="Only @iiitt.ac.in addresses are accepted."
               />
 
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                busy={busy}
-                disabled={success}
-                className="w-full"
-              >
-                {busy ? "Verifying..." : success ? "Verified" : "Verify and Continue"}
-              </Button>
+              {!success ? (
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  busy={busy}
+                  disabled={success}
+                  className="w-full"
+                >
+                  {busy ? "Verifying Roster Access..." : "Verify and Continue"}
+                </Button>
+              ) : (
+                <Button
+                  href="/dashboard"
+                  variant="primary"
+                  size="md"
+                  className="w-full gap-2"
+                >
+                  <span>Open Student Dashboard</span>
+                  <ArrowRight className="size-4" />
+                </Button>
+              )}
             </form>
 
             <div
@@ -99,25 +132,33 @@ export default function FinishSignInPage() {
               className={`rounded-xl border p-3.5 text-xs sm:text-sm leading-relaxed flex items-start gap-2.5 ${
                 success
                   ? "border-accent/40 bg-accent/10 text-accent"
-                  : message.includes("not") || message.includes("error") || message.includes("requires")
+                  : message.includes("not") || message.includes("error") || message.includes("requires") || message.includes("Missing")
                   ? "border-risk/40 bg-risk/10 text-risk"
                   : "border-line bg-surface text-muted"
               }`}
             >
               {success ? (
                 <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-accent" />
+              ) : message.includes("not") || message.includes("error") || message.includes("requires") ? (
+                <AlertCircle className="size-4 shrink-0 mt-0.5 text-risk" />
               ) : (
-                <AlertCircle className="size-4 shrink-0 mt-0.5 text-muted" />
+                <ShieldCheck className="size-4 shrink-0 mt-0.5 text-muted" />
               )}
               <span>{message}</span>
             </div>
 
-            <div className="pt-2 text-center">
+            <div className="pt-2 text-center flex items-center justify-between text-xs text-muted">
               <Link
                 href="/"
-                className="text-xs text-muted hover:text-accent transition-colors underline underline-offset-4"
+                className="hover:text-accent transition-colors underline underline-offset-4"
               >
-                Return to home preview
+                Return to home overview
+              </Link>
+              <Link
+                href="/dashboard"
+                className="hover:text-accent transition-colors"
+              >
+                Go to Dashboard →
               </Link>
             </div>
           </CardContent>

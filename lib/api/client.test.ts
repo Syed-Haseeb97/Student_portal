@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getStudentDashboard, isMockModeEnabled } from "./client";
+import { normalizeAttendanceStatus } from "./types";
 import { SYNTHETIC_STUDENT } from "./mock-data";
 
 test("API client: mock mode is enabled by default in local dev without Firebase config", () => {
@@ -30,18 +31,40 @@ test("API client: mock summaries correctly reflect compliance and shortfall stat
 
   // Check 75% threshold consistency
   for (const c of compliant) {
-    assert.ok(c.percentage >= 75, `${c.courseCode} percentage (${c.percentage}) must be >= 75`);
+    assert.ok(c.percentage !== null && c.percentage >= 75, `${c.courseCode} percentage must be >= 75`);
   }
   for (const s of shortfall) {
-    assert.ok(s.percentage < 75, `${s.courseCode} percentage (${s.percentage}) must be < 75`);
+    assert.ok(s.percentage !== null && s.percentage < 75, `${s.courseCode} percentage must be < 75`);
   }
   for (const nd of noData) {
     assert.equal(nd.total, 0, "No-data course must have 0 total sessions");
+    assert.equal(nd.percentage, null, "No-data course percentage must be null");
   }
 });
 
+test("API client: supports testing mock states (empty, unauthorized, error)", async () => {
+  const emptyRes = await getStudentDashboard(undefined, { mockScenario: "empty" });
+  assert.equal(emptyRes.status, 200);
+  assert.equal(emptyRes.data?.summaries.length, 0);
+
+  const unauthRes = await getStudentDashboard(undefined, { mockScenario: "unauthorized" });
+  assert.equal(unauthRes.status, 403);
+  assert.ok(unauthRes.error?.includes("approved student roster"));
+
+  const errorRes = await getStudentDashboard(undefined, { mockScenario: "error" });
+  assert.equal(errorRes.status, 503);
+  assert.ok(errorRes.error?.includes("Unable to load"));
+});
+
+test("API client: status normalizer handles backend below_threshold alias safely", () => {
+  assert.equal(normalizeAttendanceStatus("below_threshold"), "shortfall");
+  assert.equal(normalizeAttendanceStatus("shortfall"), "shortfall");
+  assert.equal(normalizeAttendanceStatus("compliant"), "compliant");
+  assert.equal(normalizeAttendanceStatus("no_data"), "no_data");
+  assert.equal(normalizeAttendanceStatus(null), "no_data");
+});
+
 test("API client: real mode denies missing token without silent fallback to mock", async () => {
-  // Temporarily force mock mode off
   const originalEnv = process.env.NEXT_PUBLIC_ENABLE_MOCK_API;
   process.env.NEXT_PUBLIC_ENABLE_MOCK_API = "false";
 
