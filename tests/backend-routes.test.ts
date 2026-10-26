@@ -45,7 +45,7 @@ test("admin academic import and completed-session correction routes enforce auth
   const lecturerEmail = `lecturer${suffix}@iiitt.ac.in`;
   const newStaffEmail = `newstaff${suffix}@iiitt.ac.in`;
   const claimEmail = `claim${suffix}@iiitt.ac.in`;
-  const claimRollNumber = `26${suffix}`;
+  const claimRollNumber = `26${suffix}`.toUpperCase();
   const rosterId = `roll${suffix}`;
 
   await auth.createUser({ uid: adminUid, email: adminEmail, emailVerified: true });
