@@ -9,7 +9,7 @@ function tokenFrom(request: Request) {
 }
 
 function validDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00.000Z`);
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
@@ -23,10 +23,10 @@ export async function POST(request: Request) {
       !validDate(body.sessionDate)) {
     return NextResponse.json({ error: "Provide a valid offeringId and sessionDate (YYYY-MM-DD)." }, { status: 400 });
   }
-  if (body.startTime !== undefined && (typeof body.startTime !== "string" || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(body.startTime))) {
+  if (body.startTime !== undefined && (typeof body.startTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.startTime))) {
     return NextResponse.json({ error: "startTime must use 24-hour HH:MM format." }, { status: 400 });
   }
-  if (body.endTime !== undefined && (typeof body.endTime !== "string" || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(body.endTime))) {
+  if (body.endTime !== undefined && (typeof body.endTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.endTime))) {
     return NextResponse.json({ error: "endTime must use 24-hour HH:MM format." }, { status: 400 });
   }
   if (body.room !== undefined && (typeof body.room !== "string" || body.room.trim().length > 80)) {
