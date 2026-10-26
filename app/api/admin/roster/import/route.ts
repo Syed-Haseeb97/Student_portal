@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { validateRosterRows } from "@/lib/roster/validate";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export const runtime = "nodejs";
 const MAX_ROWS_PER_IMPORT = 200;
@@ -22,9 +23,12 @@ function emailHash(email: string) {
 export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > 1_000_000) return NextResponse.json({ error: "Roster import payload is too large." }, { status: 413 });
-  const body = await request.json().catch(() => null) as { rows?: unknown } | null;
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    if (parsed.reason === "too_large") return NextResponse.json({ error: "Import payload is too large." }, { status: 413 });
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+  const body = parsed.value as { rows?: unknown } | null;
   if (!body || !Array.isArray(body.rows) || body.rows.length < 1 || body.rows.length > MAX_ROWS_PER_IMPORT ||
       body.rows.some((row) => !row || typeof row !== "object" || Array.isArray(row))) {
     return NextResponse.json({ error: `rows must contain 1–${MAX_ROWS_PER_IMPORT} roster objects per atomic import.` }, { status: 400 });

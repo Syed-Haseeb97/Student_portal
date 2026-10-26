@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test lib/attendance/calc.test.ts lib/roster/validate.test.ts",
+    "test": "tsx --test lib/attendance/calc.test.ts lib/roster/validate.test.ts lib/http/read-bounded-json.test.ts",
     "check": "npm run lint && npm run typecheck && npm test",
     "test:rules": "tsx --test tests/firestore-rules.test.ts",
     "test:api": "node --conditions=react-server --import tsx --test tests/backend-routes.test.ts"

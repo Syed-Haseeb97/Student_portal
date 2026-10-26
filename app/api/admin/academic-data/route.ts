@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export const runtime = "nodejs";
 const MAX_ROWS = 100;
@@ -76,9 +77,12 @@ function normalizedRows(kind: Kind, rawRows: unknown[]): Row[] {
 export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > 1_000_000) return NextResponse.json({ error: "Import payload is too large." }, { status: 413 });
-  const body = await request.json().catch(() => null) as { kind?: unknown; rows?: unknown } | null;
+  const parsed = await readBoundedJson(request);
+  if (!parsed.ok) {
+    if (parsed.reason === "too_large") return NextResponse.json({ error: "Import payload is too large." }, { status: 413 });
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+  }
+  const body = parsed.value as { kind?: unknown; rows?: unknown } | null;
   if (!body || !["courses", "offerings", "enrollments", "assignments"].includes(String(body.kind)) ||
       !Array.isArray(body.rows) || body.rows.length < 1 || body.rows.length > MAX_ROWS) {
     return NextResponse.json({ error: `Provide kind (courses/offerings/enrollments/assignments) and 1–${MAX_ROWS} rows.` }, { status: 400 });

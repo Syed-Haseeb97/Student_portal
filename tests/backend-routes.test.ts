@@ -16,8 +16,8 @@ process.env.FIREBASE_SERVICE_ACCOUNT_JSON = JSON.stringify({
   client_email: "synthetic-admin@demo-iiitt-portal.iam.gserviceaccount.com",
   private_key: privateKey,
 });
-process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
-process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
+process.env.FIREBASE_AUTH_EMULATOR_HOST ??= "127.0.0.1:9099";
+process.env.FIRESTORE_EMULATOR_HOST ??= "127.0.0.1:8080";
 process.env.GCLOUD_PROJECT = projectId;
 
 test("admin academic import and completed-session correction routes enforce auth and audit writes", async () => {
@@ -75,7 +75,7 @@ test("admin academic import and completed-session correction routes enforce auth
   async function idToken(uid: string) {
     const customToken = await auth.createCustomToken(uid);
     const response = await fetch(
-      "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=demo-api-key",
+      `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=demo-api-key`,
       { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: customToken, returnSecureToken: true }) },
     );
     const responseText = await response.text();
@@ -94,6 +94,44 @@ test("admin academic import and completed-session correction routes enforce auth
     headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), "content-type": "application/json" },
     body: JSON.stringify(body),
   });
+  const rawRequest = (path: string, token: string | null, body: string, contentLength?: string) => new Request(`http://localhost${path}`, {
+    method: "POST",
+    headers: {
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      "content-type": "application/json",
+      ...(contentLength === undefined ? {} : { "content-length": contentLength }),
+    },
+    body,
+  });
+
+  const oversizedBody = " ".repeat(1_000_001);
+  const oversizedWithoutLength = await rosterImportRoute.POST(rawRequest(
+    "/api/admin/roster/import", adminToken, oversizedBody,
+  ));
+  assert.equal(oversizedWithoutLength.status, 413);
+  assert.deepEqual(await oversizedWithoutLength.json(), { error: "Import payload is too large." });
+
+  const understatedLength = await academicRoute.POST(rawRequest(
+    "/api/admin/academic-data", adminToken, oversizedBody, "1",
+  ));
+  assert.equal(understatedLength.status, 413);
+  assert.deepEqual(await understatedLength.json(), { error: "Import payload is too large." });
+
+  const oversizedWithLength = await rosterImportRoute.POST(rawRequest(
+    "/api/admin/roster/import", adminToken, oversizedBody, String(Buffer.byteLength(oversizedBody)),
+  ));
+  assert.equal(oversizedWithLength.status, 413);
+
+  const unauthorizedOversized = await academicRoute.POST(rawRequest(
+    "/api/admin/academic-data", null, oversizedBody,
+  ));
+  assert.equal(unauthorizedOversized.status, 401);
+
+  const malformedRoster = await rosterImportRoute.POST(rawRequest(
+    "/api/admin/roster/import", adminToken, "{",
+  ));
+  assert.equal(malformedRoster.status, 400);
+  assert.deepEqual(await malformedRoster.json(), { error: "Request body must be valid JSON." });
 
   const rosterImport = await rosterImportRoute.POST(request("/api/admin/roster/import", adminToken, {
     rows: [{ rollNumber: claimRollNumber, email: claimEmail, batch: "2026", programme: "CSE", active: true }],
@@ -136,6 +174,7 @@ test("admin academic import and completed-session correction routes enforce auth
     body: "{",
   }));
   assert.equal(malformedImport.status, 400);
+  assert.deepEqual(await malformedImport.json(), { error: "Request body must be valid JSON." });
 
   const offeringId = `offering${suffix}`;
   const offeringImport = await academicRoute.POST(request("/api/admin/academic-data", adminToken, {
