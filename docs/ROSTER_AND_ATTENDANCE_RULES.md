@@ -12,7 +12,7 @@ The source of truth is an approved administrator-provided CSV. Required columns:
 - `programme`: institute-approved programme/branch label, explicitly supplied.
 - `active`: `true`/`false` or `1`/`0`.
 - Duplicate normalized emails or roll numbers fail validation. Inactive entries cannot claim portal access.
-- The sample rows in `roster-import-template.csv` are fake examples only.
+- The sample rows in `docs/roster-import-template.csv` are fake examples only.
 - The admin-only import endpoint accepts already-parsed JSON rows from an approved CSV, limited to 200 rows per atomic request. It validates the entire batch before writing and rejects email/roll conflicts. Email changes for existing roll numbers require separate review. Imports are audited.
 - The first administrator must be provisioned manually in the Firebase Console before the import endpoint can be used. Never expose a public admin-bootstrap endpoint.
 
@@ -43,4 +43,4 @@ The source of truth is an approved administrator-provided CSV. Required columns:
 
 Firebase browser/Admin SDK setup, email-link sign-in screens/helpers, roster-claim endpoint, admin-only atomic roster import and academic-data import endpoints, session creation, audited cancellation and complete attendance submission endpoints, an admin-only audited correction endpoint, a student attendance dashboard API, deny-by-default Firestore rules, indexes/emulator config, and CSV row validation.
 
-Still required before a real pilot: first-admin bootstrap, synthetic integration tests for academic imports and corrections, frontend wiring to the dashboard API, and the actual institute-approved roster. Firestore Emulator authorization tests are now included in CI, but their run must pass before any real data is used. Do not use real student records until those items are complete and reviewed.
+Still required before a real pilot: review the first-admin provisioning runbook, confirm CI passes the new synthetic API integration tests, wire the frontend to the dashboard API, and obtain the actual institute-approved roster. Do not use real student records until those items are complete and reviewed.
