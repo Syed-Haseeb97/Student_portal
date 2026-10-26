@@ -232,6 +232,15 @@ test("admin academic import and completed-session correction routes enforce auth
   assert.equal(submitAttendance.status, 200);
   assert.equal((await db.collection("sessions").doc(createdSession.sessionId).get()).get("state"), "completed");
 
+  const repeatAttendance = await attendanceRoute.POST(
+    request(`/api/sessions/${createdSession.sessionId}/attendance`, lecturerToken, {
+      marks: [{ studentUid, mark: "absent" }],
+    }),
+    { params: Promise.resolve({ sessionId: createdSession.sessionId }) },
+  );
+  assert.equal(repeatAttendance.status, 409);
+  assert.equal((await db.collection("attendance").doc(`${createdSession.sessionId}_${studentUid}`).get()).get("mark"), "present");
+
   const attendanceId = `${createdSession.sessionId}_${studentUid}`;
   const deniedCorrection = await correctionRoute.POST(
     request(`/api/admin/attendance/${attendanceId}/correction`, studentToken, { mark: "absent", reason: "Student cannot correct" }),
@@ -263,6 +272,15 @@ test("admin academic import and completed-session correction routes enforce auth
   );
   assert.equal(cancelResponse.status, 200);
   assert.equal((await db.collection("sessions").doc(cancellationSession.sessionId).get()).get("state"), "cancelled");
+
+  const attendanceAfterCancellation = await attendanceRoute.POST(
+    request(`/api/sessions/${cancellationSession.sessionId}/attendance`, lecturerToken, {
+      marks: [{ studentUid, mark: "present" }],
+    }),
+    { params: Promise.resolve({ sessionId: cancellationSession.sessionId }) },
+  );
+  assert.equal(attendanceAfterCancellation.status, 409);
+  assert.equal((await db.collection("attendance").doc(`${cancellationSession.sessionId}_${studentUid}`).get()).exists, false);
   assert.equal((await db.collection("auditEvents").where("sessionId", "==", cancellationSession.sessionId).get()).size, 2);
 
   const scheduledId = `scheduled${suffix}`;
