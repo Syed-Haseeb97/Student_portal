@@ -199,6 +199,6 @@ export async function POST(request: Request) {
     if (code.startsWith("DEPENDENCY:")) return NextResponse.json({ error: code.slice("DEPENDENCY:".length) }, { status: 409 });
     if (code.startsWith("CONFLICT:")) return NextResponse.json({ error: code.slice("CONFLICT:".length) }, { status: 409 });
     if (code.includes("Firebase ID token")) return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
-    return NextResponse.json({ error: "The import failed. No records were imported; check the input and retry." }, { status: 409 });
+    return NextResponse.json({ error: "The import could not be completed right now. No records were imported; retry later." }, { status: 503 });
   }
 }
