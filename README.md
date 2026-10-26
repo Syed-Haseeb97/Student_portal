@@ -4,7 +4,7 @@ A mobile-first student portal for IIIT Tiruchirappalli, starting with subject-wi
 
 ## Current status
 
-The homepage remains a synthetic-data visual preview. A Firebase integration is being built on `feature/firebase-attendance-backend`: browser/Admin SDK initialization, passwordless institutional email-link helpers, a server-side roster-claim endpoint, attendance session endpoints, and deny-by-default Firestore rules. This branch is not yet a production-ready or institution-authorized system.
+The homepage remains a synthetic-data visual preview. A Firebase integration is being built on `feature/firebase-attendance-backend`: browser/Admin SDK initialization, passwordless institutional email-link screens, roster claim/import endpoints, staff provisioning, attendance session endpoints, emulator rules tests, and deny-by-default Firestore rules. This branch is not yet a production-ready or institution-authorized system.
 
 ## Stack
 
