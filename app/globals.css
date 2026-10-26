@@ -9,6 +9,7 @@
   --color-accent: #2dd4bf;
   --color-indigo: #818cf8;
   --color-risk: #fb7185;
+  --color-warning: #fbbf24;
 }
 :root { color-scheme: dark; }
 * { box-sizing: border-box; }
