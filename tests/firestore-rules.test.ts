@@ -59,6 +59,18 @@ test("assigned lecturers can read their offering but unassigned lecturers cannot
   await assertFails(getDoc(doc(unassigned, "attendance/sessionA_studentA")));
 });
 
+
+test("unverified or non-institutional identities cannot read student attendance", async () => {
+  const unverified = env.authenticatedContext("studentA", {
+    email: "studenta@iiitt.ac.in", email_verified: false,
+  }).firestore();
+  const external = env.authenticatedContext("studentA", {
+    email: "student@example.com", email_verified: true,
+  }).firestore();
+  await assertFails(getDoc(doc(unverified, "attendance/sessionA_studentA")));
+  await assertFails(getDoc(doc(external, "attendance/sessionA_studentA")));
+});
+
 test("clients cannot create or mutate sessions or attendance", async () => {
   const lecturer = env.authenticatedContext("lecturerA", { email: "lecturera@iiitt.ac.in", email_verified: true }).firestore();
   await assertFails(setDoc(doc(lecturer, "sessions/fake"), { offeringId: "offeringA", state: "completed" }));
