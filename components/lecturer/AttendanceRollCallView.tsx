@@ -5,17 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SessionDetailData } from "@/lib/api/types";
 import { getSessionDetails, submitAttendance } from "@/lib/api/client";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
+import { DashboardSkeleton, ErrorState } from "@/components/ui/StateFeedback";
 import {
   Calendar,
   Clock,
   MapPin,
   Users,
   CheckCircle2,
-  XCircle,
   AlertCircle,
   Search,
   ArrowLeft,
@@ -54,16 +54,18 @@ export function AttendanceRollCallView({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
 
+  const { getIdToken } = useAuth();
+
   const loadSession = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    const res = await getSessionDetails(sessionId, idToken);
+    const token = idToken ?? (await getIdToken()) ?? undefined;
+    const res = await getSessionDetails(sessionId, token);
     setIsMock(Boolean(res.isMock));
 
     if (res.data) {
       setData(res.data);
-      // If records are present or status is already set
       const initialMarks: Record<string, "present" | "absent"> = {};
       res.data.roster.forEach((student) => {
         if (student.status) {
@@ -75,11 +77,34 @@ export function AttendanceRollCallView({
       setError(res.error ?? "Failed to load session details.");
     }
     setLoading(false);
-  }, [sessionId, idToken]);
+  }, [sessionId, idToken, getIdToken]);
 
   useEffect(() => {
-    loadSession();
-  }, [loadSession]);
+    let active = true;
+    async function fetchSession() {
+      const token = idToken ?? (await getIdToken()) ?? undefined;
+      const res = await getSessionDetails(sessionId, token);
+      if (!active) return;
+      setIsMock(Boolean(res.isMock));
+      if (res.data) {
+        const initialMarks: Record<string, "present" | "absent"> = {};
+        res.data.roster.forEach((student) => {
+          if (student.status) {
+            initialMarks[student.studentUid] = student.status;
+          }
+        });
+        setData(res.data);
+        setMarks(initialMarks);
+      } else {
+        setError(res.error ?? "Failed to load session details.");
+      }
+      setLoading(false);
+    }
+    void fetchSession();
+    return () => {
+      active = false;
+    };
+  }, [sessionId, idToken, getIdToken]);
 
   const toggleStatus = (studentUid: string, status: "present" | "absent") => {
     setMarks((prev) => {
@@ -105,18 +130,19 @@ export function AttendanceRollCallView({
   };
 
   // Filtered Roster
+  const roster = data?.roster;
   const filteredRoster = useMemo(() => {
-    if (!data?.roster) return [];
-    if (!searchQuery.trim()) return data.roster;
+    if (!roster) return [];
+    if (!searchQuery.trim()) return roster;
 
     const q = searchQuery.toLowerCase();
-    return data.roster.filter(
+    return roster.filter(
       (s) =>
         (s.displayName ?? s.name ?? "").toLowerCase().includes(q) ||
         (s.rollNumber ?? "").toLowerCase().includes(q) ||
         Boolean(s.email?.toLowerCase().includes(q))
     );
-  }, [data?.roster, searchQuery]);
+  }, [roster, searchQuery]);
 
   // Attendance metrics
   const totalStudents = data?.roster.length ?? 0;
@@ -138,13 +164,14 @@ export function AttendanceRollCallView({
     setSubmitError(null);
 
     const payload = {
-      records: data.roster.map((student) => ({
+      marks: data.roster.map((student) => ({
         studentUid: student.studentUid,
-        status: marks[student.studentUid] || "absent",
+        mark: marks[student.studentUid] || "absent",
       })),
     };
 
-    const res = await submitAttendance(sessionId, payload, idToken);
+    const token = idToken || (await getIdToken()) || undefined;
+    const res = await submitAttendance(sessionId, payload, token);
     setSubmitting(false);
 
     if (res.data) {

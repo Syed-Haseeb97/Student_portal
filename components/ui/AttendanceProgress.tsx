@@ -39,14 +39,14 @@ export function AttendanceProgress({
   const colorClass = isNoData
     ? "text-muted"
     : isCompliant
-    ? "text-accent"
-    : "text-risk";
+    ? "text-[#d9fa58] font-bold font-mono"
+    : "text-rose-400 font-bold font-mono";
 
   const strokeColor = isNoData
-    ? "#4b5563"
+    ? "#3a4537"
     : isCompliant
-    ? "#2dd4bf"
-    : "#fb7185";
+    ? "#d9fa58"
+    : "#ef4444";
 
   if (variant === "linear") {
     const fillPercent = percentage !== null ? Math.min(100, Math.max(0, percentage)) : 0;
@@ -54,40 +54,33 @@ export function AttendanceProgress({
       <div className={`w-full space-y-1.5 ${className}`}>
         {showLabel && (
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted flex items-center gap-1.5">
+            <span className="text-muted flex items-center gap-1.5 font-mono text-[11px]">
               <span>Attendance</span>
               {showMarkerBadge && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-surface border border-line text-muted/80">
+                <span className="text-[10px] px-1.5 py-0.2 rounded-[2px] bg-canvas border border-line text-muted">
                   Target: {thresholdPercent}%
                 </span>
               )}
             </span>
-            <span className={`font-semibold tabular-nums ${colorClass}`}>
+            <span className={`tabular-nums ${colorClass}`}>
               {formatPercent(percentage)}
             </span>
           </div>
         )}
-        <div
-          role="progressbar"
-          aria-valuenow={percentage ?? 0}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`Attendance progress: ${formatPercent(percentage)}`}
-          className="relative h-2 w-full overflow-hidden rounded-full bg-raised border border-line/60"
-        >
+        <div className="relative h-2 w-full rounded-[2px] bg-canvas border border-line overflow-hidden">
           <div
-            className={`h-full transition-all duration-300 rounded-full ${
+            className={`h-full rounded-[2px] transition-all duration-300 ${
               isNoData
-                ? "bg-muted/30"
+                ? "bg-muted/40"
                 : isCompliant
-                ? "bg-accent shadow-[0_0_8px_rgba(45,212,191,0.3)]"
-                : "bg-risk shadow-[0_0_8px_rgba(251,113,133,0.3)]"
+                ? "bg-[#d9fa58]"
+                : "bg-rose-500"
             }`}
             style={{ width: `${fillPercent}%` }}
           />
-          {/* 75% Threshold Marker Notch */}
+          {/* Statutory Threshold Marker */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-ink/50 z-10"
+            className="absolute top-0 bottom-0 w-0.5 bg-white z-10"
             style={{ left: `${thresholdPercent}%` }}
             title={`Required threshold: ${thresholdPercent}%`}
           />
@@ -96,26 +89,23 @@ export function AttendanceProgress({
     );
   }
 
-  // Circular gauge variant
-  const dimensions = {
-    sm: { size: 52, strokeWidth: 4, textSize: "text-[11px] font-semibold" },
-    md: { size: 76, strokeWidth: 5.5, textSize: "text-sm font-bold" },
-    lg: { size: 100, strokeWidth: 7, textSize: "text-lg font-bold" },
+  // Circular progress (gauge ring)
+  const sizeMap = {
+    sm: { dim: 56, radius: 22, strokeWidth: 4, textSize: "text-xs font-semibold" },
+    md: { dim: 80, radius: 32, strokeWidth: 6, textSize: "text-sm font-bold" },
+    lg: { dim: 110, radius: 44, strokeWidth: 8, textSize: "text-lg font-extrabold" },
   };
 
-  const { size: dim, strokeWidth, textSize } = dimensions[size];
-  const radius = (dim - strokeWidth) / 2;
+  const { dim, radius, strokeWidth, textSize } = sizeMap[size];
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset =
-    percentage !== null
-      ? circumference - (percentage / 100) * circumference
-      : circumference;
+  const fillPercent = percentage !== null ? Math.min(100, Math.max(0, percentage)) : 0;
+  const strokeDashoffset = circumference - (fillPercent / 100) * circumference;
 
   return (
     <div
       className={`relative inline-flex items-center justify-center shrink-0 ${className}`}
       role="progressbar"
-      aria-valuenow={percentage ?? 0}
+      aria-valuenow={percentage !== null ? Math.round(percentage) : 0}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={`Attendance progress: ${formatPercent(percentage)}`}
@@ -132,7 +122,7 @@ export function AttendanceProgress({
           cx={dim / 2}
           cy={dim / 2}
           r={radius}
-          stroke="#1e222d"
+          stroke="#283226"
           strokeWidth={strokeWidth}
           fill="none"
         />

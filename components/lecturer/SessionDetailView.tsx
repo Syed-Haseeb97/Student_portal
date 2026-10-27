@@ -4,19 +4,18 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import type { SessionDetailData } from "@/lib/api/types";
 import { getSessionDetails } from "@/lib/api/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
+import { DashboardSkeleton, ErrorState } from "@/components/ui/StateFeedback";
 import { SessionCancelModal } from "./SessionCancelModal";
 import {
   Calendar,
   Clock,
   MapPin,
   Users,
-  CheckCircle2,
   XCircle,
-  AlertCircle,
   Search,
   ArrowLeft,
   ShieldCheck,
@@ -25,7 +24,6 @@ import {
   Sparkles,
   Check,
   X,
-  FileText,
 } from "lucide-react";
 
 interface SessionDetailViewProps {
@@ -46,11 +44,14 @@ export function SessionDetailView({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [cancelModalOpen, setCancelModalOpen] = useState<boolean>(false);
 
+  const { getIdToken } = useAuth();
+
   const loadSession = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    const res = await getSessionDetails(sessionId, idToken);
+    const token = idToken ?? (await getIdToken()) ?? undefined;
+    const res = await getSessionDetails(sessionId, token);
     setIsMock(Boolean(res.isMock));
 
     if (res.data) {
@@ -59,24 +60,41 @@ export function SessionDetailView({
       setError(res.error ?? "Failed to load session details.");
     }
     setLoading(false);
-  }, [sessionId, idToken]);
+  }, [sessionId, idToken, getIdToken]);
 
   useEffect(() => {
-    loadSession();
-  }, [loadSession]);
+    let active = true;
+    async function fetchSession() {
+      const token = idToken ?? (await getIdToken()) ?? undefined;
+    const res = await getSessionDetails(sessionId, token);
+      if (!active) return;
+      if (res.data) {
+        setData(res.data);
+        setIsMock(Boolean(res.isMock));
+      } else {
+        setError(res.error ?? "Failed to load session details.");
+      }
+      setLoading(false);
+    }
+    void fetchSession();
+    return () => {
+      active = false;
+    };
+  }, [sessionId, idToken, getIdToken]);
 
+  const roster = data?.roster;
   const filteredRoster = useMemo(() => {
-    if (!data?.roster) return [];
-    if (!searchQuery.trim()) return data.roster;
+    if (!roster) return [];
+    if (!searchQuery.trim()) return roster;
 
     const q = searchQuery.toLowerCase();
-    return data.roster.filter(
+    return roster.filter(
       (s) =>
         (s.displayName ?? s.name ?? "").toLowerCase().includes(q) ||
         (s.rollNumber ?? "").toLowerCase().includes(q) ||
         Boolean(s.email?.toLowerCase().includes(q))
     );
-  }, [data?.roster, searchQuery]);
+  }, [roster, searchQuery]);
 
   if (loading && !data) {
     return (
@@ -108,21 +126,22 @@ export function SessionDetailView({
 
   if (!data) return null;
 
-  const { session, roster } = data;
+  const { session } = data;
+  const sessionRoster = data.roster;
   const sessionStatus = session.status ?? session.state;
   const isScheduled = sessionStatus === "scheduled";
   const isCompleted = sessionStatus === "completed";
   const isCancelled = sessionStatus === "cancelled";
 
-  const totalStudents = roster.length;
+  const totalStudents = sessionRoster.length;
   const presentCount =
     session.presentCount !== undefined
       ? session.presentCount
-      : roster.filter((r) => r.status === "present").length;
+      : sessionRoster.filter((r) => r.status === "present").length;
   const absentCount =
     session.absentCount !== undefined
       ? session.absentCount
-      : roster.filter((r) => r.status === "absent").length;
+      : sessionRoster.filter((r) => r.status === "absent").length;
 
   const attendanceRate =
     totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
@@ -333,7 +352,6 @@ export function SessionDetailView({
             <div className="divide-y divide-line/60">
               {filteredRoster.map((student, idx) => {
                 const isMarkedPresent = student.status === "present";
-                const isMarkedAbsent = student.status === "absent";
 
                 return (
                   <div

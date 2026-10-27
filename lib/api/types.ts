@@ -236,3 +236,35 @@ export interface SessionDetailData {
   totalCount?: number;
   isSynthetic?: boolean;
 }
+
+// ==========================================
+// Timetable & Subject Detail Types (Presnt Parity)
+// ==========================================
+
+export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
+
+export interface TimetableSlot {
+  id: string;
+  offeringId: string;
+  courseCode: string;
+  courseTitle: string;
+  facultyName: string;
+  dayOfWeek: DayOfWeek;
+  startTime: string; // "09:00"
+  endTime: string;   // "10:00"
+  room: string;      // "LH-101"
+  type: "Lecture" | "Lab" | "Tutorial";
+}
+
+export interface StudentSessionRecord {
+  id: string;
+  offeringId: string;
+  sessionDate: string; // YYYY-MM-DD
+  startTime?: string | null;
+  endTime?: string | null;
+  room?: string | null;
+  status: SessionStatus;
+  mark?: AttendanceMark;
+  cancelReason?: string | null;
+  topic?: string | null;
+}

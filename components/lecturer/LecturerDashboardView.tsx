@@ -1,22 +1,21 @@
 "use client";
 
+import Image from "next/image";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import Link from "next/link";
 import type {
   LecturerDashboardData,
-  LecturerOffering,
   LecturerSessionSummary,
   SessionStatus,
 } from "@/lib/api/types";
-import { getLecturerDashboard, isMockModeEnabled } from "@/lib/api/client";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { getLecturerDashboard } from "@/lib/api/client";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
 import { SessionCreateModal } from "./SessionCreateModal";
 import { SessionCancelModal } from "./SessionCancelModal";
 import {
-  GraduationCap,
   Calendar,
   Clock,
   MapPin,
@@ -24,14 +23,12 @@ import {
   PlusCircle,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Search,
   RotateCcw,
   Sparkles,
   BookOpen,
   ClipboardCheck,
   ChevronRight,
-  Filter,
 } from "lucide-react";
 
 interface LecturerDashboardViewProps {
@@ -48,7 +45,6 @@ export function LecturerDashboardView({
   const [data, setData] = useState<LecturerDashboardData | null>(initialData ?? null);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<string | null>(null);
-  const [statusCode, setStatusCode] = useState<number | null>(null);
   const [isMock, setIsMock] = useState<boolean>(isMockDefault);
 
   // Filters & Search
@@ -60,13 +56,14 @@ export function LecturerDashboardView({
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [cancelModalSession, setCancelModalSession] = useState<LecturerSessionSummary | null>(null);
 
+  const { getIdToken } = useAuth();
+
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setStatusCode(null);
 
-    const res = await getLecturerDashboard(idToken);
-    setStatusCode(res.status);
+    const token = idToken ?? (await getIdToken()) ?? undefined;
+    const res = await getLecturerDashboard(token);
     setIsMock(Boolean(res.isMock));
 
     if (res.data) {
@@ -76,19 +73,36 @@ export function LecturerDashboardView({
       setError(res.error ?? "Failed to load lecturer dashboard.");
     }
     setLoading(false);
-  }, [idToken]);
+  }, [idToken, getIdToken]);
 
   useEffect(() => {
-    if (!initialData) {
-      loadDashboard();
+    if (initialData) return;
+    let active = true;
+    async function fetchDashboard() {
+      const token = idToken ?? (await getIdToken()) ?? undefined;
+      const res = await getLecturerDashboard(token);
+      if (!active) return;
+      setIsMock(Boolean(res.isMock));
+      if (res.data) {
+        setData(res.data);
+      } else {
+        setData(null);
+        setError(res.error ?? "Failed to load lecturer dashboard.");
+      }
+      setLoading(false);
     }
-  }, [initialData, loadDashboard]);
+    void fetchDashboard();
+    return () => {
+      active = false;
+    };
+  }, [initialData, idToken, getIdToken]);
 
   // Filtered Sessions
+  const sessions = data?.sessions;
   const filteredSessions = useMemo(() => {
-    if (!data?.sessions) return [];
+    if (!sessions) return [];
 
-    return data.sessions.filter((session) => {
+    return sessions.filter((session) => {
       // Status filter
       if (statusFilter !== "all" && session.status !== statusFilter) {
         return false;
@@ -109,20 +123,20 @@ export function LecturerDashboardView({
       }
       return true;
     });
-  }, [data?.sessions, statusFilter, offeringFilter, searchQuery]);
+  }, [sessions, statusFilter, offeringFilter, searchQuery]);
 
   // Aggregate stats
   const scheduledCount = useMemo(
-    () => data?.sessions.filter((s) => s.status === "scheduled").length ?? 0,
-    [data?.sessions]
+    () => sessions?.filter((s) => s.status === "scheduled").length ?? 0,
+    [sessions]
   );
   const completedCount = useMemo(
-    () => data?.sessions.filter((s) => s.status === "completed").length ?? 0,
-    [data?.sessions]
+    () => sessions?.filter((s) => s.status === "completed").length ?? 0,
+    [sessions]
   );
   const cancelledCount = useMemo(
-    () => data?.sessions.filter((s) => s.status === "cancelled").length ?? 0,
-    [data?.sessions]
+    () => sessions?.filter((s) => s.status === "cancelled").length ?? 0,
+    [sessions]
   );
 
   return (
@@ -144,7 +158,17 @@ export function LecturerDashboardView({
 
       {/* Header Profile & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-line/60">
-        <div>
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="size-14 rounded-2xl bg-surface border border-line p-2 flex items-center justify-center shrink-0 shadow-inner">
+            <Image
+              src="/images/iiitt-seal.png"
+              alt="IIITT Faculty Emblem"
+              width={42}
+              height={42}
+              className="object-contain"
+            />
+          </div>
+          <div>
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-widest text-accent font-semibold">
               Faculty Attendance Console
@@ -160,6 +184,7 @@ export function LecturerDashboardView({
             {data?.lecturer.designation ?? "Faculty Member"} · {data?.lecturer.department ?? "Department of CSE & ECE"} · Emp ID:{" "}
             <span className="text-ink font-mono">{data?.lecturer.employeeId ?? "FAC-01"}</span>
           </p>
+        </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -554,8 +579,8 @@ export function LecturerDashboardView({
           offerings={data.offerings}
           initialOfferingId={offeringFilter !== "all" ? offeringFilter : undefined}
           idToken={idToken}
-          onSuccess={(sessionId) => {
-            loadDashboard();
+          onSuccess={() => {
+            void loadDashboard();
           }}
         />
       )}

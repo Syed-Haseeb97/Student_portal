@@ -19,6 +19,8 @@ import type {
   SessionCancelPayload,
   LecturerSessionSummary,
   AttendanceMark,
+  TimetableSlot,
+  StudentSessionRecord,
 } from "./types";
 import { normalizeAttendanceStatus } from "./types";
 import {
@@ -27,6 +29,8 @@ import {
   SYNTHETIC_LECTURER_DASHBOARD,
   SYNTHETIC_SESSION_DETAILS,
   SYNTHETIC_STUDENT_ROSTER,
+  SYNTHETIC_TIMETABLE,
+  SYNTHETIC_SUBJECT_SESSIONS,
 } from "./mock-data";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -408,13 +412,55 @@ export async function getSessionDetails(
 /**
  * Create a new scheduled class session.
  */
+
+/**
+ * Detect scheduling collision on the same date and room (Presnt 1.0.6 parity)
+ */
+export function checkSessionConflict(payload: SessionCreatePayload): {
+  hasConflict: boolean;
+  conflictingSession?: LecturerSessionSummary;
+} {
+  if (!payload.room || !payload.room.trim() || !payload.sessionDate) {
+    return { hasConflict: false };
+  }
+
+  const roomClean = payload.room.trim().toLowerCase();
+  const conflicting = mutableLecturerDashboard.sessions.find((s) => {
+    if (s.state === "cancelled") return false;
+    if (s.sessionDate !== payload.sessionDate) return false;
+    if (!s.room || s.room.trim().toLowerCase() !== roomClean) return false;
+
+    // Overlap comparison
+    if (payload.startTime && payload.endTime && s.startTime && s.endTime) {
+      return !(payload.endTime <= s.startTime || payload.startTime >= s.endTime);
+    }
+    return true;
+  });
+
+  return {
+    hasConflict: Boolean(conflicting),
+    conflictingSession: conflicting,
+  };
+}
+
 export async function createSession(
   payload: SessionCreatePayload,
   idToken?: string
 ): Promise<ApiResponse<{ sessionId: string; state: string }>> {
   if (isMockModeEnabled()) {
-    if (!payload.offeringId || !payload.sessionDate) {
+        if (!payload.offeringId || !payload.sessionDate) {
       return { status: 400, error: "Provide a valid offeringId and sessionDate (YYYY-MM-DD).", isMock: true };
+    }
+
+    // Presnt 1.0.6: Conflict detection for room and time overlap
+    const conflict = checkSessionConflict(payload);
+    if (conflict.hasConflict && conflict.conflictingSession) {
+      const c = conflict.conflictingSession;
+      return {
+        status: 409,
+        error: `Scheduling conflict: Room ${payload.room} is already reserved on ${payload.sessionDate} (${c.startTime ?? "All Day"} - ${c.endTime ?? ""}) for ${c.courseCode ?? c.courseTitle}.`,
+        isMock: true,
+      };
     }
 
     const newSessionId = `sess-mock-${Date.now().toString(36)}`;
@@ -715,5 +761,74 @@ export async function cancelSession(
       error: err instanceof Error ? err.message : "Failed to cancel session",
       isMock: false,
     };
+  }
+}
+
+
+/**
+ * Retrieve weekly class schedule / timetable for students (Presnt parity)
+ */
+export async function getStudentTimetable(
+  idToken?: string
+): Promise<ApiResponse<TimetableSlot[]>> {
+  if (isMockModeEnabled()) {
+    return {
+      status: 200,
+      data: SYNTHETIC_TIMETABLE,
+      isMock: true,
+    };
+  }
+
+  if (!idToken || !idToken.trim()) {
+    return { status: 401, error: "Authentication required", isMock: false };
+  }
+
+  try {
+    const response = await fetch("/api/student/timetable", {
+      headers: { Authorization: `Bearer ${idToken.trim()}` },
+    });
+    if (!response.ok) {
+      return { status: 200, data: SYNTHETIC_TIMETABLE, isMock: true };
+    }
+    const data = await response.json();
+    return { status: 200, data, isMock: false };
+  } catch {
+    return { status: 200, data: SYNTHETIC_TIMETABLE, isMock: true };
+  }
+}
+
+/**
+ * Retrieve session history log for a specific subject offering (Presnt parity)
+ */
+export async function getSubjectSessionHistory(
+  offeringId: string,
+  idToken?: string
+): Promise<ApiResponse<StudentSessionRecord[]>> {
+  if (isMockModeEnabled()) {
+    const records = SYNTHETIC_SUBJECT_SESSIONS[offeringId] ?? [];
+    return {
+      status: 200,
+      data: records,
+      isMock: true,
+    };
+  }
+
+  if (!idToken || !idToken.trim()) {
+    return { status: 401, error: "Authentication required", isMock: false };
+  }
+
+  try {
+    const response = await fetch(`/api/student/offerings/${encodeURIComponent(offeringId)}/sessions`, {
+      headers: { Authorization: `Bearer ${idToken.trim()}` },
+    });
+    if (!response.ok) {
+      const records = SYNTHETIC_SUBJECT_SESSIONS[offeringId] ?? [];
+      return { status: 200, data: records, isMock: true };
+    }
+    const data = await response.json();
+    return { status: 200, data, isMock: false };
+  } catch {
+    const records = SYNTHETIC_SUBJECT_SESSIONS[offeringId] ?? [];
+    return { status: 200, data: records, isMock: true };
   }
 }

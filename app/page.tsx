@@ -1,271 +1,246 @@
 import React from "react";
+import Image from "next/image";
 import { AppShell } from "@/components/layout/AppShell";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
-import { AttendanceProgress } from "@/components/ui/AttendanceProgress";
-import { calculateGuidance } from "@/lib/attendance/calc";
-import { SYNTHETIC_STUDENT } from "@/lib/api/mock-data";
-import { ArrowRight, BookOpen, CheckCircle2, AlertTriangle, ShieldCheck, Calendar } from "lucide-react";
+import { InstitutionalAuthGate } from "@/components/landing/InstitutionalAuthGate";
+import { LandingAuthRedirect } from "@/components/landing/LandingAuthRedirect";
+import {
+  ShieldCheck,
+  Clock,
+  MapPin,
+  Calendar,
+  ExternalLink,
+} from "lucide-react";
+
+export const metadata = {
+  title: "IIIT Tiruchirappalli | Academic Attendance & Student Portal",
+  description:
+    "Official attendance ledger, 75% statutory ordinance margin calculator, and classroom timetables for Indian Institute of Information Technology, Tiruchirappalli.",
+};
 
 export default function HomePage() {
-  const { student, policy, summaries } = SYNTHETIC_STUDENT;
-
-  const compliantCount = summaries.filter((s) => s.status === "compliant").length;
-  const shortfallCount = summaries.filter((s) => s.status === "shortfall").length;
-  const pendingCount = summaries.filter((s) => s.status === "no_data").length;
-
   return (
-    <AppShell
-      currentPath="/"
-      userRole="student"
-      userRollNumber={student.rollNumber ?? "261161"}
-    >
-      {/* Hero Section */}
-      <section className="grid gap-8 py-4 sm:py-8 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[.22em] text-accent">
-              IIIT Tiruchirappalli
-            </span>
-            <span className="text-muted/40">•</span>
-            <span className="text-xs text-muted">
-              Batch {student.batch ?? "2026"} · {student.programme ?? "CSE"}
-            </span>
-          </div>
-
-          <h1 className="max-w-2xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl text-ink">
-            Stay on top of{" "}
-            <span className="text-accent underline decoration-accent/30 decoration-2 underline-offset-8">
-              every subject.
-            </span>
-          </h1>
-
-          <p className="mt-5 max-w-xl text-sm sm:text-base leading-7 text-muted">
-            The dedicated academic portal for checking course-wise attendance percentages,
-            tracking session history, and keeping every class requirement in clear view.
-          </p>
-
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Button href="/dashboard" variant="primary" size="md">
-              Open Student Dashboard
-              <ArrowRight className="size-4" />
-            </Button>
-            <Button href="/sign-in" variant="secondary" size="md">
-              Sign in with Email
-            </Button>
-          </div>
-        </div>
-
-        {/* Policy Highlights Card */}
-        <Card id="policy" variant="raised" className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 size-28 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted">
-                Statutory Requirement
-              </span>
-              <Badge variant="indigo" size="sm">
-                Ordinance Rule
-              </Badge>
+    <AppShell currentPath="/">
+      <LandingAuthRedirect />
+      <div className="space-y-16 py-6 sm:py-10 animate-in fade-in duration-300">
+        {/* HERO SECTION: Mobility IIITT Aesthetic */}
+        <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+          {/* Left Column: Official Branding & Campus Identity */}
+          <div className="space-y-6">
+            {/* Mobility Signature Eyebrow */}
+            <div className="landing-eyebrow">
+              <span className="eyebrow-pulse" />
+              <span>ACADEMIC LEDGER · 2026 SESSION · IIIT TIRUCHIRAPPALLI</span>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-4xl font-bold tracking-tight text-ink tabular-nums">
-                {policy.thresholdPercent}%
-              </span>
-              <span className="text-sm font-normal text-muted">minimum per course</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            <p className="text-xs sm:text-sm text-muted leading-relaxed">
-              Each subject is assessed strictly independently. A surplus percentage in one course
-              cannot offset a shortfall in another.
-            </p>
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-line/60">
-              <div className="p-2.5 rounded-xl bg-surface border border-line">
-                <p className="text-[11px] text-muted">On Track</p>
-                <p className="text-base sm:text-lg font-semibold text-accent tabular-nums">
-                  {compliantCount} {compliantCount === 1 ? "Course" : "Courses"}
-                </p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-surface border border-line">
-                <p className="text-[11px] text-muted">Action Needed</p>
-                <p className="text-base sm:text-lg font-semibold text-risk tabular-nums">
-                  {shortfallCount} {shortfallCount === 1 ? "Course" : "Courses"}
-                </p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-surface border border-line">
-                <p className="text-[11px] text-muted">Pending</p>
-                <p className="text-base sm:text-lg font-semibold text-muted tabular-nums">
-                  {pendingCount} {pendingCount === 1 ? "Course" : "Courses"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
 
-      {/* Course Overview Section */}
-      <section id="courses" aria-labelledby="courses-heading" className="mt-8 pt-8 border-t border-line/60">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-          <div>
-            <h2 id="courses-heading" className="text-xl sm:text-2xl font-semibold tracking-tight text-ink">
-              Subject Overview
-            </h2>
-            <p className="mt-1 text-xs sm:text-sm text-muted">
-              Synthetic preview simulating student enrolled courses in semester {student.batch ?? "2026"}-S1.
-            </p>
-          </div>
-          <Badge variant="preview" size="sm" className="self-start sm:self-auto">
-            Threshold: {policy.thresholdPercent}%
-          </Badge>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {summaries.map((course) => {
-            const isCompliant = course.status === "compliant";
-            const isShortfall = course.status === "shortfall";
-            const isNoData = course.status === "no_data";
-            const guidance = calculateGuidance(course.attended, course.total, policy.thresholdPercent);
-
-            return (
-              <Card
-                key={course.offeringId}
-                className={`flex flex-col justify-between hover:border-line/90 transition-all ${
-                  isShortfall ? "border-risk/30 hover:border-risk/50" : ""
-                }`}
-              >
+            {/* Main Headline */}
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Image
+                  src="/images/iiitt-logo.png"
+                  alt="IIIT Trichy Official Emblem"
+                  width={44}
+                  height={44}
+                  className="size-11 object-contain"
+                  priority
+                />
                 <div>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-muted">
-                          <BookOpen className="size-3.5 text-accent" />
-                          <span>{course.courseCode ?? course.offeringId}</span>
-                        </div>
-                        <CardTitle className="mt-1.5 text-base sm:text-lg leading-snug line-clamp-2">
-                          {course.courseTitle}
-                        </CardTitle>
-                      </div>
-
-                      {isCompliant && (
-                        <Badge variant="compliant" size="sm">
-                          <CheckCircle2 className="size-3" />
-                          Compliant
-                        </Badge>
-                      )}
-                      {isShortfall && (
-                        <Badge variant="shortfall" size="sm">
-                          <AlertTriangle className="size-3" />
-                          Shortfall
-                        </Badge>
-                      )}
-                      {isNoData && (
-                        <Badge variant="neutral" size="sm">
-                          Pending
-                        </Badge>
-                      )}
-                    </div>
-                    <CardDescription className="text-xs">
-                      Term: {course.term ?? "Current Term"}
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="pt-1">
-                    <div className="flex items-center gap-4">
-                      <AttendanceProgress
-                        attended={course.attended}
-                        total={course.total}
-                        percentage={course.percentage}
-                        thresholdPercent={policy.thresholdPercent}
-                        variant="circular"
-                        size="md"
-                      />
-
-                      <div className="space-y-1.5 text-xs flex-1 min-w-0">
-                        {course.total === 0 ? (
-                          <p className="text-muted text-[11px] italic py-1 leading-relaxed">
-                            No completed sessions recorded yet for this subject.
-                          </p>
-                        ) : (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted">Attended:</span>
-                              <span className="font-semibold text-ink tabular-nums">
-                                {course.attended}{" "}
-                                <span className="text-muted font-normal">/ {course.total}</span>
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted">Missed:</span>
-                              <span className={`font-medium tabular-nums ${course.missed > 0 ? "text-risk" : "text-muted"}`}>
-                                {course.missed} {course.missed === 1 ? "session" : "sessions"}
-                              </span>
-                            </div>
-                          </>
-                        )}
-
-                        {/* Guidance Pill */}
-                        {isShortfall && guidance.sessionsToRecover > 0 && (
-                          <div className="p-1.5 rounded-lg bg-risk/10 border border-risk/20 text-[11px] text-risk leading-tight">
-                            Need next <strong>{guidance.sessionsToRecover}</strong> {guidance.sessionsToRecover === 1 ? "class" : "classes"} for 75%
-                          </div>
-                        )}
-                        {isCompliant && (
-                          <div className="p-1.5 rounded-lg bg-accent/10 border border-accent/20 text-[11px] text-accent leading-tight">
-                            {guidance.sessionsCanMiss > 0 ? (
-                              <>Can miss <strong>{guidance.sessionsCanMiss}</strong> {guidance.sessionsCanMiss === 1 ? "class" : "classes"} safely</>
-                            ) : (
-                              <>At requirement (75%)</>
-                            )}
-                          </div>
-                        )}
-
-                        {course.latestSessionDate && (
-                          <div className="flex items-center gap-1 text-[11px] text-muted/70 pt-0.5">
-                            <Calendar className="size-3 shrink-0" />
-                            <span className="truncate">Last: {course.latestSessionDate}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-[#a5b09d] font-mono">
+                    இந்திய தகவல் தொழில்நுட்பக் கழகம்
+                  </h2>
+                  <p className="text-[10px] text-muted font-mono uppercase">
+                    Institute of National Importance · Govt. of India
+                  </p>
                 </div>
+              </div>
 
-                <div className="px-5 sm:px-6 pb-4 pt-1">
-                  <AttendanceProgress
-                    attended={course.attended}
-                    total={course.total}
-                    percentage={course.percentage}
-                    thresholdPercent={policy.thresholdPercent}
-                    variant="linear"
-                    showLabel={false}
-                  />
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-[-0.06em] leading-[0.93] text-ink uppercase mt-4">
+                Know your attendance.<br />
+                Every margin.<br />
+                <span className="text-accent">Every class.</span>
+              </h1>
+
+              <p className="mt-4 max-w-xl text-xs sm:text-sm leading-relaxed text-muted">
+                The official attendance ledger for IIIT Tiruchirappalli students and faculty.
+                Automated 75% examination ordinance compliance, weekly schedule timetables, and
+                safe bunk margin forecasting.
+              </p>
+            </div>
+
+            {/* Permanent Campus Showcase Card: Sharp Mobility Architecture */}
+            <div className="relative rounded-[3px] overflow-hidden border border-line group bg-surface">
+              <div className="relative h-48 sm:h-56 w-full">
+                <Image
+                  src="/images/iiitt-campus.jpg"
+                  alt="IIIT Tiruchirappalli Permanent Campus, Sethurappatti"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-102"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/50 to-transparent" />
+              </div>
+
+              <div className="absolute top-3 left-3 z-10">
+                <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-[2px] bg-canvas/90 border border-line text-accent font-bold">
+                  01 / SETHURAPPATTI (NH-45B)
+                </span>
+              </div>
+
+              <div className="absolute bottom-0 inset-x-0 p-4 space-y-1 z-10">
+                <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-accent">
+                  <MapPin className="size-3.5" />
+                  <span>Permanent Campus · Central Academic Block</span>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
+                <p className="text-xs text-muted/90 max-w-md">
+                  Smart lecture halls (LH-101 to LH-106), Central Computing Facility (CCF), and VLSI Labs synced to campus roll-call.
+                </p>
+              </div>
+            </div>
 
-      {/* Safety Notice & System Status Banner */}
-      <section className="mt-10 rounded-2xl border border-dashed border-line bg-surface/40 p-5 sm:p-6">
-        <div className="flex items-start gap-3.5">
-          <div className="size-9 rounded-xl bg-surface border border-line grid place-items-center shrink-0 text-accent">
-            <ShieldCheck className="size-4.5" />
+            {/* Fast Stats Ticker: Precision Monospace */}
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <div className="p-3 rounded-[3px] bg-surface border border-line text-center">
+                <span className="text-2xl sm:text-3xl font-black text-accent font-mono block">75%</span>
+                <span className="text-[10px] text-muted font-mono uppercase mt-0.5 block">Statutory Rule</span>
+              </div>
+              <div className="p-3 rounded-[3px] bg-surface border border-line text-center">
+                <span className="text-2xl sm:text-3xl font-black text-ink font-mono block">100%</span>
+                <span className="text-[10px] text-muted font-mono uppercase mt-0.5 block">Roster Verified</span>
+              </div>
+              <div className="p-3 rounded-[3px] bg-surface border border-line text-center">
+                <span className="text-2xl sm:text-3xl font-black text-[#c9d5b5] font-mono block">0</span>
+                <span className="text-[10px] text-muted font-mono uppercase mt-0.5 block">Attendance Drift</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="text-sm font-semibold text-ink">
-              Development Scaffold & Boundary Notice
-            </h4>
-            <p className="mt-1 max-w-3xl text-xs sm:text-sm leading-relaxed text-muted">
-              This preview operates entirely in synthetic mode. No live Firebase project, institutional credentials,
-              or real student records are connected. All attendance figures shown above are illustrative
-              test data aligned with the IIIT Trichy attendance calculation specifications.
+
+          {/* Right Column: Institutional Auth Gate FIRST */}
+          <div className="lg:sticky lg:top-24 space-y-4">
+            <InstitutionalAuthGate />
+
+            {/* Quick Helper Notes */}
+            <div className="p-3.5 rounded-[3px] bg-surface border border-line text-xs text-muted space-y-1.5">
+              <div className="flex items-center gap-2 font-bold font-mono text-ink text-[11px] uppercase">
+                <ShieldCheck className="size-3.5 text-accent" />
+                <span>Institutional Sign-In Guarantee</span>
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                Roll numbers and faculty accounts are verified against the approved institute registrar roster.
+                Attendance percentages are calculated strictly from instructor-verified roll calls.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 2: KEY PORTAL CAPABILITIES */}
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-line pb-4">
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold block mb-1">
+                PLATFORM CAPABILITIES
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-ink">
+                Engineered specifically for IIIT Trichy
+              </h2>
+            </div>
+            <p className="text-xs text-muted max-w-sm">
+              Built to eliminate spreadsheet errors, proxy attendance, and unexpected semester debar notices.
             </p>
           </div>
-        </div>
-      </section>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Pillar 1 */}
+            <div className="p-5 rounded-[3px] bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-accent font-bold uppercase">
+                  01 / STATUTORY RULE
+                </span>
+                <ShieldCheck className="size-4 text-accent" />
+              </div>
+              <h3 className="text-base font-bold text-ink uppercase">Independent 75% Ordinance</h3>
+              <p className="text-xs text-muted leading-relaxed">
+                Each subject is calculated independently. A 95% attendance in Data Structures will never offset a 68% shortfall in Discrete Mathematics.
+              </p>
+            </div>
+
+            {/* Pillar 2 */}
+            <div className="p-5 rounded-[3px] bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-accent font-bold uppercase">
+                  02 / WEEKLY SCHEDULE
+                </span>
+                <Calendar className="size-4 text-accent" />
+              </div>
+              <h3 className="text-base font-bold text-ink uppercase">Weekly Timetable Sync</h3>
+              <p className="text-xs text-muted leading-relaxed">
+                View your complete Monday through Friday timetable with lecture halls, laboratory assignments, and instructor names in Asia/Kolkata time.
+              </p>
+            </div>
+
+            {/* Pillar 3 */}
+            <div className="p-5 rounded-[3px] bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-accent font-bold uppercase">
+                  03 / RESOURCE SCHEDULING
+                </span>
+                <Clock className="size-4 text-accent" />
+              </div>
+              <h3 className="text-base font-bold text-ink uppercase">Classroom Conflict Detection</h3>
+              <p className="text-xs text-muted leading-relaxed">
+                Prevents faculty and clubs from double-booking lecture theatres (LH-101, Lab-2) with real-time room overlap detection.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 3: INSTITUTIONAL FOOTER */}
+        <footer className="pt-8 border-t border-line text-xs text-muted space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/images/iiitt-seal.png"
+                alt="IIITT Seal"
+                width={32}
+                height={32}
+                className="object-contain"
+              />
+              <div>
+                <span className="font-bold text-ink block uppercase text-[11px] tracking-wide">
+                  Indian Institute of Information Technology, Tiruchirappalli
+                </span>
+                <span className="text-[10px] font-mono text-muted">
+                  Sethurappatti, Trichy-Madurai National Highway (NH-45B), Tamil Nadu – 620012
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 text-xs font-mono font-bold">
+              <a
+                href="https://www.iiitt.ac.in"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-accent transition-colors flex items-center gap-1 uppercase"
+              >
+                <span>Official IIITT Site</span>
+                <ExternalLink className="size-3" />
+              </a>
+              <a
+                href="https://placement.iiitt.ac.in"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-accent transition-colors flex items-center gap-1 uppercase"
+              >
+                <span>Placements</span>
+                <ExternalLink className="size-3" />
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4 border-t border-line/40 text-[10px] font-mono">
+            <span>© {new Date().getFullYear()} IIIT TIRUCHIRAPPALLI · ACADEMIC SERVICES DIVISION</span>
+            <span className="text-muted/80 uppercase">CAMPUS IN MOTION · CLEAR LISTINGS · INFORMED ATTENDANCE</span>
+          </div>
+        </footer>
+      </div>
     </AppShell>
   );
 }

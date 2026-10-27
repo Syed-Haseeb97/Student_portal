@@ -9,6 +9,9 @@ import {
   cancelSession,
   isMockModeEnabled,
   resetMockLecturerState,
+  getStudentTimetable,
+  getSubjectSessionHistory,
+  checkSessionConflict,
 } from "./client";
 import { normalizeAttendanceStatus } from "./types";
 import { SYNTHETIC_STUDENT, SYNTHETIC_STUDENT_ROSTER } from "./mock-data";
@@ -298,4 +301,60 @@ test("API client: lecturer endpoints deny requests without token when mock mode 
   } finally {
     process.env.NEXT_PUBLIC_ENABLE_MOCK_API = originalEnv;
   }
+});
+
+
+test("API client: createSession rejects room and time scheduling conflicts with 409", async () => {
+  resetMockLecturerState();
+  // sess-104 is already scheduled on 2026-10-27 in LH-101 from 09:00 to 10:00
+  const conflictRes = await createSession({
+    offeringId: "cs202-2026s1",
+    sessionDate: "2026-10-27",
+    startTime: "09:30",
+    endTime: "10:30",
+    room: "LH-101",
+  });
+
+  assert.equal(conflictRes.status, 409);
+  assert.ok(conflictRes.error?.includes("Scheduling conflict"));
+  assert.ok(conflictRes.error?.includes("LH-101"));
+
+  // Check checkSessionConflict helper directly
+  const check = checkSessionConflict({
+    offeringId: "cs202-2026s1",
+    sessionDate: "2026-10-27",
+    startTime: "09:30",
+    endTime: "10:30",
+    room: "LH-101",
+  });
+  assert.equal(check.hasConflict, true);
+  assert.equal(check.conflictingSession?.id, "sess-104");
+
+  // Non-conflicting session succeeds (different room)
+  const nonConflictRes = await createSession({
+    offeringId: "cs202-2026s1",
+    sessionDate: "2026-10-27",
+    startTime: "09:30",
+    endTime: "10:30",
+    room: "LH-103",
+  });
+  assert.equal(nonConflictRes.status, 201);
+});
+
+test("API client: getStudentTimetable returns weekly schedule slots in mock mode", async () => {
+  const res = await getStudentTimetable();
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.data));
+  assert.ok(res.data.length >= 5);
+  const monSlot = res.data.find((s) => s.dayOfWeek === "Monday");
+  assert.ok(monSlot);
+  assert.equal(monSlot?.courseCode, "CS201");
+});
+
+test("API client: getSubjectSessionHistory returns session log for student offering", async () => {
+  const res = await getSubjectSessionHistory("cs201-2026s1");
+  assert.equal(res.status, 200);
+  assert.ok(Array.isArray(res.data));
+  assert.ok(res.data.length > 0);
+  assert.equal(res.data[0].offeringId, "cs201-2026s1");
 });

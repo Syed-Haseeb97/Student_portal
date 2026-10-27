@@ -15,17 +15,17 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  compliant: "bg-accent/10 border-accent/30 text-accent",
-  shortfall: "bg-risk/10 border-risk/30 text-risk",
-  warning: "bg-warning/10 border-warning/30 text-warning",
+  compliant: "bg-[#d9fa58]/15 border-[#d9fa58]/35 text-[#d9fa58]",
+  shortfall: "bg-rose-500/15 border-rose-500/35 text-rose-400",
+  warning: "bg-amber-500/15 border-amber-500/35 text-amber-300",
   neutral: "bg-surface border-line text-muted",
-  preview: "bg-surface border-line text-muted",
-  indigo: "bg-indigo/10 border-indigo/30 text-indigo",
+  preview: "bg-[#d9fa58]/10 border-[#d9fa58]/30 text-[#d9fa58]",
+  indigo: "bg-[#819a35]/20 border-[#819a35]/40 text-[#c9d5b5]",
 };
 
 const sizeStyles = {
-  sm: "px-2.5 py-0.5 text-xs font-medium",
-  md: "px-3 py-1 text-xs font-semibold",
+  sm: "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase rounded-[3px]",
+  md: "px-2.5 py-1 text-xs font-bold font-mono tracking-wider uppercase rounded-[3px]",
 };
 
 export function Badge({
@@ -37,7 +37,7 @@ export function Badge({
 }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border transition-colors ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`inline-flex items-center gap-1.5 border transition-colors ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
       {...props}
     >
       {children}
