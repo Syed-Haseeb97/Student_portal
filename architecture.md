@@ -2,42 +2,49 @@
 
 ## Scope and status
 
-The IIITT Student Portal is an attendance-focused Next.js application. The homepage remains a synthetic preview; Firebase Auth/Firestore backend routes and emulator rules are implemented on the Firebase feature branch. No live Firebase project, production roster, or real admin is configured by this repository workflow.
+The IIITT Student Portal is a full-stack, attendance-focused Next.js application built for the Indian Institute of Information Technology, Tiruchirappalli. Under the repository owner's explicit authorization override, the portal supports both local development against the Firebase Emulator Suite and live institutional deployments using real Firebase Auth, Cloud Firestore, and Resend email delivery.
 
 ## Stack
 
-- Next.js App Router, TypeScript, and Tailwind CSS.
-- Firebase Authentication with passwordless email-link sign-in.
-- Cloud Firestore for roster, profiles, staff, courses, offerings, enrollments, teaching assignments, sessions, attendance, and audit events.
-- Firebase Admin SDK only in server routes that require trusted provisioning or atomic multi-document operations.
-- Firestore Emulator Suite for local security rules tests.
-- Vercel is a planned deployment target, not configured here.
+- Next.js 16 App Router, TypeScript, and Tailwind CSS.
+- Firebase Authentication with passwordless institutional email-link sign-in.
+- Resend API for transactional institutional sign-in link delivery with HTML/plain-text templates, rate limiting, and dev/emulator console fallback.
+- Cloud Firestore for roster, profiles, staff, courses, offerings, enrollments, teaching assignments, sessions, attendance, audit events, and rate limits.
+- Firebase Admin SDK strictly server-only for trusted provisioning, link generation, and atomic multi-document transactions.
+- Firestore Emulator Suite for local automated security rules and API integration test execution.
+- Vercel is a supported deployment target, configured via environment variables.
 
 ## Identity and authorization
 
-- A verified institutional email ending exactly in `@iiitt.ac.in` is necessary but not sufficient for access.
-- A server-side roster claim must also find exactly one active, approved roster entry for the authenticated email.
-- Roll numbers, email prefixes, and programme patterns are never authorization mechanisms. Batch, programme, and roll number are explicit approved-roster fields.
-- Student, lecturer, and admin roles are server-provisioned. Client writes to roster, email index, profiles, staff, sessions, attendance, assignments, enrollments, offerings, and audit events are denied by Firestore rules.
-- Normal reads use Firebase Auth plus Firestore rules. Admin SDK credentials are server-only, narrowly scoped, and guarded against a mismatch between configured project IDs.
-- The portal must use a separate Firebase project from any unrelated application. Never put service-account credentials in browser-visible variables or source control.
+- A verified institutional email ending exactly in `@iiitt.ac.in` is necessary but not sufficient for student access.
+- A server-side roster claim (`POST /api/roster/claim`) must match the authenticated email against exactly one active, approved roster entry in `studentRoster`.
+- Roll numbers, email prefixes, and programme patterns are never client authorization mechanisms. Batch, programme, and roll number are authoritative roster fields populated by administration.
+- Student, lecturer, and admin roles are server-provisioned (`userProfiles` and `staff`). Client writes to roster, email index, profiles, staff, sessions, attendance, assignments, enrollments, offerings, rate limits, and audit events are denied by Firestore rules.
+- Normal client reads use Firebase Auth tokens verified by Firestore rules. Admin SDK credentials are server-only, validated on startup, and guarded against project ID mismatches.
+- Client state is managed by a central `AuthProvider` and `useAuth` hook. Server endpoints verify ID tokens on every request.
 
-## Roster import
+## Roster import & Administration
 
-The approved CSV contract is `rollNumber,email,batch,programme,active`. Validate the whole batch before writes, normalize email and roll number, reject duplicate normalized email/roll values, and process the import atomically. Existing roll-number email changes require separate review. Imports and staff provisioning emit audit events. The included CSV template contains synthetic examples only.
+- The approved CSV contract is `rollNumber,email,batch,programme,active`. The admin portal validates the entire batch before writing, normalizes email and roll number, rejects duplicate normalized email/roll values, and processes imports atomically.
+- Existing roll-number email changes require separate review.
+- Imports, staff provisioning, session lifecycle changes, and attendance corrections write immutable records to `auditEvents`.
+- The first administrator is provisioned safely via the offline CLI script `scripts/bootstrap-admin.ts`.
 
 ## Session lifecycle and attendance
 
 - Sessions have distinct IDs; multiple sessions for the same offering on the same date remain separate.
-- Active lecturers can create and cancel sessions only for active offerings assigned to them. Scheduled sessions may be created in advance.
-- Cancellation requires a non-empty reason and an audit event.
-- A session can be completed only with exactly one `present` or `absent` mark for every active enrollee. Missing, duplicate, or out-of-scope marks must not complete the session.
+- Active lecturers can create and cancel sessions only for active offerings assigned to them.
+- Cancellation requires a non-empty reason and emits an audit event.
+- A session can be completed only with exactly one `present` or `absent` mark for every active enrollee. Missing, duplicate, or out-of-scope marks cannot complete the session.
 - Attendance is calculated independently per course offering/term. Exactly 75% is compliant: `present / (present + absent) >= 0.75`.
 - Only completed sessions count; scheduled and cancelled sessions are excluded.
-- Completed-session corrections are restricted to the admin-only correction endpoint; each correction requires a reason and writes before/after values to an audit event in the same transaction. Validate this endpoint with synthetic fixtures before any pilot.
+- Completed-session corrections are restricted to the admin-only correction endpoint (`/api/admin/attendance/[attendanceId]/correction`); each correction requires a mandatory reason and writes before/after values to an audit event in the same transaction.
 
-## Verification and remaining work
+## Verification
 
-CI runs lint, TypeScript checks, unit tests, Firestore Emulator authorization tests, and a production build. A successful CI run verifies the tested code path but does not substitute for a human security review or production configuration.
-
-Remaining: expand negative/edge-case integration coverage for duplicate imports, inactive actors, malformed bodies, and concurrent role changes; complete a human transaction/security review; review the first-admin bootstrap runbook with the institution; wire the frontend to the student dashboard API; obtain institution-approved roster/academic data; and complete a focused security review before any live pilot. The dependency graph is recorded in `package-lock.json`, and CI/local setup use `npm ci` for reproducible installation; dependency advisories should still be reviewed independently of a green CI run. Do not create live Firebase resources, deploy rules, or use real student records without explicit human approval.
+Continuous verification includes:
+- Linting (ESLint) and TypeScript strict type checking (`tsc --noEmit`).
+- Fast unit tests for attendance formulas, roster validation, bounded JSON streaming, API client normalization, send-link rate limiting, `/api/me`, and role guards.
+- Firestore Emulator unit tests verifying client denial-of-service and collection isolation rules (`npm run test:rules`).
+- Full backend route integration tests against the Firebase Auth + Firestore emulators (`npm run test:api`).
+- Complete production build (`next build`).

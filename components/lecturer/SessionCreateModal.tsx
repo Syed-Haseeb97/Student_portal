@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import type { LecturerOffering, SessionCreatePayload } from "@/lib/api/types";
-import { createSession, checkSessionConflict } from "@/lib/api/client";
+import { createSession } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Calendar, Clock, MapPin, X, BookOpen, AlertCircle, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, MapPin, X, BookOpen, AlertCircle } from "lucide-react";
 
 interface SessionCreateModalProps {
   isOpen: boolean;
@@ -43,17 +43,6 @@ export function SessionCreateModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Live conflict detection (Presnt 1.0.6 feature parity)
-  const conflictCheck = useMemo(() => {
-    return checkSessionConflict({
-      offeringId,
-      sessionDate,
-      startTime,
-      endTime,
-      room,
-    });
-  }, [offeringId, sessionDate, startTime, endTime, room]);
-
   if (!isOpen) return null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -87,12 +76,6 @@ export function SessionCreateModal({
 
     if (room && room.trim().length > 80) {
       setError("Room name cannot exceed 80 characters.");
-      return;
-    }
-
-    if (conflictCheck.hasConflict && conflictCheck.conflictingSession) {
-      const c = conflictCheck.conflictingSession;
-      setError(`Cannot schedule: Room ${room} is already booked on ${sessionDate} (${c.startTime ?? "All day"} - ${c.endTime ?? ""}) for ${c.courseCode ?? c.courseTitle}.`);
       return;
     }
 
@@ -158,27 +141,6 @@ export function SessionCreateModal({
           >
             <AlertCircle className="size-4 shrink-0 mt-0.5" />
             <span>{error}</span>
-          </div>
-        )}
-
-        {/* Live Conflict Warning Banner */}
-        {conflictCheck.hasConflict && conflictCheck.conflictingSession && (
-          <div
-            role="alert"
-            className="mt-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs flex items-start gap-2.5 animate-in fade-in"
-          >
-            <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-500" />
-            <div>
-              <strong className="font-semibold block text-amber-400">Classroom Scheduling Conflict</strong>
-              <span className="mt-0.5 block leading-relaxed text-amber-200/90">
-                <strong>{room}</strong> is already booked on <strong>{sessionDate}</strong> from{" "}
-                <strong>{conflictCheck.conflictingSession.startTime} – {conflictCheck.conflictingSession.endTime}</strong> for{" "}
-                <strong>{conflictCheck.conflictingSession.courseCode ?? conflictCheck.conflictingSession.courseTitle}</strong>.
-              </span>
-              <span className="block mt-1 text-[11px] text-amber-300/70">
-                Please change the classroom or time slot to prevent double-booking.
-              </span>
-            </div>
           </div>
         )}
 
@@ -273,7 +235,6 @@ export function SessionCreateModal({
               variant="primary"
               size="md"
               busy={busy}
-              disabled={conflictCheck.hasConflict}
             >
               {busy ? "Scheduling..." : "Create Session"}
             </Button>

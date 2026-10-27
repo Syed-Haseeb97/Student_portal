@@ -102,6 +102,19 @@ export async function POST(request: Request) {
     return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
   }
 
+  const resendKey = process.env.RESEND_API_KEY;
+  const isEmulator = Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST);
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // In production without an active emulator, missing RESEND_API_KEY is a fatal configuration error.
+  if (!resendKey && !isEmulator && isProduction) {
+    console.error("[FATAL] RESEND_API_KEY is missing in production environment. Outbound email delivery is disabled.");
+    return NextResponse.json(
+      { error: "Email delivery service is currently unavailable. Please contact the administrator." },
+      { status: 503 }
+    );
+  }
+
   // 6. Generate action link with Firebase Admin SDK
   try {
     const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL || "http://localhost:3000";
@@ -115,10 +128,7 @@ export async function POST(request: Request) {
       handleCodeInApp: true,
     });
 
-    const resendKey = process.env.RESEND_API_KEY;
-    const isEmulator = Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST);
-
-    // Dev fallback: if RESEND_API_KEY is missing or emulator is active, log link to server console
+    // Dev / emulator fallback: only in non-production or when emulator is active
     if (!resendKey || isEmulator) {
       console.log("\n=======================================================");
       console.log(" [DEV / EMULATOR SIGN-IN LINK]");

@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
-import { InstitutionalAuthGate } from "@/components/landing/InstitutionalAuthGate";
 import { LandingAuthRedirect } from "@/components/landing/LandingAuthRedirect";
 import {
   ShieldCheck,
@@ -9,6 +9,7 @@ import {
   MapPin,
   Calendar,
   ExternalLink,
+  ArrowRight,
 } from "lucide-react";
 
 export const metadata = {
@@ -113,19 +114,58 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Column: Institutional Auth Gate FIRST */}
+          {/* Right Column: Institutional Gateway Access */}
           <div className="lg:sticky lg:top-24 space-y-4">
-            <InstitutionalAuthGate />
+            <div className="p-6 sm:p-8 rounded-[3px] bg-surface border border-line space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-accent" />
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold">
+                    INSTITUTIONAL ACCESS
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold uppercase text-ink tracking-tight">
+                  Sign In to Portal
+                </h2>
+                <p className="text-xs text-muted leading-relaxed">
+                  Authentication is strictly restricted to verified <span className="text-ink font-mono font-medium">@iiitt.ac.in</span> institutional email accounts linked to the official institute roster.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <Link
+                  href="/sign-in"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-[3px] bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm"
+                >
+                  <span>Sign In with @iiitt.ac.in</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              </div>
+
+              <div className="border-t border-line pt-4 space-y-2 text-[11px] text-muted font-mono">
+                <div className="flex items-center justify-between">
+                  <span>Authentication Method</span>
+                  <span className="text-ink">Passwordless Email Link</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Authorized Domain</span>
+                  <span className="text-accent">@iiitt.ac.in</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Statutory Rule</span>
+                  <span className="text-ink">75% Attendance Policy</span>
+                </div>
+              </div>
+            </div>
 
             {/* Quick Helper Notes */}
             <div className="p-3.5 rounded-[3px] bg-surface border border-line text-xs text-muted space-y-1.5">
               <div className="flex items-center gap-2 font-bold font-mono text-ink text-[11px] uppercase">
                 <ShieldCheck className="size-3.5 text-accent" />
-                <span>Institutional Sign-In Guarantee</span>
+                <span>Institutional Verification Guarantee</span>
               </div>
               <p className="text-[11px] leading-relaxed">
-                Roll numbers and faculty accounts are verified against the approved institute registrar roster.
-                Attendance percentages are calculated strictly from instructor-verified roll calls.
+                Students and faculty authenticate via one-time secure link dispatched to their institutional mailbox. No third-party passwords or unverified claims.
               </p>
             </div>
           </div>

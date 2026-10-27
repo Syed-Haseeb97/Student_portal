@@ -65,26 +65,6 @@ export async function POST(request: Request) {
       if (!isAdmin && !isAssignedLecturer) throw new Error("NOT_AUTHORIZED");
       if (!offering.exists || offering.get("active") !== true) throw new Error("OFFERING_INACTIVE");
 
-      // Live room & time conflict check
-      if (typeof body.room === "string" && body.room.trim() && typeof body.startTime === "string" && typeof body.endTime === "string") {
-        const roomTrimmed = body.room.trim();
-        const existingSessionsSnap = await transaction.get(
-          db.collection("sessions")
-            .where("sessionDate", "==", body.sessionDate)
-            .where("room", "==", roomTrimmed)
-        );
-        for (const doc of existingSessionsSnap.docs) {
-          if (doc.get("state") === "cancelled") continue;
-          const sStart = doc.get("startTime");
-          const sEnd = doc.get("endTime");
-          if (typeof sStart === "string" && typeof sEnd === "string") {
-            if (body.startTime < sEnd && body.endTime > sStart) {
-              throw new Error("CONFLICT:Room is already booked for another session at this time.");
-            }
-          }
-        }
-      }
-
       const now = FieldValue.serverTimestamp();
       transaction.create(sessionRef, {
         offeringId: body.offeringId,
@@ -111,7 +91,6 @@ export async function POST(request: Request) {
     const code = error instanceof Error ? error.message : "";
     if (code === "NOT_AUTHORIZED") return NextResponse.json({ error: "You are not authorized to schedule sessions for this offering." }, { status: 403 });
     if (code === "OFFERING_INACTIVE") return NextResponse.json({ error: "The course offering is missing or inactive." }, { status: 404 });
-    if (code.startsWith("CONFLICT:")) return NextResponse.json({ error: code.slice("CONFLICT:".length) }, { status: 409 });
     if (code.includes("Firebase ID token")) return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
     return NextResponse.json({ error: "Unable to create the session. Please retry." }, { status: 503 });
   }

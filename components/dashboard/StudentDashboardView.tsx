@@ -3,7 +3,6 @@
 import Image from "next/image";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { StudentDashboardData, NormalizedAttendanceStatus, StudentSummary } from "@/lib/api/types";
-import { getStoredUser, type PortalUser } from "@/lib/auth/client-auth";
 import { normalizeAttendanceStatus } from "@/lib/api/types";
 import { getStudentDashboard, type MockScenario } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -14,8 +13,6 @@ import { Button } from "@/components/ui/Button";
 import { AttendanceProgress } from "@/components/ui/AttendanceProgress";
 import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
 import { StudentSubjectDetailModal } from "./StudentSubjectDetailModal";
-import { StudentTimetableView } from "./StudentTimetableView";
-import { AttendanceCalculatorWidget } from "@/components/landing/AttendanceCalculatorWidget";
 import {
   GraduationCap,
   ShieldCheck,
@@ -30,9 +27,6 @@ import {
   Calendar,
   Check,
   ChevronRight,
-  Clock,
-  Layers,
-  Calculator,
 } from "lucide-react";
 
 interface StudentDashboardViewProps {
@@ -51,25 +45,12 @@ export function StudentDashboardView({
   const [error, setError] = useState<string | null>(null);
   const [statusCode, setStatusCode] = useState<number | null>(null);
   const [isMock, setIsMock] = useState<boolean>(isMockDefault);
-  const [activeTab, setActiveTab] = useState<"overview" | "calculator" | "timetable">(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab");
-      if (tabParam === "calculator" || window.location.hash === "#calculator") return "calculator";
-      if (tabParam === "timetable" || window.location.hash === "#timetable") return "timetable";
-    }
-    return "overview";
-  });
   const [activeFilter, setActiveFilter] = useState<"all" | NormalizedAttendanceStatus>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCourse, setSelectedCourse] = useState<StudentSummary | null>(null);
   const [mockScenario, setMockScenario] = useState<MockScenario>("normal");
-  const [sessionUser] = useState<PortalUser | null>(() => {
-    const u = getStoredUser();
-    return u && u.role === "student" ? u : null;
-  });
 
-  const { getIdToken } = useAuth();
+  const { user, getIdToken } = useAuth();
 
   const loadDashboard = useCallback(
     async (scenario?: MockScenario) => {
@@ -244,14 +225,14 @@ export function StudentDashboardView({
                   </div>
 
                   <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-ink flex items-center gap-3">
-                    <span>{sessionUser?.name ?? data.student.name ?? "Enrolled Student"}</span>
+                    <span>{user?.name ?? data.student.name ?? "Enrolled Student"}</span>
                   </h1>
 
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted font-mono">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="text-muted/70">ROLL:</span>
                       <strong className="text-accent font-bold tracking-wide">
-                        {sessionUser?.rollNumber ?? data.student.rollNumber ?? "Unassigned"}
+                        {user?.rollNumber ?? data.student.rollNumber ?? "Unassigned"}
                       </strong>
                     </span>
                     <span className="text-muted/40 hidden sm:inline">•</span>
@@ -282,59 +263,6 @@ export function StudentDashboardView({
             </div>
           </div>
         </section>
-      )}
-
-      {/* Main View Tabs (Overview vs Calculator vs Timetable) */}
-      {!loading && !error && data && summaries.length > 0 && (
-        <div className="flex items-center gap-2 border-b border-line pb-3 overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab("overview")}
-            className={`px-3.5 py-2 rounded-[2px] text-xs font-mono font-bold uppercase transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "overview"
-                ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
-                : "text-muted hover:text-ink hover:bg-surface border border-transparent"
-            }`}
-          >
-            <Layers className="size-3.5" />
-            <span>Attendance & Subjects</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-[2px] bg-canvas border border-line text-muted">
-              {summaries.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("calculator")}
-            className={`px-3.5 py-2 rounded-[2px] text-xs font-mono font-bold uppercase transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "calculator"
-                ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
-                : "text-muted hover:text-ink hover:bg-surface border border-transparent"
-            }`}
-          >
-            <Calculator className="size-3.5" />
-            <span>75% Bunk Margin Calculator</span>
-            <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-[2px] bg-accent text-[#171915] font-mono">
-              Engine
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("timetable")}
-            className={`px-3.5 py-2 rounded-[2px] text-xs font-mono font-bold uppercase transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-              activeTab === "timetable"
-                ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
-                : "text-muted hover:text-ink hover:bg-surface border border-transparent"
-            }`}
-          >
-            <Clock className="size-3.5" />
-            <span>Weekly Class Timetable</span>
-            <Badge variant="indigo" size="sm" className="text-[9px] py-0">
-              Live
-            </Badge>
-          </button>
-        </div>
       )}
 
       {/* Loading State: Realistic Skeleton */}
@@ -393,57 +321,8 @@ export function StudentDashboardView({
         />
       )}
 
-      {/* Active Tab: Weekly Timetable */}
-      {!loading && !error && data && summaries.length > 0 && activeTab === "timetable" && (
-        <StudentTimetableView
-          idToken={idToken}
-          summaries={summaries}
-          onSelectCourse={(course) => setSelectedCourse(course)}
-        />
-      )}
-
-      {/* Active Tab: 75% Bunk Margin & Eligibility Calculator */}
-      {!loading && !error && data && activeTab === "calculator" && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="p-4 sm:p-5 rounded-[3px] bg-surface border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-accent flex items-center gap-1.5">
-                  <Calculator className="size-3.5" />
-                  <span>Interactive Simulator</span>
-                </span>
-                <span className="text-muted/40">•</span>
-                <span className="text-[10px] font-mono text-muted uppercase">Independent Ordinance Calculation</span>
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold uppercase tracking-tight text-ink">
-                75% Bunk Margin & Eligibility Engine
-              </h2>
-              <p className="text-xs text-muted mt-1 max-w-2xl leading-relaxed">
-                Test your attendance margins across your enrolled courses below or simulate any theoretical scenario.
-                Know exactly how many upcoming classes you can safely skip, or how many consecutive classes you must attend to clear a deficit.
-              </p>
-            </div>
-            <div className="flex items-center gap-2.5 shrink-0">
-              <Badge variant="indigo" size="sm" className="font-bold font-mono">
-                {data.policy.thresholdPercent}% Cut-off
-              </Badge>
-            </div>
-          </div>
-
-          <AttendanceCalculatorWidget
-            courses={summaries.map((s) => ({
-              courseCode: s.courseCode,
-              courseTitle: s.courseTitle,
-              attended: s.attended,
-              total: s.total,
-              percentage: s.percentage,
-            }))}
-          />
-        </div>
-      )}
-
-      {/* Active Tab: Attendance Overview */}
-      {!loading && !error && data && summaries.length > 0 && activeTab === "overview" && (
+      {/* Course Attendance List & Metrics */}
+      {!loading && !error && data && summaries.length > 0 && (
         <>
           {/* Statutory Policy Card & Summary KPIs */}
           <section aria-label="Attendance Summary and Policy" className="grid gap-3 md:grid-cols-4">

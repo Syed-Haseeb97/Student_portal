@@ -238,23 +238,8 @@ export interface SessionDetailData {
 }
 
 // ==========================================
-// Timetable & Subject Detail Types (Presnt Parity)
+// Subject Detail & Session History Types
 // ==========================================
-
-export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
-
-export interface TimetableSlot {
-  id: string;
-  offeringId: string;
-  courseCode: string;
-  courseTitle: string;
-  facultyName: string;
-  dayOfWeek: DayOfWeek;
-  startTime: string; // "09:00"
-  endTime: string;   // "10:00"
-  room: string;      // "LH-101"
-  type: "Lecture" | "Lab" | "Tutorial";
-}
 
 export interface StudentSessionRecord {
   id: string;

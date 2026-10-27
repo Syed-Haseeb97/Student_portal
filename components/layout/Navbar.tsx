@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -13,7 +13,6 @@ import {
   ShieldAlert,
   LogOut,
   Sparkles,
-  Clock,
   Calendar,
 } from "lucide-react";
 
@@ -24,27 +23,6 @@ interface NavbarProps {
 export function Navbar({ currentPath = "/" }: NavbarProps) {
   const { user, role, isMock, signOut, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [timeStr, setTimeStr] = useState<string>("");
-
-  useEffect(() => {
-    const updateTime = () => {
-      try {
-        const now = new Date();
-        const formatted = new Intl.DateTimeFormat("en-IN", {
-          timeZone: "Asia/Kolkata",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }).format(now);
-        setTimeStr(formatted);
-      } catch {
-        setTimeStr("");
-      }
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const displayName = user?.name ? user.name.split(" ")[0] : (user?.rollNumber || user?.staffId || "User");
   const identifier = user?.rollNumber || user?.staffId || (role ? role.toUpperCase() : "");
@@ -190,12 +168,6 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
 
           {/* Right Status / User Controls */}
           <div className="hidden sm:flex items-center gap-3">
-            {timeStr && (
-              <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-mono text-[#c9d5b5] px-2 py-1 rounded-[3px] bg-surface border border-line">
-                <Clock className="size-3 text-accent" />
-                <span>{timeStr} IST</span>
-              </div>
-            )}
 
             {!loading && user ? (
               <div className="flex items-center gap-2.5 bg-surface border border-line p-1 pl-2.5 rounded-[3px]">

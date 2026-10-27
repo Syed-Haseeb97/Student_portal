@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut as fbSignOut, type User as FirebaseUser } from "firebase/auth";
 import { getFirebaseClient } from "@/lib/firebase/client";
 import { isMockModeEnabled } from "@/lib/api/client";
-import { getStoredUser, clearStoredUser } from "@/lib/auth/client-auth";
 
 export type UserRole = "student" | "lecturer" | "admin";
 
@@ -41,17 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [user, setUser] = useState<AuthProfile | null>(() => {
     if (typeof window !== "undefined" && isMockModeEnabled()) {
-      const stored = getStoredUser();
-      if (stored) {
-        return {
-          uid: stored.uid,
-          email: stored.email,
-          role: stored.role,
-          name: stored.name,
-          rollNumber: stored.rollNumber,
-          active: true,
-        };
-      }
       return {
         uid: "mock-student-261161",
         email: "261161@iiitt.ac.in",
@@ -68,8 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [role, setRole] = useState<UserRole | null>(() => {
     if (typeof window !== "undefined" && isMockModeEnabled()) {
-      const stored = getStoredUser();
-      return stored ? stored.role : "student";
+      return "student";
     }
     return null;
   });
@@ -93,18 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (isMock) {
-      const stored = getStoredUser();
-      if (stored) {
-        setUser({
-          uid: stored.uid,
-          email: stored.email,
-          role: stored.role,
-          name: stored.name,
-          rollNumber: stored.rollNumber,
-          active: true,
-        });
-        setRole(stored.role);
-      }
       return;
     }
 
@@ -191,7 +166,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (isMock) {
-      clearStoredUser();
       setUser(null);
       setRole(null);
       router.push("/");
@@ -200,7 +174,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { auth } = getFirebaseClient();
       await fbSignOut(auth);
-      clearStoredUser();
       setUser(null);
       setRole(null);
       router.push("/");

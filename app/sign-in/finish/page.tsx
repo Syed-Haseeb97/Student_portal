@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { completeInstitutionalSignIn, isInstitutionalSignInLink } from "@/lib/firebase/email-link";
 import { isMockModeEnabled } from "@/lib/api/client";
-import { setStoredUser } from "@/lib/auth/client-auth";
 import { useAuth, type UserRole } from "@/components/auth/AuthProvider";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -51,15 +50,6 @@ export default function FinishSignInPage() {
           } else if (trimmedEmail.startsWith("fac") || trimmedEmail.includes("faculty")) {
             role = "lecturer";
           }
-          const roll = trimmedEmail.split("@")[0].toUpperCase();
-          setStoredUser({
-            uid: `mock-${role}-${roll}`,
-            email: trimmedEmail,
-            role,
-            rollNumber: roll,
-            name: role === "student" ? "Syed Haseeb" : role === "admin" ? "System Admin" : "Faculty Member",
-            verifiedAt: new Date().toISOString(),
-          });
           setResolvedRole(role);
           const target = role === "admin" ? "/admin" : role === "lecturer" ? "/lecturer" : "/dashboard";
           setRedirectTarget(target);
