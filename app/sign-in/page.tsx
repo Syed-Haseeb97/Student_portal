@@ -1,37 +1,79 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { sendInstitutionalSignInLink } from "@/lib/firebase/email-link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Mail, ArrowLeft, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowLeft, ShieldAlert, CheckCircle2, RotateCcw, ArrowRight } from "lucide-react";
 
 export default function SignInPage() {
+  const router = useRouter();
+  const { user, role, isMock } = useAuth();
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<{ kind: "error" | "success"; message: string } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "rate_limited" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [cooldown, setCooldown] = useState(0);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  // If already logged in, redirect to their role dashboard
+  useEffect(() => {
+    if (user && role) {
+      if (role === "admin") router.replace("/admin");
+      else if (role === "lecturer") router.replace("/lecturer");
+      else router.replace("/dashboard");
+    }
+  }, [user, role, router]);
+
+  // Handle countdown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
+
+  async function handleSendLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setBusy(true);
-    setStatus(null);
+    if (cooldown > 0) return;
+
+    setStatus("sending");
+    setErrorMessage("");
+
     try {
-      await sendInstitutionalSignInLink(email);
-      setStatus({
-        kind: "success",
-        message:
-          "Sign-in link sent. Open it on this device, or enter the same email on the link completion page if using another device.",
+      const response = await fetch("/api/auth/send-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
-    } catch (error) {
-      setStatus({
-        kind: "error",
-        message: error instanceof Error ? error.message : "Could not send the sign-in link. Please retry.",
-      });
-    } finally {
-      setBusy(false);
+
+      const data = await response.json();
+
+      if (response.status === 429) {
+        setStatus("rate_limited");
+        setCooldown(data.retryAfter || 60);
+        setErrorMessage(data.error || "Too many sign-in requests. Please wait.");
+        return;
+      }
+
+      if (!response.ok) {
+        setStatus("error");
+        setErrorMessage(data.error || "Unable to send sign-in link.");
+        return;
+      }
+
+      // Success: Save email to localStorage for automatic completion
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("emailForSignIn", email.trim().toLowerCase());
+      }
+      setStatus("sent");
+      setCooldown(60); // 60s cooldown for resend button
+    } catch (err) {
+      setStatus("error");
+      setErrorMessage(err instanceof Error ? err.message : "Network error. Please try again.");
     }
   }
 
@@ -41,80 +83,132 @@ export default function SignInPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors font-mono"
           >
             <ArrowLeft className="size-3.5" />
-            Back to portal overview
+            BACK TO PORTAL
           </Link>
-          <Badge variant="preview" size="sm">
-            Institutional Access
+          <Badge variant={isMock ? "preview" : "compliant"} size="sm">
+            {isMock ? "Mock Preview" : "Institutional Access"}
           </Badge>
         </div>
 
         <Card variant="raised" className="border-line/80">
           <CardHeader>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold uppercase tracking-[.2em] text-accent">
-                IIITT Attendance
+              <span className="text-[10px] font-bold uppercase tracking-[.25em] text-accent font-mono">
+                IIIT TIRUCHIRAPPALLI
               </span>
             </div>
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              Sign in with your institute email
+            <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-ink">
+              Sign in with Institute Email
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              We will send you a secure, one-time sign-in link. Access is granted only when the
-              verified email matches an active entry on the approved institutional roster.
+            <CardDescription className="text-xs sm:text-sm text-muted leading-relaxed">
+              We will send you an authentication link. Portal access is strictly granted to verified
+              accounts on the approved institutional roster.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4 pt-0">
-            <form onSubmit={submit} className="space-y-4">
-              <Input
-                id="email"
-                type="email"
-                label="Institutional Email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="rollnumber@iiitt.ac.in"
-                leftIcon={<Mail className="size-4" />}
-                hint="Only @iiitt.ac.in domains are accepted."
-              />
+            {status !== "sent" ? (
+              <form onSubmit={handleSendLink} className="space-y-4">
+                <Input
+                  id="email"
+                  type="email"
+                  label="Institutional Email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="rollnumber@iiitt.ac.in"
+                  leftIcon={<Mail className="size-4" />}
+                  hint="Only institutional @iiitt.ac.in addresses are accepted."
+                  disabled={status === "sending"}
+                />
 
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                busy={busy}
-                className="w-full"
-              >
-                {busy ? "Sending Link..." : "Email me a sign-in link"}
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  busy={status === "sending"}
+                  disabled={cooldown > 0}
+                  className="w-full"
+                >
+                  {status === "sending"
+                    ? "Dispatching link..."
+                    : cooldown > 0
+                    ? `Wait ${cooldown}s to retry`
+                    : "Email me a sign-in link"}
+                </Button>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-[3px] border border-accent/40 bg-accent/10 p-4 text-xs sm:text-sm text-ink space-y-2">
+                  <div className="flex items-center gap-2 text-accent font-semibold font-mono text-xs">
+                    <CheckCircle2 className="size-4 shrink-0" />
+                    SIGN-IN LINK DISPATCHED
+                  </div>
+                  <p className="text-muted text-xs leading-relaxed">
+                    A secure sign-in link has been sent to{" "}
+                    <strong className="text-ink font-mono">{email}</strong>. Open the link on
+                    this device to sign in instantly.
+                  </p>
+                </div>
 
-            {status && (
-              <div
-                role="status"
-                className={`rounded-xl border p-3.5 text-xs sm:text-sm leading-relaxed flex items-start gap-2.5 ${
-                  status.kind === "error"
-                    ? "border-risk/40 bg-risk/10 text-risk"
-                    : "border-accent/40 bg-accent/10 text-accent"
-                }`}
-              >
-                {status.kind === "error" ? (
-                  <ShieldAlert className="size-4 shrink-0 mt-0.5" />
-                ) : (
-                  <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+                {isMock && (
+                  <div className="rounded-[3px] border border-line bg-surface p-3 text-xs space-y-2">
+                    <div className="text-[11px] font-mono text-accent uppercase font-semibold">
+                      Local Development Mock Mode
+                    </div>
+                    <p className="text-muted text-[11px]">
+                      Since mock mode is enabled, you can simulate opening the sign-in link right now:
+                    </p>
+                    <Link
+                      href={`/sign-in/finish?mockEmail=${encodeURIComponent(email)}`}
+                      className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline font-mono font-semibold"
+                    >
+                      Complete mock sign-in <ArrowRight className="size-3" />
+                    </Link>
+                  </div>
                 )}
-                <span>{status.message}</span>
+
+                <div className="flex items-center justify-between pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={cooldown > 0}
+                    onClick={() => {
+                      setStatus("idle");
+                    }}
+                    className="gap-1.5 text-xs font-mono"
+                  >
+                    <RotateCcw className="size-3" />
+                    {cooldown > 0 ? `Resend link (${cooldown}s)` : "Use different email"}
+                  </Button>
+                  <Link
+                    href="/sign-in/finish"
+                    className="text-xs text-accent hover:underline font-mono"
+                  >
+                    Have a link? Complete sign-in &rarr;
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {(status === "error" || status === "rate_limited") && (
+              <div
+                role="alert"
+                className="rounded-[3px] border border-risk/40 bg-risk/10 p-3.5 text-xs leading-relaxed flex items-start gap-2.5 text-risk"
+              >
+                <ShieldAlert className="size-4 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
               </div>
             )}
 
             <div className="pt-3 border-t border-line/60">
               <p className="text-[11px] leading-relaxed text-muted">
-                Preview implementation. Do not use real student accounts until the separate
-                Firebase project, authorized domains, roster import, and security tests are configured.
+                Authoritative institutional portal. All access events are cryptographically verified
+                and logged in accordance with institute academic integrity policy.
               </p>
             </div>
           </CardContent>

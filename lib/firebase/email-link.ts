@@ -31,32 +31,41 @@ export async function sendInstitutionalSignInLink(emailInput: string) {
 }
 
 export function isInstitutionalSignInLink(url: string) {
-  return isSignInWithEmailLink(getFirebaseClient().auth, url);
+  try {
+    return isSignInWithEmailLink(getFirebaseClient().auth, url);
+  } catch {
+    return false;
+  }
 }
 
 export async function completeInstitutionalSignIn(
   emailInput: string,
-  url = window.location.href,
-): Promise<UserCredential> {
+  url = typeof window !== "undefined" ? window.location.href : "",
+): Promise<{ credential: UserCredential; role: "student" | "lecturer" | "admin" }> {
   const email = normalizeInstitutionalEmail(emailInput);
   if (!isInstitutionalEmail(email)) throw new Error("Enter the same institutional email used to request the link.");
   const { auth } = getFirebaseClient();
   if (!isSignInWithEmailLink(auth, url)) throw new Error("This is not a valid Firebase sign-in link.");
+  
   const credential = await signInWithEmailLink(auth, email, url);
   if (!credential.user.emailVerified || !isInstitutionalEmail(credential.user.email ?? "")) {
     await auth.signOut();
     throw new Error("Sign-in requires a verified @iiitt.ac.in email address.");
   }
+
   const token = await credential.user.getIdToken();
   const response = await fetch("/api/roster/claim", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
+
   if (!response.ok) {
     await auth.signOut();
-    const body = await response.json().catch(() => null) as Partial<ApiErrorResponse> | null;
-    throw new Error(body?.error ?? "Your account could not be matched to the approved student roster.");
+    const body = (await response.json().catch(() => null)) as Partial<ApiErrorResponse> | null;
+    throw new Error(body?.error ?? "Your account could not be matched to the approved student roster or staff registry.");
   }
-  return credential;
-}
 
+  const data = (await response.json().catch(() => null)) as { ok?: boolean; role?: "student" | "lecturer" | "admin" } | null;
+  const role = data?.role || "student";
+  return { credential, role };
+}
