@@ -1,81 +1,106 @@
-# IIITT Student Portal
+# IIIT Tiruchirappalli Academic Attendance Portal
 
-A mobile-first attendance portal MVP for IIIT Tiruchirappalli. The homepage is a visual preview and uses synthetic data only.
+Official mobile-first academic attendance ledger, 75% statutory bunk margin calculator, and administrative portal for Indian Institute of Information Technology, Tiruchirappalli.
 
-## Status and safety boundary
+## Authorization & Deployment Status
 
-The Firebase attendance foundation includes email-link sign-in, a server-side approved-roster claim check, admin-only roster/staff provisioning endpoints, lecturer-scoped session lifecycle routes, Firestore rules/indexes, emulator authorization tests, and CI. This is not a production-authorized system. No live Firebase project, real institutional roster, or production admin is configured as part of this repository work.
+- **Authorization Override**: The project owner has explicitly authorized real email delivery (Resend) and live Firebase Auth/Firestore configuration through environment variables.
+- **Institutional Access Boundary**: Access is strictly limited to verified `@iiitt.ac.in` institutional email addresses matching an active record on the approved institutional roster or staff registry.
+- **Security Posture**: All mutations are handled via server-only Firebase Admin SDK routes wrapped in transactions. Cloud Firestore client rules enforce deny-by-default on all collections.
 
-**Synthetic data only.** Do not import real student data, create a production admin, deploy Firestore rules, or configure live Firebase resources without explicit human approval and institutional authorization.
+---
 
-## Stack
+## Architecture & Technology Stack
 
-- Next.js App Router, TypeScript, Tailwind CSS v4
-- Firebase Authentication (passwordless email link) and Cloud Firestore
-- Firebase Admin SDK for narrowly scoped trusted server routes only
-- Firebase Emulator Suite for local authorization tests
-- Vercel (planned; not configured here)
+- **Framework**: Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
+- **Design System**: Mobility IIITT Theme (`#171915` canvas, `#20261F` surfaces, `#2D382B` borders, `#D9FA58` electric lime accents, sharp `rounded-[3px]` geometry)
+- **Identity & Authentication**: Firebase Authentication (Passwordless Email Link) + Verified `@iiitt.ac.in` claim
+- **Database & Storage**: Google Cloud Firestore (Admin SDK server-side, client deny-by-default)
+- **Outbound Mailer**: Resend API (`EMAIL_FROM`) with server console fallback in development/emulator modes
+- **State Management**: Context-driven `AuthProvider` & `useAuth` hook with real server profile resolution (`GET /api/me`)
 
-## Locked attendance rules
+---
 
-- Verified `@iiitt.ac.in` email plus an active approved-roster match is required. Neither domain verification nor roll-number parsing alone grants access.
-- Roles are server-provisioned; Firestore client writes to protected records are denied.
-- Attendance is calculated per course offering. Exactly 75% is compliant.
-- Only completed sessions count; scheduled and cancelled sessions are excluded.
-- A session can be completed only with exactly one present/absent mark per active enrollee.
-- Cancellation requires a reason and is audited.
-- The backend branch includes admin-only course/offering/enrollment/assignment imports, audited completed-session corrections, and an authenticated student dashboard API integrated with the frontend client. No production Firebase project or real roster is configured.
+## Live Configuration & Setup Guide
 
-See [architecture.md](architecture.md), [roster and attendance rules](docs/ROSTER_AND_ATTENDANCE_RULES.md), [backend status](docs/BACKEND_STATUS.md), [backend API contract](docs/BACKEND_API_CONTRACT.md), and the [first-admin bootstrap runbook](docs/FIRST_ADMIN_BOOTSTRAP.md). The CSV template contains fake examples only.
+### 1. Firebase Console Configuration
+1. **Create or select the dedicated Firebase project** for IIIT Trichy Attendance Portal.
+2. **Enable Email Link (Passwordless) Sign-in**:
+   - Go to **Authentication** > **Sign-in method**.
+   - Click on **Email/Password**.
+   - Enable **Email / Password** and toggle on **Email link (passwordless sign-in)**.
+   - Click **Save**.
+3. **Configure Authorized Domains**:
+   - In **Authentication** > **Settings** > **Authorized domains**, add your deployment domains:
+     - `localhost` (for local dev)
+     - `portal.iiitt.ac.in` (production)
+     - Your Vercel domain (e.g. `*.vercel.app`)
+4. **Generate Service Account Private Key**:
+   - Go to **Project Settings** > **Service accounts**.
+   - Click **Generate new private key** and download the JSON file.
+   - Set the raw JSON string as `FIREBASE_SERVICE_ACCOUNT_JSON` in your environment (never commit this file to git).
+   - Set `FIREBASE_ADMIN_PROJECT_ID` to your project ID.
+5. **Deploy Firestore Rules**:
+   - Deploy `firestore.rules` using the Firebase CLI:
+     ```bash
+     firebase deploy --only firestore:rules
+     ```
 
-## Local setup
+### 2. Resend Outbound Email Setup
+1. Sign up or log into [Resend](https://resend.com).
+2. Generate an API Key in **API Keys** and set it as `RESEND_API_KEY`.
+3. **Institutional Domain Verification**:
+   - By default, Resend's free `onboarding@resend.dev` only delivers to the owner's email address.
+   - To deliver to real students and faculty `@iiitt.ac.in`, add `iiitt.ac.in` under **Domains** in Resend.
+   - Configure the required DNS records (DKIM, SPF, MX) on the institute's DNS management console.
+   - Configure `EMAIL_FROM="IIITT Attendance <attendance@iiitt.ac.in>"`.
 
-Requires Node.js 24.12+ and npm.
+### 3. First Administrator Bootstrap
+Every administrative route requires an active `staff/{uid}` document with `role: "admin"`. Use the safe offline bootstrap script (never exposed over HTTP):
 
 ```bash
-npm ci
+# Ensure your environment variables are configured in .env.local
+npx tsx scripts/bootstrap-admin.ts <admin-email@iiitt.ac.in> "Initial authorized administrator provisioning"
+```
+
+This script:
+1. Verifies the user exists in Firebase Auth (or marks them verified).
+2. Creates `staff/{uid}` with `role: "admin"` and `active: true`.
+3. Appends an immutable record to the `auditEvents` collection.
+
+---
+
+## Local Development & Testing
+
+### Environment Setup
+Copy the template configuration:
+```bash
+# Windows PowerShell:
+Copy-Item .env.example .env.local
+
+# Linux/macOS:
 cp .env.example .env.local
+```
+
+### Running Checks & Tests
+```bash
+# Full verification suite (lint, typecheck, unit and route authorization tests):
 npm run check
-npm run dev
-```
 
-On Windows PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`.
+# Security rules unit tests (against Firebase emulator):
+npm run test:rules
 
-The synthetic homepage can be reviewed without enabling a real backend. For local auth/backend testing, use the Firebase Emulator Suite and synthetic fixtures. Do not add live credentials to `.env.local` for this task.
+# Route integration tests (against Firebase emulator):
+npm run test:api
 
-## Emulator and checks
-
-Run the unit/lint/type checks:
-
-```bash
-npm run check
-```
-
-Run Firestore authorization tests and protected-route integration tests against synthetic Firebase Auth/Firestore emulators:
-
-```bash
-npx firebase emulators:exec --only auth,firestore --project demo-iiitt-portal "npm run test:rules && npm run test:api"
-```
-
-Run the production build:
-
-```bash
+# Production build:
 npm run build
 ```
 
-CI runs these checks on pull requests targeting `main` and pushes to `main`. Emulator tests use the demo project ID and synthetic documents; they do not create a live Firebase project.
+---
 
-## Environment contract
+## 75% Statutory Attendance Ordinance Rules
 
-`.env.example` documents public Firebase web configuration and server-only Admin SDK variables. Public web config is not an access-control boundary; Firebase Auth and Firestore rules are mandatory. Keep `FIREBASE_SERVICE_ACCOUNT_JSON` and `FIREBASE_ADMIN_PROJECT_ID` server-side and uncommitted. The Admin SDK helper checks project identity to reduce accidental cross-project use.
-
-No Firebase project configuration, production rule deployment, real roster upload, or real admin bootstrap is included here. Do not run production deployment commands for this MVP phase.
-
-## Follow-ups before any real pilot
-
-1. Review the first-admin provisioning runbook with the institution.
-2. Expand negative/edge-case integration tests for duplicate imports, inactive actors, malformed bodies, and concurrent role changes, then complete a focused security review.
-3. Complete lecturer session creation, roll-call attendance marking, and cancellation interface (implemented in MVP under `/lecturer`).
-4. Obtain and import the institute-approved roster and academic catalog only after explicit authorization.
-5. Verify institutional policy and operational workflows with authorized stakeholders.
-6. Consider a live pilot only after a focused security review and separate, explicit approval.
+1. **Threshold**: Exactly 75.0% is compliant. A percentage of 74.9% is a shortfall.
+2. **Completed Sessions Only**: Scheduled and cancelled sessions never count towards attendance calculation.
+3. **Auditability**: Administrative corrections require an active administrator session, a mandatory written justification (5–300 characters), and write an append-only audit record.

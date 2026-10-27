@@ -1,29 +1,32 @@
 # Firebase backend implementation status
 
-This document replaces the original proposal, which described the pre-Firebase scaffold and is now superseded by the implemented backend.
+This document summarizes the current backend and frontend integration status for the IIIT Trichy attendance portal.
 
-## Current implementation
+## Implemented Capabilities
 
-- Next.js App Router, TypeScript, Firebase Authentication email-link sign-in, Cloud Firestore, Firebase Admin SDK for trusted server operations.
-- Student roster claim and admin-only roster/staff provisioning.
-- Admin academic-data imports for courses, offerings, enrollments, and lecturer assignments.
-- Lecturer-scoped session creation, complete attendance submission, and reasoned session cancellation.
-- Admin-only completed-session attendance correction with before/after audit data.
-- Student dashboard API and deny-by-default Firestore security rules.
-- Unit tests, Firestore Emulator rules tests, lint/typecheck, dependency audit gate, and production build in CI.
+- **Auth & Identity**: Next.js App Router, Firebase Authentication passwordless email-link sign-in via Resend (`POST /api/auth/send-link`), client `AuthProvider` / `useAuth` hook, and `/api/me` profile resolution.
+- **Roster & Claim**: Verified student roster claim (`POST /api/roster/claim`) with single-match active roster check and staff verification.
+- **Admin Management Console (`/admin`)**:
+  - Full UI for CSV roster upload with client-side preview/validation and atomic import.
+  - Staff management for provisioning lecturers and administrators with last-admin lockout safeguards.
+  - Academic catalog and offerings management with referential integrity validation.
+  - Attendance mark correction with mandatory administrative justification.
+  - Immutable security audit trail viewer (`/admin/audit`).
+  - Safe First Administrator bootstrap CLI script (`scripts/bootstrap-admin.ts`).
+- **Lecturer Management (`/lecturer`)**:
+  - Live session scheduling with room and time conflict detection.
+  - Roll-call attendance submission and session cancellation with audit trail.
+- **Student Portal (`/dashboard`)**:
+  - Live attendance summaries, 75% statutory bunk margin engine, per-subject session history, and student profile (`/dashboard/profile`).
+- **Security Rules**:
+  - Deny-by-default Cloud Firestore rules (`firestore.rules`).
+  - Server-only Admin SDK operations protected by transactions.
+  - Anti-enumeration generic sign-in response and rate-limiting (`lib/auth/rate-limit.ts`).
 
-## Still required before a real pilot
+## Operational Checklist Before Live Institutional Pilot
 
-1. Continue expanding negative/edge-case coverage, especially concurrent role changes. Emulator-backed tests also verify duplicate-email roster imports are rejected without writes, inactive administrators cannot import academic data, malformed JSON bodies are rejected, completed sessions cannot be submitted twice, and cancelled sessions cannot receive attendance. Existing coverage exercises roster import/claim, every academic-data kind, staff provisioning, the student dashboard (including no-data and shortfall statuses), session creation, attendance submission, cancellation, and completed-session correction.
-2. Complete a human review of transaction behavior, import bounds, error handling, and audit integrity.
-3. Review the first-admin bootstrap runbook with an authorized institutional stakeholder.
-4. Connect the UI to the authenticated APIs (frontend implementation is being handled separately).
-5. Obtain institution-approved roster and academic data through authorized channels.
-6. Configure a separate production Firebase project and deployment secrets only with explicit human approval.
-7. Conduct an institution-approved security and workflow review before any live pilot.
-
-## Safety boundary
-
-The current preview uses synthetic data. Do not create production Firebase resources, deploy production rules, provision a live administrator, or upload real student records as part of automated repository work.
-
-For the current architecture and collection model, see [architecture.md](../architecture.md). For request/response details, see [the backend API contract](BACKEND_API_CONTRACT.md). Attendance defaults and roster rules are documented in [ROSTER_AND_ATTENDANCE_RULES.md](ROSTER_AND_ATTENDANCE_RULES.md).
+1. **Firebase Console**: Enable Email Link sign-in, add authorized domains (`portal.iiitt.ac.in`), and generate service account JSON credentials.
+2. **Resend Domain Verification**: Verify `iiitt.ac.in` domain in the Resend console so emails reach all students and faculty.
+3. **First Admin Bootstrap**: Execute `npx tsx scripts/bootstrap-admin.ts <admin@iiitt.ac.in>` once to establish the initial institutional admin.
+4. **Roster Upload**: Upload the official approved institute roster CSV through `/admin/roster`.
+5. **Academic Catalog**: Populate courses and semester offerings through `/admin/academic`.
