@@ -12,8 +12,6 @@ import {
   Briefcase,
   ShieldAlert,
   LogOut,
-  Sparkles,
-  Calendar,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -21,7 +19,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ currentPath = "/" }: NavbarProps) {
-  const { user, role, isMock, signOut, loading } = useAuth();
+  const { user, role, isMock, signOut, loading, switchRole } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const displayName = user?.name ? user.name.split(" ")[0] : (user?.rollNumber || user?.staffId || "User");
@@ -90,18 +88,12 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                   Dashboard
                 </Link>
                 <Link
-                  href="/dashboard?tab=calculator"
-                  className="transition-colors hover:text-accent flex items-center gap-1.5 font-mono text-[11px]"
+                  href="/dashboard/profile"
+                  className={`transition-colors hover:text-ink ${
+                    currentPath === "/dashboard/profile" ? "text-accent border-b border-accent pb-0.5" : ""
+                  }`}
                 >
-                  <Sparkles className="size-3 text-accent" />
-                  <span>75% ENGINE</span>
-                </Link>
-                <Link
-                  href="/dashboard?tab=timetable"
-                  className="transition-colors hover:text-accent flex items-center gap-1.5 font-mono text-[11px]"
-                >
-                  <Calendar className="size-3 text-accent" />
-                  <span>TIMETABLE</span>
+                  Profile
                 </Link>
               </>
             )}
@@ -168,6 +160,38 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
 
           {/* Right Status / User Controls */}
           <div className="hidden sm:flex items-center gap-3">
+            {isMock && switchRole && (
+              <div className="flex items-center gap-1 bg-surface border border-line rounded-[3px] p-0.5 text-[10px] font-mono">
+                <span className="text-muted px-1 font-bold text-[9px] uppercase tracking-wider">Role:</span>
+                <button
+                  type="button"
+                  onClick={() => switchRole("student")}
+                  className={`px-1.5 py-0.5 rounded-[2px] transition-colors font-bold cursor-pointer ${
+                    role === "student" ? "bg-accent text-accent-contrast shadow-xs" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchRole("lecturer")}
+                  className={`px-1.5 py-0.5 rounded-[2px] transition-colors font-bold cursor-pointer ${
+                    role === "lecturer" ? "bg-accent text-accent-contrast shadow-xs" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  Faculty
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchRole("admin")}
+                  className={`px-1.5 py-0.5 rounded-[2px] transition-colors font-bold cursor-pointer ${
+                    role === "admin" ? "bg-accent text-accent-contrast shadow-xs" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  Admin
+                </button>
+              </div>
+            )}
 
             {!loading && user ? (
               <div className="flex items-center gap-2.5 bg-surface border border-line p-1 pl-2.5 rounded-[3px]">
@@ -240,20 +264,11 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                   Student Dashboard
                 </Link>
                 <Link
-                  href="/dashboard?tab=calculator"
+                  href="/dashboard/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 rounded-[3px] hover:bg-raised text-ink flex items-center gap-2"
+                  className="px-3 py-2 rounded-[3px] hover:bg-raised text-ink"
                 >
-                  <Sparkles className="size-4 text-accent" />
-                  <span>75% Margin Engine</span>
-                </Link>
-                <Link
-                  href="/dashboard?tab=timetable"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 rounded-[3px] hover:bg-raised text-ink flex items-center gap-2"
-                >
-                  <Calendar className="size-4 text-accent" />
-                  <span>Timetable</span>
+                  Student Profile
                 </Link>
               </>
             )}
@@ -294,6 +309,50 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
               </>
             )}
           </div>
+
+          {isMock && switchRole && (
+            <div className="pt-3 border-t border-line flex flex-col gap-2">
+              <span className="text-[10px] font-mono uppercase text-muted font-bold">Switch Mock Role</span>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchRole("student");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`py-1.5 text-xs font-bold rounded-[3px] border transition-colors cursor-pointer text-center ${
+                    role === "student" ? "bg-accent text-accent-contrast border-accent" : "border-line text-muted hover:text-ink"
+                  }`}
+                >
+                  Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchRole("lecturer");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`py-1.5 text-xs font-bold rounded-[3px] border transition-colors cursor-pointer text-center ${
+                    role === "lecturer" ? "bg-accent text-accent-contrast border-accent" : "border-line text-muted hover:text-ink"
+                  }`}
+                >
+                  Faculty
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchRole("admin");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`py-1.5 text-xs font-bold rounded-[3px] border transition-colors cursor-pointer text-center ${
+                    role === "admin" ? "bg-accent text-accent-contrast border-accent" : "border-line text-muted hover:text-ink"
+                  }`}
+                >
+                  Admin
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="pt-3 border-t border-line flex items-center justify-between">
             {user ? (

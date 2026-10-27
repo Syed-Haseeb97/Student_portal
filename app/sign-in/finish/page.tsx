@@ -50,6 +50,9 @@ export default function FinishSignInPage() {
           } else if (trimmedEmail.startsWith("fac") || trimmedEmail.includes("faculty")) {
             role = "lecturer";
           }
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem("iiitt_mock_role", role);
+          }
           setResolvedRole(role);
           const target = role === "admin" ? "/admin" : role === "lecturer" ? "/lecturer" : "/dashboard";
           setRedirectTarget(target);

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -11,21 +10,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Mail, ArrowLeft, ShieldAlert, CheckCircle2, RotateCcw, ArrowRight } from "lucide-react";
 
 export default function SignInPage() {
-  const router = useRouter();
-  const { user, role, isMock } = useAuth();
+  const { user, role, isMock, signOut } = useAuth();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "rate_limited" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
-
-  // If already logged in, redirect to their role dashboard
-  useEffect(() => {
-    if (user && role) {
-      if (role === "admin") router.replace("/admin");
-      else if (role === "lecturer") router.replace("/lecturer");
-      else router.replace("/dashboard");
-    }
-  }, [user, role, router]);
 
   // Handle countdown timer
   useEffect(() => {
@@ -35,6 +24,36 @@ export default function SignInPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, [cooldown]);
+
+  if (user && role) {
+    const roleTarget = role === "admin" ? "/admin" : role === "lecturer" ? "/lecturer" : "/dashboard";
+    const roleLabel = role === "admin" ? "Admin Console" : role === "lecturer" ? "Faculty Portal" : "Student Dashboard";
+    return (
+      <main className="min-h-screen px-4 py-12 flex flex-col justify-center items-center bg-canvas">
+        <div className="w-full max-w-md space-y-4">
+          <Card variant="raised" className="text-center p-8 space-y-5 border-line">
+            <div className="size-12 rounded-full bg-accent/10 border border-accent/30 text-accent grid place-items-center mx-auto">
+              <CheckCircle2 className="size-6 text-accent" />
+            </div>
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold text-ink">Currently Authenticated</CardTitle>
+              <p className="text-xs text-muted">
+                You are signed in as <strong className="text-ink">{user.name || user.email}</strong> ({role.toUpperCase()}).
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 pt-2">
+              <Button href={roleTarget} variant="primary" size="md">
+                Continue to {roleLabel} &rarr;
+              </Button>
+              <Button onClick={() => signOut()} variant="outline" size="sm">
+                Sign Out & Switch Account
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </main>
+    );
+  }
 
   async function handleSendLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

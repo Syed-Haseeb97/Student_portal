@@ -30,7 +30,39 @@ export interface AuthContextValue {
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  switchRole?: (role: UserRole) => void;
 }
+
+const MOCK_PROFILES: Record<UserRole, AuthProfile> = {
+  student: {
+    uid: "mock-student-261161",
+    email: "261161@iiitt.ac.in",
+    role: "student",
+    name: "Syed Haseeb",
+    rollNumber: "261161",
+    batch: "2026",
+    programme: "Computer Science & Engineering",
+    active: true,
+  },
+  lecturer: {
+    uid: "mock-lecturer-1",
+    email: "fac01@iiitt.ac.in",
+    role: "lecturer",
+    name: "Dr. Faculty Member",
+    staffId: "FAC-01",
+    department: "Computer Science & Engineering",
+    active: true,
+  },
+  admin: {
+    uid: "mock-admin-1",
+    email: "admin@iiitt.ac.in",
+    role: "admin",
+    name: "System Administrator",
+    staffId: "ADM-01",
+    department: "Academic Section",
+    active: true,
+  },
+};
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -40,22 +72,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [user, setUser] = useState<AuthProfile | null>(() => {
     if (typeof window !== "undefined" && isMockModeEnabled()) {
-      return {
-        uid: "mock-student-261161",
-        email: "261161@iiitt.ac.in",
-        role: "student",
-        name: "Syed Haseeb",
-        rollNumber: "261161",
-        batch: "2026",
-        programme: "Computer Science & Engineering",
-        active: true,
-      };
+      const stored = window.localStorage.getItem("iiitt_mock_role");
+      if (stored === "signed_out") return null;
+      if (stored === "admin" || stored === "lecturer") return MOCK_PROFILES[stored];
+      return MOCK_PROFILES.student;
     }
     return null;
   });
 
   const [role, setRole] = useState<UserRole | null>(() => {
     if (typeof window !== "undefined" && isMockModeEnabled()) {
+      const stored = window.localStorage.getItem("iiitt_mock_role");
+      if (stored === "signed_out") return null;
+      if (stored === "admin" || stored === "lecturer") return stored;
       return "student";
     }
     return null;
@@ -164,11 +193,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [isMock]
   );
 
+  const switchRole = useCallback(
+    (newRole: UserRole) => {
+      if (!isMock) return;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("iiitt_mock_role", newRole);
+      }
+      const profile = MOCK_PROFILES[newRole];
+      setUser(profile);
+      setRole(newRole);
+      if (newRole === "admin") router.push("/admin");
+      else if (newRole === "lecturer") router.push("/lecturer");
+      else router.push("/dashboard");
+    },
+    [isMock, router]
+  );
+
   const signOut = useCallback(async () => {
     if (isMock) {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("iiitt_mock_role", "signed_out");
+      }
       setUser(null);
       setRole(null);
-      router.push("/");
+      router.push("/sign-in");
       return;
     }
     try {
@@ -176,7 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fbSignOut(auth);
       setUser(null);
       setRole(null);
-      router.push("/");
+      router.push("/sign-in");
     } catch (err) {
       console.error("Error signing out:", err);
     }
@@ -191,8 +239,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       getIdToken,
       signOut,
       refreshProfile,
+      switchRole,
     }),
-    [user, role, loading, isMock, getIdToken, signOut, refreshProfile]
+    [user, role, loading, isMock, getIdToken, signOut, refreshProfile, switchRole]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
