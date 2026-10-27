@@ -75,7 +75,7 @@ No Firebase project configuration, production rule deployment, real roster uploa
 
 1. Review the first-admin provisioning runbook with the institution.
 2. Expand negative/edge-case integration tests for duplicate imports, inactive actors, malformed bodies, and concurrent role changes, then complete a focused security review.
-3. Build out instructor attendance-marking and session creation frontend workflows.
+3. Complete lecturer session creation, roll-call attendance marking, and cancellation interface (implemented in MVP under `/lecturer`).
 4. Obtain and import the institute-approved roster and academic catalog only after explicit authorization.
 5. Verify institutional policy and operational workflows with authorized stakeholders.
 6. Consider a live pilot only after a focused security review and separate, explicit approval.

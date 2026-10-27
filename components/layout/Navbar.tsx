@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Menu, X, ShieldCheck, GraduationCap } from "lucide-react";
+import { Menu, X, ShieldCheck, GraduationCap, Briefcase } from "lucide-react";
 
 interface NavbarProps {
   currentPath?: string;
@@ -65,6 +65,14 @@ export function Navbar({
               Student Dashboard
             </Link>
             <Link
+              href="/lecturer"
+              className={`transition-colors hover:text-ink ${
+                currentPath.startsWith("/lecturer") ? "text-accent font-semibold" : ""
+              }`}
+            >
+              Lecturer Portal
+            </Link>
+            <Link
               href="/#policy"
               className="transition-colors hover:text-ink"
             >
@@ -80,7 +88,11 @@ export function Navbar({
             </Badge>
 
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-surface border border-line text-xs">
-              <GraduationCap className="size-3.5 text-accent" />
+              {userRole === "lecturer" ? (
+                <Briefcase className="size-3.5 text-accent" />
+              ) : (
+                <GraduationCap className="size-3.5 text-accent" />
+              )}
               <span className="font-medium text-ink">{userRollNumber}</span>
               <span className="text-muted/60">|</span>
               <span className="text-muted capitalize">{userRole}</span>
@@ -116,7 +128,9 @@ export function Navbar({
             <span className="text-muted">Simulated Profile:</span>
             <div className="flex items-center gap-1 text-ink font-medium">
               <ShieldCheck className="size-3.5 text-accent" />
-              <span>Roll: {userRollNumber}</span>
+              <span>
+                {userRole === "lecturer" ? "Faculty" : "Roll"}: {userRollNumber}
+              </span>
             </div>
           </div>
           <nav className="flex flex-col gap-2 text-sm">
@@ -133,6 +147,13 @@ export function Navbar({
               className="px-3 py-2 rounded-lg hover:bg-raised text-muted hover:text-ink"
             >
               Student Dashboard
+            </Link>
+            <Link
+              href="/lecturer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg hover:bg-raised text-muted hover:text-ink"
+            >
+              Lecturer Portal
             </Link>
             <Link
               href="/#policy"

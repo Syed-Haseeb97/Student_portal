@@ -112,9 +112,104 @@ Corrects a mark on a completed session. Requires `{ "mark": "present" | "absent"
 
 ## Lecturer
 
-- `POST /api/sessions`: create a scheduled session for an active offering assigned to the lecturer. Body includes `offeringId`, `sessionDate` (a real calendar date in `YYYY-MM-DD` form), and optional `startTime`, `endTime`, `room`. Times use 24-hour `HH:MM` campus wall-clock values in Asia/Kolkata; they are stored as strings without UTC conversion. If both are given, `endTime` must be later than `startTime`.
-- `POST /api/sessions/{sessionId}/attendance`: submit exactly one `present`/`absent` mark for every active enrollee. The transaction writes all marks, marks the session completed, and writes an audit event.
-- `POST /api/sessions/{sessionId}/cancel`: cancel a scheduled session with a required 5–300 character reason. Completed sessions cannot be cancelled through this route.
+All lecturer endpoints require an active `staff/{uid}` document with `role: "lecturer"` or `role: "admin"`. Lecturers can only access offerings and sessions assigned to them in `teachingAssignments`.
+
+### `GET /api/lecturer/dashboard`
+
+Returns the signed-in faculty member's profile identity, active assigned course offerings, and class sessions.
+Response shape (`LecturerDashboardData` in `lib/api/types.ts`):
+
+```json
+{
+  "lecturer": {
+    "uid": "firebase-uid",
+    "email": "faculty@iiitt.ac.in",
+    "name": "Dr. K. Ramanathan",
+    "role": "lecturer"
+  },
+  "offerings": [
+    {
+      "id": "cs201-2026s1",
+      "courseId": "cs201",
+      "courseCode": "CS201",
+      "courseTitle": "Data Structures and Algorithms",
+      "term": "2026-S1",
+      "batch": "2026",
+      "programme": "CSE",
+      "enrolledCount": 13,
+      "active": true
+    }
+  ],
+  "sessions": [
+    {
+      "id": "sess-104",
+      "offeringId": "cs201-2026s1",
+      "courseCode": "CS201",
+      "courseTitle": "Data Structures and Algorithms",
+      "sessionDate": "2026-10-27",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "room": "LH-101",
+      "state": "scheduled",
+      "createdAt": "2026-10-26T08:00:00.000Z"
+    }
+  ],
+  "todayDate": "2026-10-27",
+  "generatedAt": "2026-10-27T08:00:00.000Z"
+}
+```
+
+### `GET /api/sessions/{sessionId}`
+
+Returns the session metadata, offering details, and enrolled student roster for roll-call (if `scheduled`) or finalized marks (if `completed` or `cancelled`).
+Response shape (`SessionDetailData` in `lib/api/types.ts`):
+
+```json
+{
+  "session": {
+    "id": "sess-104",
+    "offeringId": "cs201-2026s1",
+    "courseCode": "CS201",
+    "courseTitle": "Data Structures and Algorithms",
+    "sessionDate": "2026-10-27",
+    "startTime": "09:00",
+    "endTime": "10:00",
+    "room": "LH-101",
+    "state": "scheduled"
+  },
+  "offering": {
+    "id": "cs201-2026s1",
+    "courseId": "cs201",
+    "courseCode": "CS201",
+    "courseTitle": "Data Structures and Algorithms",
+    "term": "2026-S1",
+    "batch": "2026",
+    "programme": "CSE"
+  },
+  "roster": [
+    {
+      "studentUid": "student-261101",
+      "rollNumber": "261101",
+      "name": "Aarav Sharma",
+      "batch": "2026",
+      "programme": "CSE"
+    }
+  ],
+  "totalCount": 13
+}
+```
+
+### `POST /api/sessions`
+
+Create a scheduled session for an active offering assigned to the lecturer. Body includes `offeringId`, `sessionDate` (a real calendar date in `YYYY-MM-DD` form), and optional `startTime`, `endTime`, `room`. Times use 24-hour `HH:MM` campus wall-clock values in Asia/Kolkata; they are stored as strings without UTC conversion. If both are given, `endTime` must be later than `startTime`. Returns `{ "ok": true, "sessionId": "...", "state": "scheduled" }` with HTTP 201.
+
+### `POST /api/sessions/{sessionId}/attendance`
+
+Submit roll-call attendance. Requires `{ "marks": [{ "studentUid": "...", "mark": "present" | "absent" }] }` with exactly one present/absent mark for every active enrollee in the offering. The transaction writes all marks, transitions the session state to `completed`, and logs an audit event.
+
+### `POST /api/sessions/{sessionId}/cancel`
+
+Cancel a scheduled session with a required 5–300 character reason `{ "reason": "..." }`. Completed sessions cannot be cancelled through this route. Transitions the session state to `cancelled` and logs an audit event.
 
 ## Status codes and operational boundaries
 

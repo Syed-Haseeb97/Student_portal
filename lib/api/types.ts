@@ -1,33 +1,23 @@
-/**
- * Shared API and domain types for the IIIT Tiruchirappalli Student Portal.
- * Dashboard fields follow docs/BACKEND_API_CONTRACT.md.
- */
-
+export type AttendanceStatus = "compliant" | "shortfall" | "no_data";
+export type NormalizedAttendanceStatus = "compliant" | "shortfall" | "no_data";
+export type SessionStatus = "scheduled" | "completed" | "cancelled";
+export type AttendanceMark = "present" | "absent";
 export type UserRole = "student" | "lecturer" | "admin";
 
-export interface ApiErrorResponse {
-  error: string;
+export interface StudentSummary {
+  offeringId: string;
+  courseId: string | null;
+  courseCode: string | null;
+  courseTitle: string;
+  term: string | null;
+  attended: number;
+  missed: number;
+  total: number;
+  percentage: number | null;
+  status: NormalizedAttendanceStatus;
+  thresholdPercent: number;
+  latestSessionDate: string | null;
 }
-
-/**
- * The dashboard API returns "compliant" | "shortfall" | "no_data".
- * The normalizer accepts the calculation engine's legacy "below_threshold" value.
- */
-export type AttendanceStatus = "compliant" | "shortfall" | "no_data";
-
-export type NormalizedAttendanceStatus = "compliant" | "shortfall" | "no_data";
-
-export function normalizeAttendanceStatus(
-  status: AttendanceStatus | string | null | undefined
-): NormalizedAttendanceStatus {
-  if (status === "compliant") return "compliant";
-  if (status === "shortfall" || status === "below_threshold") return "shortfall";
-  return "no_data";
-}
-
-export type SessionStatus = "scheduled" | "completed" | "cancelled";
-
-export type AttendanceMark = "present" | "absent";
 
 export interface StudentIdentity {
   uid: string;
@@ -39,31 +29,27 @@ export interface StudentIdentity {
 }
 
 export interface AttendancePolicy {
-  thresholdPercent: number; // Locked at 75
-  countsOnlyCompletedSessions: boolean; // Locked: true
-}
-
-export interface CourseSummary {
-  offeringId: string;
-  courseId: string | null;
-  courseCode: string | null;
-  courseTitle: string;
-  term: string | null;
-  attended: number;
-  missed: number;
-  total: number;
-  percentage: number | null;
-  status: AttendanceStatus;
   thresholdPercent: number;
-  latestSessionDate?: string | null;
+  countsOnlyCompletedSessions: boolean;
 }
 
 export interface StudentDashboardData {
   student: StudentIdentity;
   policy: AttendancePolicy;
-  summaries: CourseSummary[];
+  summaries: StudentSummary[];
   generatedAt: string;
   isSynthetic?: boolean;
+}
+
+export function normalizeAttendanceStatus(
+  status: string | null | undefined
+): NormalizedAttendanceStatus {
+  if (!status) return "no_data";
+  if (status === "below_threshold") return "shortfall";
+  if (status === "compliant" || status === "shortfall" || status === "no_data") {
+    return status;
+  }
+  return "no_data";
 }
 
 export interface SessionRecord {
@@ -92,9 +78,13 @@ export interface SessionCreatePayload {
 }
 
 export interface AttendanceSubmissionPayload {
-  marks: Array<{
+  marks?: Array<{
     studentUid: string;
     mark: AttendanceMark;
+  }>;
+  records?: Array<{
+    studentUid: string;
+    status: AttendanceMark;
   }>;
 }
 
@@ -125,4 +115,124 @@ export interface ApiResponse<T> {
   error?: string;
   status: number;
   isMock?: boolean;
+}
+
+export interface ApiErrorResponse {
+  error: string;
+  code?: string;
+}
+
+// ==========================================
+// Lecturer Workflow Types
+// ==========================================
+
+export interface LecturerIdentity {
+  uid: string;
+  email: string;
+  name?: string | null;
+  displayName?: string | null;
+  employeeId?: string | null;
+  department?: string | null;
+  designation?: string | null;
+  role: "lecturer" | "admin";
+}
+
+export interface LecturerOffering {
+  id: string; // offeringId
+  courseId: string;
+  courseCode: string | null;
+  courseTitle: string;
+  term: string | null;
+  batch: string | null;
+  programme: string | null;
+  department?: string | null;
+  enrolledCount: number;
+  enrolledStudentsCount?: number;
+  sessionCount?: number;
+  active: boolean;
+}
+
+export interface LecturerSessionSummary {
+  id: string;
+  offeringId: string;
+  courseCode: string | null;
+  courseTitle: string;
+  sessionDate: string; // YYYY-MM-DD
+  startTime?: string | null;
+  endTime?: string | null;
+  room?: string | null;
+  state: SessionStatus;
+  status?: SessionStatus;
+  cancellationReason?: string | null;
+  presentCount?: number | null;
+  absentCount?: number | null;
+  totalCount?: number | null;
+  totalEligible?: number | null;
+  createdAt?: string | null;
+}
+
+export interface LecturerDashboardData {
+  lecturer: LecturerIdentity;
+  offerings: LecturerOffering[];
+  sessions: LecturerSessionSummary[];
+  todayDate: string; // YYYY-MM-DD
+  generatedAt: string;
+  isSynthetic?: boolean;
+}
+
+export interface RosterStudent {
+  studentUid: string;
+  rollNumber: string | null;
+  name?: string | null;
+  displayName?: string | null;
+  email?: string | null;
+  batch?: string | null;
+  programme?: string | null;
+  program?: string | null;
+  semester?: number | null;
+  status?: AttendanceMark;
+}
+
+export interface SessionDetailData {
+  session: {
+    id: string;
+    offeringId: string;
+    sessionDate: string;
+    courseCode?: string | null;
+    courseTitle?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+    room?: string | null;
+    state: SessionStatus;
+    status?: SessionStatus;
+    cancellationReason?: string | null;
+    completedAt?: string | null;
+    completedBy?: string | null;
+    cancelledAt?: string | null;
+    cancelledBy?: string | null;
+    presentCount?: number;
+    absentCount?: number;
+    totalCount?: number;
+  };
+  offering: {
+    id: string;
+    courseId: string | null;
+    courseCode: string | null;
+    courseTitle: string;
+    term: string | null;
+    batch: string | null;
+    programme: string | null;
+  };
+  roster: RosterStudent[];
+  marks?: Array<{
+    studentUid: string;
+    rollNumber: string | null;
+    name?: string | null;
+    mark: AttendanceMark;
+    recordedAt?: string | null;
+  }>;
+  presentCount?: number;
+  absentCount?: number;
+  totalCount?: number;
+  isSynthetic?: boolean;
 }

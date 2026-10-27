@@ -1,8 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getStudentDashboard, isMockModeEnabled } from "./client";
+import {
+  getStudentDashboard,
+  getLecturerDashboard,
+  getSessionDetails,
+  createSession,
+  submitAttendance,
+  cancelSession,
+  isMockModeEnabled,
+  resetMockLecturerState,
+} from "./client";
 import { normalizeAttendanceStatus } from "./types";
-import { SYNTHETIC_STUDENT } from "./mock-data";
+import { SYNTHETIC_STUDENT, SYNTHETIC_STUDENT_ROSTER } from "./mock-data";
 
 test("API client: mock mode is enabled by default in local dev without Firebase config", () => {
   assert.equal(isMockModeEnabled(), true);
@@ -129,6 +138,164 @@ test("API client: rejects unknown attendance statuses instead of hiding them as 
     assert.equal(result.error, "Malformed dashboard response: fields do not match the attendance API contract.");
   } finally {
     globalThis.fetch = originalFetch;
+    process.env.NEXT_PUBLIC_ENABLE_MOCK_API = originalEnv;
+  }
+});
+
+// --- Lecturer API Client Tests ---
+
+test("API client: getLecturerDashboard returns faculty identity, offerings, and sessions in mock mode", async () => {
+  resetMockLecturerState();
+  const result = await getLecturerDashboard();
+  assert.equal(result.status, 200);
+  assert.equal(result.isMock, true);
+  assert.ok(result.data);
+  assert.equal(result.data.lecturer.role, "lecturer");
+  assert.equal(result.data.lecturer.employeeId, "FAC-01");
+  assert.ok(result.data.offerings.length >= 2, "Expected at least 2 assigned offerings");
+  assert.ok(result.data.sessions.length >= 2, "Expected sessions to be present");
+
+  const offering = result.data.offerings[0];
+  assert.ok(offering.courseCode);
+  assert.ok(offering.courseTitle);
+  assert.ok(offering.enrolledCount > 0);
+});
+
+test("API client: getSessionDetails returns session metadata and roster in mock mode", async () => {
+  resetMockLecturerState();
+  const result = await getSessionDetails("sess-104");
+  assert.equal(result.status, 200);
+  assert.equal(result.isMock, true);
+  assert.ok(result.data);
+  assert.equal(result.data.session.id, "sess-104");
+  assert.equal(result.data.session.state, "scheduled");
+  assert.ok(result.data.roster.length > 0, "Roster must contain enrolled students");
+  assert.equal(result.data.roster[0].rollNumber, "261101");
+});
+
+test("API client: createSession adds a new scheduled session in mock mode", async () => {
+  resetMockLecturerState();
+  const createRes = await createSession({
+    offeringId: "cs201-2026s1",
+    sessionDate: "2026-10-30",
+    startTime: "11:00",
+    endTime: "12:00",
+    room: "LH-103",
+  });
+
+  assert.equal(createRes.status, 201);
+  assert.ok(createRes.data);
+  assert.ok(createRes.data.sessionId);
+  assert.equal(createRes.data.state, "scheduled");
+
+  // Verify it appears in dashboard
+  const dashRes = await getLecturerDashboard();
+  const created = dashRes.data?.sessions.find((s) => s.id === createRes.data?.sessionId);
+  assert.ok(created, "Created session must appear in dashboard sessions list");
+  assert.equal(created?.sessionDate, "2026-10-30");
+});
+
+test("API client: submitAttendance records attendance and marks session completed in mock mode", async () => {
+  resetMockLecturerState();
+  const createRes = await createSession({
+    offeringId: "cs201-2026s1",
+    sessionDate: "2026-10-31",
+    startTime: "14:00",
+    endTime: "15:00",
+    room: "LH-101",
+  });
+  assert.ok(createRes.data?.sessionId);
+  const sessionId = createRes.data.sessionId;
+
+  // Incomplete submission (missing students)
+  const incompleteRes = await submitAttendance(sessionId, {
+    marks: [{ studentUid: SYNTHETIC_STUDENT_ROSTER[0].studentUid, mark: "present" }],
+  });
+  assert.equal(incompleteRes.status, 400);
+  assert.ok(incompleteRes.error?.includes("must include attendance marks for all enrolled students"));
+
+  // Complete submission for all students
+  const fullMarks = SYNTHETIC_STUDENT_ROSTER.map((s, idx) => ({
+    studentUid: s.studentUid,
+    mark: idx === 0 ? ("absent" as const) : ("present" as const),
+  }));
+
+  const completeRes = await submitAttendance(sessionId, { marks: fullMarks });
+  assert.equal(completeRes.status, 200);
+  assert.ok(completeRes.data);
+  assert.equal(completeRes.data.state, "completed");
+  assert.equal(completeRes.data.recorded, fullMarks.length);
+
+  // Subsequent submission rejected
+  const duplicateRes = await submitAttendance(sessionId, { marks: fullMarks });
+  assert.equal(duplicateRes.status, 400);
+  assert.ok(duplicateRes.error?.includes("already completed"));
+});
+
+test("API client: cancelSession cancels a scheduled session with audited reason in mock mode", async () => {
+  resetMockLecturerState();
+  const createRes = await createSession({
+    offeringId: "cs202-2026s1",
+    sessionDate: "2026-11-01",
+    startTime: "10:00",
+    endTime: "11:00",
+    room: "LH-102",
+  });
+  assert.ok(createRes.data?.sessionId);
+  const sessionId = createRes.data.sessionId;
+
+  // Short reason rejected
+  const shortReasonRes = await cancelSession(sessionId, { reason: "bad" });
+  assert.equal(shortReasonRes.status, 400);
+  assert.ok(shortReasonRes.error?.includes("between 5 and 300 characters"));
+
+  // Valid cancellation
+  const cancelRes = await cancelSession(sessionId, {
+    reason: "Institute guest lecture on VLSI architecture scheduled.",
+  });
+  assert.equal(cancelRes.status, 200);
+  assert.ok(cancelRes.data);
+  assert.equal(cancelRes.data.state, "cancelled");
+
+  // Check detail retrieval reflects cancellation
+  const detailRes = await getSessionDetails(sessionId);
+  assert.equal(detailRes.data?.session.state, "cancelled");
+  assert.equal(
+    detailRes.data?.session.cancellationReason,
+    "Institute guest lecture on VLSI architecture scheduled."
+  );
+});
+
+test("API client: lecturer endpoints deny requests without token when mock mode is disabled", async () => {
+  const originalEnv = process.env.NEXT_PUBLIC_ENABLE_MOCK_API;
+  process.env.NEXT_PUBLIC_ENABLE_MOCK_API = "false";
+
+  try {
+    const dashRes = await getLecturerDashboard();
+    assert.equal(dashRes.status, 401);
+    assert.equal(dashRes.isMock, false);
+    assert.ok(dashRes.error?.includes("Authentication required"));
+
+    const detailRes = await getSessionDetails("sess-104");
+    assert.equal(detailRes.status, 401);
+    assert.equal(detailRes.isMock, false);
+    assert.ok(detailRes.error?.includes("Authentication required"));
+
+    const createRes = await createSession({
+      offeringId: "test",
+      sessionDate: "2026-10-30",
+    });
+    assert.equal(createRes.status, 401);
+    assert.equal(createRes.isMock, false);
+
+    const submitRes = await submitAttendance("sess-104", { marks: [] });
+    assert.equal(submitRes.status, 401);
+    assert.equal(submitRes.isMock, false);
+
+    const cancelRes = await cancelSession("sess-104", { reason: "Reason test" });
+    assert.equal(cancelRes.status, 401);
+    assert.equal(cancelRes.isMock, false);
+  } finally {
     process.env.NEXT_PUBLIC_ENABLE_MOCK_API = originalEnv;
   }
 });
