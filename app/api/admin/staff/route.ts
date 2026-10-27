@@ -5,8 +5,9 @@ import { readBoundedJson } from "@/lib/http/read-bounded-json";
 import { normalizeEmail, INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
 
 export const runtime = "nodejs";
+
 function tokenFrom(request: Request) {
-  return /^Bearer (.+)$/.exec(request.headers.get("authorization") ?? "")?.[1] ?? null;
+  return /^Bearer (.+)$/i.exec(request.headers.get("authorization") ?? "")?.[1] ?? null;
 }
 
 /** Provision an already-created, verified institutional Firebase Auth account as staff. */
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     if (parsed.reason === "too_large") return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
     return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }
-  const body = parsed.value as { email?: unknown; role?: unknown; active?: unknown } | null;
+  const body = parsed.value as { email?: unknown; role?: unknown; active?: unknown; name?: unknown; department?: unknown; staffId?: unknown } | null;
   const email = typeof body?.email === "string" ? normalizeEmail(body.email) : "";
   if (!INSTITUTIONAL_EMAIL_PATTERN.test(email) ||
       !["lecturer", "admin"].includes(String(body?.role)) ||
@@ -64,6 +65,9 @@ export async function POST(request: Request) {
         email,
         role: body.role,
         active: body.active,
+        name: typeof body.name === "string" ? body.name.trim() : (currentTarget.get("name") || targetUser.displayName || ""),
+        staffId: typeof body.staffId === "string" ? body.staffId.trim() : (currentTarget.get("staffId") || ""),
+        department: typeof body.department === "string" ? body.department.trim() : (currentTarget.get("department") || "CSE"),
         ...(currentTarget.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
         updatedAt: FieldValue.serverTimestamp(),
         updatedBy: actor.uid,
@@ -87,5 +91,62 @@ export async function POST(request: Request) {
     if (firebaseCode === "auth/user-not-found") return NextResponse.json({ error: "The target account must already exist and have a verified matching institutional email." }, { status: 409 });
     if (code.includes("Firebase ID token")) return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
     return NextResponse.json({ error: "Staff provisioning is temporarily unavailable. Retry later." }, { status: 503 });
+  }
+}
+
+/** List all provisioned staff (lecturers and admins) - Admin only */
+export async function GET(request: Request) {
+  const token = tokenFrom(request);
+  const isMock = process.env.NEXT_PUBLIC_ENABLE_MOCK_API === "true";
+
+  if (isMock) {
+    return NextResponse.json({
+      staff: [
+        { uid: "mock-lecturer-1", email: "fac01@iiitt.ac.in", role: "lecturer", active: true, name: "Dr. N. Renugadevi", staffId: "FAC-01", department: "Computer Science & Engineering" },
+        { uid: "mock-lecturer-2", email: "fac02@iiitt.ac.in", role: "lecturer", active: true, name: "Dr. C. Velmurugan", staffId: "FAC-02", department: "Electronics & Communication Engineering" },
+        { uid: "mock-admin-1", email: "admin@iiitt.ac.in", role: "admin", active: true, name: "Academic Office Admin", staffId: "ADM-01", department: "Academic Section" },
+      ],
+    });
+  }
+
+  if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+
+  try {
+    const { auth, db } = getFirebaseAdmin();
+    const actor = await auth.verifyIdToken(token, true);
+
+    const actorDoc = await db.collection("staff").doc(actor.uid).get();
+    if (!actorDoc.exists || actorDoc.get("role") !== "admin" || actorDoc.get("active") !== true) {
+      return NextResponse.json({ error: "Administrator authorization required." }, { status: 403 });
+    }
+
+    const snap = await db.collection("staff").get();
+    const staff = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        uid: d.id,
+        email: data.email || "",
+        role: data.role || "lecturer",
+        active: data.active === true,
+        name: data.name || "",
+        staffId: data.staffId || "",
+        department: data.department || "",
+        updatedAt: data.updatedAt ? (data.updatedAt.toDate ? data.updatedAt.toDate().toISOString() : String(data.updatedAt)) : null,
+      };
+    });
+
+    return NextResponse.json({ staff });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (
+      msg.includes("Firebase ID token") ||
+      msg.includes("decoding Firebase ID token") ||
+      msg.includes("auth/argument-error") ||
+      msg.includes("auth/id-token-expired") ||
+      msg.includes("auth/invalid-id-token")
+    ) {
+      return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
+    }
+    return NextResponse.json({ error: msg || "Internal error" }, { status: 500 });
   }
 }

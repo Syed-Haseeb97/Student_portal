@@ -15,7 +15,7 @@ type Kind = "courses" | "offerings" | "enrollments" | "assignments";
 type Row = Record<string, unknown>;
 
 function tokenFrom(request: Request) {
-  return /^Bearer (.+)$/.exec(request.headers.get("authorization") ?? "")?.[1] ?? null;
+  return /^Bearer (.+)$/i.exec(request.headers.get("authorization") ?? "")?.[1] ?? null;
 }
 function requiredString(value: unknown, field: string, max = 120) {
   if (typeof value !== "string" || !value.trim() || value.trim().length > max) {
@@ -53,27 +53,24 @@ function normalizedRows(kind: Kind, rawRows: unknown[]): Row[] {
     if (kind === "enrollments") {
       const offeringId = requiredString(row.offeringId, "offeringId", 100);
       const studentUid = requiredString(row.studentUid, "studentUid", 128);
-      if (!OFFERING_ID.test(offeringId) || !ID.test(studentUid)) throw new Error("INVALID:Enrollment offeringId/studentUid is invalid; offeringId must not contain underscores.");
+      if (!OFFERING_ID.test(offeringId) || !ID.test(studentUid)) throw new Error("INVALID:offeringId or studentUid contains unsupported characters.");
       return { id: `${offeringId}_${studentUid}`, offeringId, studentUid, active: activeFlag(row.active) };
     }
     const offeringId = requiredString(row.offeringId, "offeringId", 100);
     const lecturerUid = requiredString(row.lecturerUid, "lecturerUid", 128);
-    if (!OFFERING_ID.test(offeringId) || !ID.test(lecturerUid)) throw new Error("INVALID:Assignment offeringId/lecturerUid is invalid; offeringId must not contain underscores.");
+    if (!OFFERING_ID.test(offeringId) || !ID.test(lecturerUid)) throw new Error("INVALID:offeringId or lecturerUid contains unsupported characters.");
     return { id: `${offeringId}_${lecturerUid}`, offeringId, lecturerUid, active: activeFlag(row.active) };
   });
-  const ids = new Set<string>();
+  const seen = new Set<string>();
   for (const row of rows) {
     const id = String(row.id);
-    if (ids.has(id)) throw new Error("INVALID:Duplicate document IDs in this import.");
-    ids.add(id);
+    if (seen.has(id)) throw new Error("INVALID:Duplicate document IDs in this import.");
+    seen.add(id);
   }
   return rows;
 }
 
-/**
- * Admin-only, per-kind atomic import. Import courses, then offerings, then
- * enrollments/assignments. Each request is validated before any writes.
- */
+/** Atomically replace or upsert an academic-data collection chunk. */
 export async function POST(request: Request) {
   const token = tokenFrom(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
@@ -83,16 +80,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }
   const body = parsed.value as { kind?: unknown; rows?: unknown } | null;
-  if (!body || !["courses", "offerings", "enrollments", "assignments"].includes(String(body.kind)) ||
-      !Array.isArray(body.rows) || body.rows.length < 1 || body.rows.length > MAX_ROWS) {
-    return NextResponse.json({ error: `Provide kind (courses/offerings/enrollments/assignments) and 1–${MAX_ROWS} rows.` }, { status: 400 });
+  const kind = body?.kind as Kind;
+  if (!["courses", "offerings", "enrollments", "assignments"].includes(String(kind)) || !Array.isArray(body?.rows)) {
+    return NextResponse.json({ error: "Provide kind (courses|offerings|enrollments|assignments) and a rows array." }, { status: 400 });
   }
-  const kind = body.kind as Kind;
+  if (body.rows.length === 0 || body.rows.length > MAX_ROWS) {
+    return NextResponse.json({ error: `Import batches must contain between 1 and ${MAX_ROWS} rows.` }, { status: 400 });
+  }
+
   let rows: Row[];
   try {
     rows = normalizedRows(kind, body.rows);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message.replace(/^INVALID:/, "") : "Invalid import." }, { status: 400 });
+    const message = error instanceof Error ? error.message : "Malformed rows.";
+    if (message.startsWith("CONFLICT:")) return NextResponse.json({ error: message.slice("CONFLICT:".length) }, { status: 409 });
+    return NextResponse.json({ error: message.replace(/^INVALID:/, "") }, { status: 400 });
   }
 
   try {
@@ -101,73 +103,55 @@ export async function POST(request: Request) {
     if (identity.email_verified !== true || !INSTITUTIONAL_EMAIL_PATTERN.test(identity.email ?? "")) {
       return NextResponse.json({ error: "A verified institutional administrator account is required." }, { status: 403 });
     }
-    const refs = rows.map((row) => {
-      const collection = kind === "courses" ? "courses" : kind === "offerings" ? "courseOfferings" :
-        kind === "enrollments" ? "enrollments" : "teachingAssignments";
-      return db.collection(collection).doc(String(row.id));
-    });
-    const dependencies = rows.map((row) => {
-      if (kind === "offerings") return db.collection("courses").doc(String(row.courseId));
-      if (kind === "enrollments") return db.collection("courseOfferings").doc(String(row.offeringId));
-      if (kind === "assignments") return db.collection("courseOfferings").doc(String(row.offeringId));
-      return null;
-    });
+
+    const collectionName =
+      kind === "courses" ? "courses" :
+      kind === "offerings" ? "courseOfferings" :
+      kind === "enrollments" ? "enrollments" : "teachingAssignments";
+
+    const actorRef = db.collection("staff").doc(identity.uid);
+    const refs = rows.map((r) => db.collection(collectionName).doc(String(r.id)));
 
     await db.runTransaction(async (transaction) => {
-      const actor = await transaction.get(db.collection("staff").doc(identity.uid));
-      if (!actor.exists || actor.get("role") !== "admin" || actor.get("active") !== true) throw new Error("NOT_ADMIN");
-      const dependencyDocs = await Promise.all(dependencies.map((ref) => ref ? transaction.get(ref) : Promise.resolve(null)));
+      const actorDoc = await transaction.get(actorRef);
+      if (!actorDoc.exists || actorDoc.get("role") !== "admin" || actorDoc.get("active") !== true) {
+        throw new Error("NOT_ADMIN");
+      }
+
+      // Read every target document so that the write pipeline stays within Firestore's read-before-write constraint.
       const targetDocs = await Promise.all(refs.map((ref) => transaction.get(ref)));
 
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]!;
-        const dependency = dependencyDocs[i];
-        if (kind === "offerings") {
-          if (row.active === true && (!dependency?.exists || dependency.get("active") !== true)) {
-            throw new Error("DEPENDENCY:An active offering must reference an active course.");
-          }
-          if (row.active === false && !targetDocs[i]?.exists) {
-            throw new Error("CONFLICT:Cannot deactivate a course offering that does not exist.");
+      // Validate referential dependencies inside the transaction before any writes are applied.
+      if (kind === "offerings") {
+        const courseIds = [...new Set(rows.map((r) => String(r.courseId)))];
+        const courseDocs = await Promise.all(courseIds.map((id) => transaction.get(db.collection("courses").doc(id))));
+        const activeCourseIds = new Set(courseDocs.filter((d) => d.exists && d.get("active") === true).map((d) => d.id));
+        for (const row of rows) {
+          if (row.active === true && !activeCourseIds.has(String(row.courseId))) {
+            throw new Error("DEPENDENCY:Every active course offering must reference an active course.");
           }
         }
-        if (kind === "enrollments") {
-          const studentUid = String(row.studentUid);
-          const existingEnrollment = targetDocs[i];
-          if (row.active === false) {
-            if (!existingEnrollment?.exists || existingEnrollment.get("studentUid") !== studentUid) {
-              throw new Error("CONFLICT:Cannot deactivate an enrollment that does not exist.");
-            }
-          } else {
+      } else if (kind === "enrollments" || kind === "assignments") {
+        const offeringIds = [...new Set(rows.map((r) => String(r.offeringId)))];
+        const offeringDocs = await Promise.all(offeringIds.map((id) => transaction.get(db.collection("courseOfferings").doc(id))));
+        const offeringMap = new Map(offeringDocs.map((d) => [d.id, d]));
+
+        for (const row of rows) {
+          if (row.active !== true) continue;
+          const offeringId = String(row.offeringId);
+          const studentUid = String(row.studentUid ?? "");
+          const lecturerUid = String(row.lecturerUid ?? "");
+          const dependency = offeringMap.get(offeringId);
+
+          if (kind === "enrollments") {
             if (!dependency?.exists || dependency.get("active") !== true) {
               throw new Error("DEPENDENCY:Every active enrollment must reference an active course offering.");
             }
-            const profile = await transaction.get(db.collection("userProfiles").doc(studentUid));
-            if (!profile.exists || profile.get("active") !== true || profile.get("role") !== "student" ||
-                typeof profile.get("rosterId") !== "string") throw new Error("DEPENDENCY:Every enrollee must have an active roster-linked student profile.");
-            const roster = await transaction.get(db.collection("studentRoster").doc(String(profile.get("rosterId"))));
-            if (!roster.exists || roster.get("active") !== true ||
-                typeof roster.get("emailNormalized") !== "string" ||
-                profile.get("email") !== roster.get("emailNormalized")) {
-              throw new Error("DEPENDENCY:Every enrollee must have an active roster entry matching their claimed identity.");
+            const student = await transaction.get(db.collection("userProfiles").doc(studentUid));
+            if (!student.exists || student.get("role") !== "student" || student.get("active") !== true) {
+              throw new Error("DEPENDENCY:Active enrollments require an active student user profile.");
             }
-            const offering = dependencyDocs[i];
-            if (roster.get("batch") !== offering?.get("batch") ||
-                roster.get("programme") !== offering?.get("programme")) {
-              throw new Error("DEPENDENCY:Approved roster batch and programme must match the course offering.");
-            }
-            if (existingEnrollment?.exists && existingEnrollment.get("studentUid") !== studentUid) {
-              throw new Error("CONFLICT:An enrollment ID is already assigned to another student.");
-            }
-            row.rosterId = profile.get("rosterId");
-          }
-        }
-        if (kind === "assignments") {
-          const lecturerUid = String(row.lecturerUid);
-          const existingAssignment = targetDocs[i];
-          if (row.active === false) {
-            if (!existingAssignment?.exists || existingAssignment.get("lecturerUid") !== lecturerUid) {
-              throw new Error("CONFLICT:Cannot deactivate an assignment that does not exist.");
-            }
+            row.rosterId = student.get("rosterId");
           } else {
             if (!dependency?.exists || dependency.get("active") !== true) {
               throw new Error("DEPENDENCY:Every active assignment must reference an active course offering.");
@@ -207,5 +191,50 @@ export async function POST(request: Request) {
     if (code.startsWith("CONFLICT:")) return NextResponse.json({ error: code.slice("CONFLICT:".length) }, { status: 409 });
     if (code.includes("Firebase ID token")) return NextResponse.json({ error: "Your sign-in session expired. Sign in again." }, { status: 401 });
     return NextResponse.json({ error: "The import could not be completed right now. No records were imported; retry later." }, { status: 503 });
+  }
+}
+
+/** Retrieve academic catalog data (courses and offerings) */
+export async function GET(request: Request) {
+  const token = tokenFrom(request);
+  const isMock = process.env.NEXT_PUBLIC_ENABLE_MOCK_API === "true";
+
+  if (isMock) {
+    return NextResponse.json({
+      courses: [
+        { id: "cs201", code: "CS201", title: "Data Structures and Algorithms", credits: 4, active: true },
+        { id: "cs202", code: "CS202", title: "Operating Systems Principles", credits: 4, active: true },
+        { id: "cs203", code: "CS203", title: "Computer System Architecture", credits: 3, active: true },
+        { id: "cs204", code: "CS204", title: "Database Management Systems", credits: 4, active: true },
+        { id: "ma201", code: "MA201", title: "Discrete Mathematics & Linear Algebra", credits: 4, active: true },
+      ],
+      offerings: [
+        { id: "offering-cs201-2026", courseId: "cs201", courseCode: "CS201", courseTitle: "Data Structures and Algorithms", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-cs202-2026", courseId: "cs202", courseCode: "CS202", courseTitle: "Operating Systems Principles", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-cs203-2026", courseId: "cs203", courseCode: "CS203", courseTitle: "Computer System Architecture", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-cs204-2026", courseId: "cs204", courseCode: "CS204", courseTitle: "Database Management Systems", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-ma201-2026", courseId: "ma201", courseCode: "MA201", courseTitle: "Discrete Mathematics & Linear Algebra", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
+      ],
+    });
+  }
+
+  if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+
+  try {
+    const { auth, db } = getFirebaseAdmin();
+    await auth.verifyIdToken(token, true);
+
+    const [coursesSnap, offeringsSnap] = await Promise.all([
+      db.collection("courses").limit(100).get(),
+      db.collection("courseOfferings").limit(100).get(),
+    ]);
+
+    const courses = coursesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const offerings = offeringsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    return NextResponse.json({ courses, offerings });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error reading academic data";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
