@@ -90,7 +90,7 @@ export function StudentSubjectDetailModal({
         <div className="p-5 sm:p-6 border-b border-line/60 bg-surface flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-accent px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-accent px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
                 {summary.courseCode ?? summary.offeringId}
               </span>
               <span className="text-xs text-muted">Term: {summary.term ?? "Current Term"}</span>
@@ -116,7 +116,7 @@ export function StudentSubjectDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-[2px] border border-line bg-canvas text-muted hover:text-ink hover:bg-raised transition-colors cursor-pointer shrink-0"
+            className="p-2 rounded-full border border-line bg-canvas text-muted hover:text-ink hover:bg-raised transition-colors cursor-pointer shrink-0"
             aria-label="Close dialog"
           >
             <X className="size-4" />
@@ -128,7 +128,7 @@ export function StudentSubjectDetailModal({
           {/* Quick Metrics & Guidance Card */}
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Attendance Progress Card */}
-            <div className="p-4 rounded-[2px] bg-canvas border border-line flex items-center gap-4">
+            <div className="p-4 rounded-2xl bg-canvas border border-line flex items-center gap-4">
               <AttendanceProgress
                 attended={summary.attended}
                 total={summary.total}
@@ -217,13 +217,13 @@ export function StudentSubjectDetailModal({
               </div>
 
               {/* Filter tabs */}
-              <div className="flex items-center gap-1 bg-canvas p-1 rounded-[2px] border border-line text-[10px] font-mono">
+              <div className="flex items-center gap-1 bg-canvas p-1 rounded-full border border-line text-[10px] font-mono">
                 {(["all", "present", "absent", "scheduled"] as const).map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setFilter(tab)}
-                    className={`px-2.5 py-0.5 rounded-[2px] font-bold uppercase transition-colors cursor-pointer ${
+                    className={`px-3 py-1 rounded-full font-bold uppercase transition-colors cursor-pointer ${
                       filter === tab
                         ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
                         : "text-muted hover:text-ink"

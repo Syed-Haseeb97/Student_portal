@@ -142,7 +142,7 @@ export function StudentDashboardView({
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Top Banner: Mode Indicator & Simulator Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-[3px] bg-surface border border-line text-xs font-mono">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-full bg-surface border border-line text-xs font-mono">
         <div className="flex items-center gap-2.5">
           <Badge variant={isMock ? "preview" : "compliant"} size="sm">
             {isMock ? (
@@ -183,7 +183,7 @@ export function StudentDashboardView({
                   setMockScenario(scenario);
                   loadDashboard(scenario);
                 }}
-                className={`px-2 py-1 rounded-[2px] text-[10px] font-mono font-bold border transition-colors cursor-pointer uppercase ${
+                className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold border transition-colors cursor-pointer uppercase ${
                   mockScenario === scenario
                     ? "bg-[#283226] border-accent text-accent shadow-xs"
                     : "bg-canvas border-line text-muted hover:text-ink hover:border-line/80"
@@ -199,11 +199,11 @@ export function StudentDashboardView({
       {/* Roster-Linked Student Identity Banner */}
       {data?.student && (
         <section aria-label="Student Identity Information">
-          <div className="p-5 sm:p-6 rounded-[3px] bg-surface border border-line relative overflow-hidden">
+          <div className="p-5 sm:p-6 rounded-3xl bg-surface border border-line relative overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
               <div className="flex items-start sm:items-center gap-4">
                 {/* Student Avatar Monogram */}
-                <div className="size-13 rounded-[2px] bg-canvas border border-line p-2 flex items-center justify-center shrink-0">
+                <div className="size-13 rounded-full bg-canvas border border-line p-2 flex items-center justify-center shrink-0">
                   <Image
                     src="/images/iiitt-seal.png"
                     alt="IIITT Official Crest"
@@ -327,7 +327,7 @@ export function StudentDashboardView({
           {/* Statutory Policy Card & Summary KPIs */}
           <section aria-label="Attendance Summary and Policy" className="grid gap-3 md:grid-cols-4">
             {/* Policy Card */}
-            <Card variant="raised" className="md:col-span-2 relative overflow-hidden flex flex-col justify-between rounded-[3px]">
+            <Card variant="raised" className="md:col-span-2 relative overflow-hidden flex flex-col justify-between">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted">
@@ -355,7 +355,7 @@ export function StudentDashboardView({
             </Card>
 
             {/* KPI: Compliant Courses */}
-            <Card className="flex flex-col justify-between hover:border-accent/40 transition-colors rounded-[3px]">
+            <Card className="flex flex-col justify-between hover:border-accent/40 transition-colors">
               <CardHeader className="pb-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono uppercase font-bold text-muted">On Track (≥ {data.policy.thresholdPercent}%)</span>
@@ -373,7 +373,7 @@ export function StudentDashboardView({
             </Card>
 
             {/* KPI: Shortfall Courses */}
-            <Card className={`flex flex-col justify-between transition-colors rounded-[3px] ${
+            <Card className={`flex flex-col justify-between transition-colors ${
               shortfallCourses.length > 0 ? "border-risk/40 bg-risk/5" : "hover:border-line"
             }`}>
               <CardHeader className="pb-1">
@@ -419,7 +419,7 @@ export function StudentDashboardView({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search subject or code..."
-                    className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-xs rounded-[2px] bg-canvas border border-line text-ink placeholder:text-muted/60 font-mono focus-visible:outline-2 focus-visible:outline-accent"
+                    className="w-full sm:w-48 pl-8 pr-4 py-1.5 text-xs rounded-full bg-canvas border border-line text-ink placeholder:text-muted/60 font-mono focus-visible:outline-2 focus-visible:outline-accent"
                     aria-label="Filter subjects by code or title"
                   />
                   {searchQuery && (
@@ -435,11 +435,11 @@ export function StudentDashboardView({
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-1 bg-surface p-1 rounded-[2px] border border-line text-xs overflow-x-auto">
+                <div className="flex items-center gap-1 bg-surface p-1 rounded-full border border-line text-xs overflow-x-auto">
                   <button
                     type="button"
                     onClick={() => setActiveFilter("all")}
-                    className={`px-2.5 py-1 rounded-[2px] font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
+                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                       activeFilter === "all"
                         ? "bg-[#283226] text-ink border border-line"
                         : "text-muted hover:text-ink"
@@ -450,7 +450,7 @@ export function StudentDashboardView({
                   <button
                     type="button"
                     onClick={() => setActiveFilter("compliant")}
-                    className={`px-2.5 py-1 rounded-[2px] font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
+                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                       activeFilter === "compliant"
                         ? "bg-[#d9fa58]/15 text-[#d9fa58] border border-[#d9fa58]/35"
                         : "text-muted hover:text-ink"
@@ -461,7 +461,7 @@ export function StudentDashboardView({
                   <button
                     type="button"
                     onClick={() => setActiveFilter("shortfall")}
-                    className={`px-2.5 py-1 rounded-[2px] font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
+                    className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                       activeFilter === "shortfall"
                         ? "bg-risk/15 text-risk border border-risk/35"
                         : "text-muted hover:text-ink"
@@ -473,7 +473,7 @@ export function StudentDashboardView({
                     <button
                       type="button"
                       onClick={() => setActiveFilter("no_data")}
-                      className={`px-2.5 py-1 rounded-[2px] font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
+                      className={`px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent ${
                         activeFilter === "no_data"
                           ? "bg-raised text-muted border border-line"
                           : "text-muted hover:text-ink"
@@ -623,14 +623,14 @@ export function StudentDashboardView({
                               </>
                             )}
 
-                            {/* Practical Guidance Callout */}
+                            {/* Practical Guidance Callout: Pill Capsules */}
                             {isShortfall && guidance.sessionsToRecover > 0 && (
-                              <div className="p-1.5 rounded-[2px] bg-risk/10 border border-risk/30 text-[10px] font-mono font-bold text-risk leading-tight uppercase">
+                              <div className="py-1 px-3 rounded-full bg-risk/10 border border-risk/30 text-[10px] font-mono font-bold text-risk leading-tight uppercase inline-block">
                                 Attend next <strong>{guidance.sessionsToRecover}</strong> {guidance.sessionsToRecover === 1 ? "class" : "classes"} for 75%
                               </div>
                             )}
                             {isCompliant && (
-                              <div className="p-1.5 rounded-[2px] bg-[#d9fa58]/10 border border-[#d9fa58]/30 text-[10px] font-mono font-bold text-accent leading-tight uppercase">
+                              <div className="py-1 px-3 rounded-full bg-[#d9fa58]/10 border border-[#d9fa58]/30 text-[10px] font-mono font-bold text-accent leading-tight uppercase inline-block">
                                 {guidance.sessionsCanMiss > 0 ? (
                                   <>Can miss <strong>{guidance.sessionsCanMiss}</strong> {guidance.sessionsCanMiss === 1 ? "class" : "classes"} safely</>
                                 ) : (

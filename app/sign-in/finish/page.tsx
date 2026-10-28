@@ -197,7 +197,7 @@ export default function FinishSignInPage() {
               </form>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-[3px] border border-accent/40 bg-accent/10 p-4 text-xs text-ink space-y-2">
+                <div className="rounded-2xl border border-accent/40 bg-accent/10 p-4 text-xs text-ink space-y-2">
                   <div className="flex items-center gap-2 text-accent font-semibold font-mono text-xs">
                     <CheckCircle2 className="size-4 shrink-0" />
                     AUTHENTICATION VERIFIED
@@ -220,7 +220,7 @@ export default function FinishSignInPage() {
             {status === "error" && (
               <div
                 role="alert"
-                className="rounded-[3px] border border-risk/40 bg-risk/10 p-3.5 text-xs leading-relaxed flex items-start gap-2.5 text-risk"
+                className="rounded-2xl border border-risk/40 bg-risk/10 p-3.5 text-xs leading-relaxed flex items-start gap-2.5 text-risk"
               >
                 <AlertCircle className="size-4 shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>
@@ -230,7 +230,7 @@ export default function FinishSignInPage() {
             {status === "idle" && (
               <div
                 role="status"
-                className="rounded-[3px] border border-line bg-surface p-3 text-xs leading-relaxed flex items-start gap-2.5 text-muted"
+                className="rounded-2xl border border-line bg-surface p-3 text-xs leading-relaxed flex items-start gap-2.5 text-muted"
               >
                 <ShieldCheck className="size-4 shrink-0 mt-0.5 text-accent" />
                 <span>

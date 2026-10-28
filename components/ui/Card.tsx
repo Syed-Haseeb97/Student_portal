@@ -19,7 +19,7 @@ export function Card({
 
   return (
     <div
-      className={`rounded-[3px] border transition-all ${variantStyles[variant]} ${className}`}
+      className={`rounded-2xl border transition-all ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {children}

@@ -27,9 +27,8 @@ export default function HomePage() {
         <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           {/* Left Column: Official Branding & Campus Identity */}
           <div className="space-y-6">
-            {/* Mobility Signature Eyebrow */}
+            {/* Mobility Signature Eyebrow: Capsule with curved horizontal ends */}
             <div className="landing-eyebrow">
-              <span className="eyebrow-pulse" />
               <span>ACADEMIC LEDGER · 2026 SESSION · IIIT TIRUCHIRAPPALLI</span>
             </div>
 
@@ -67,8 +66,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Permanent Campus Showcase Card: Sharp Mobility Architecture */}
-            <div className="relative rounded-[3px] overflow-hidden border border-line group bg-surface">
+            {/* Permanent Campus Showcase Card */}
+            <div className="relative rounded-3xl overflow-hidden border border-line group bg-surface">
               <div className="relative h-48 sm:h-56 w-full">
                 <Image
                   src="/images/iiitt-campus.jpg"
@@ -81,12 +80,12 @@ export default function HomePage() {
               </div>
 
               <div className="absolute top-3 left-3 z-10">
-                <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-[2px] bg-canvas/90 border border-line text-accent font-bold">
+                <span className="text-[10px] font-mono uppercase tracking-widest px-3 py-1 rounded-full bg-canvas/90 border border-line text-accent font-bold">
                   01 / SETHURAPPATTI (NH-45B)
                 </span>
               </div>
 
-              <div className="absolute bottom-0 inset-x-0 p-4 space-y-1 z-10">
+              <div className="absolute bottom-0 inset-x-0 p-5 space-y-1 z-10">
                 <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-accent">
                   <MapPin className="size-3.5" />
                   <span>Permanent Campus · Central Academic Block</span>
@@ -97,33 +96,30 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Fast Stats Ticker: Precision Monospace */}
-            <div className="grid grid-cols-3 gap-2.5 pt-1">
-              <div className="p-3 rounded-[3px] bg-surface border border-line text-center">
-                <span className="text-2xl sm:text-3xl font-black text-accent font-mono block">75%</span>
-                <span className="text-[10px] text-muted font-mono uppercase mt-0.5 block">Statutory Rule</span>
+            {/* Fast Stats Ticker: Precision Capsules */}
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="py-3 px-2 sm:px-4 rounded-full bg-surface border border-line text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-black text-accent font-mono block">75%</span>
+                <span className="text-[9px] text-muted font-mono uppercase mt-0.5 block truncate max-w-full px-1">Statutory Rule</span>
               </div>
-              <div className="p-3 rounded-[3px] bg-surface border border-line text-center">
-                <span className="text-2xl sm:text-3xl font-black text-ink font-mono block">100%</span>
-                <span className="text-[10px] text-muted font-mono uppercase mt-0.5 block">Roster Verified</span>
+              <div className="py-3 px-2 sm:px-4 rounded-full bg-surface border border-line text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-black text-ink font-mono block">100%</span>
+                <span className="text-[9px] text-muted font-mono uppercase mt-0.5 block truncate max-w-full px-1">Roster Verified</span>
               </div>
-              <div className="p-3 rounded-[3px] bg-surface border border-line text-center">
-                <span className="text-2xl sm:text-3xl font-black text-[#c9d5b5] font-mono block">0</span>
-                <span className="text-[10px] text-muted font-mono uppercase mt-0.5 block">Attendance Drift</span>
+              <div className="py-3 px-2 sm:px-4 rounded-full bg-surface border border-line text-center flex flex-col items-center justify-center">
+                <span className="text-xl sm:text-2xl font-black text-[#c9d5b5] font-mono block">0</span>
+                <span className="text-[9px] text-muted font-mono uppercase mt-0.5 block truncate max-w-full px-1">Zero Drift</span>
               </div>
             </div>
           </div>
 
           {/* Right Column: Institutional Gateway Access */}
           <div className="lg:sticky lg:top-24 space-y-4">
-            <div className="p-6 sm:p-8 rounded-[3px] bg-surface border border-line space-y-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-surface border border-line space-y-6">
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-accent" />
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold">
-                    INSTITUTIONAL ACCESS
-                  </span>
-                </div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold px-3 py-1 rounded-full bg-accent/10 border border-accent/25 inline-block">
+                  INSTITUTIONAL ACCESS
+                </span>
                 <h2 className="text-xl sm:text-2xl font-bold uppercase text-ink tracking-tight">
                   Sign In to Portal
                 </h2>
@@ -135,7 +131,7 @@ export default function HomePage() {
               <div className="pt-2">
                 <Link
                   href="/sign-in"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-[3px] bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm"
                 >
                   <span>Sign In with @iiitt.ac.in</span>
                   <ArrowRight className="size-4" />
@@ -159,7 +155,7 @@ export default function HomePage() {
             </div>
 
             {/* Quick Helper Notes */}
-            <div className="p-3.5 rounded-[3px] bg-surface border border-line text-xs text-muted space-y-1.5">
+            <div className="p-4 rounded-2xl bg-surface border border-line text-xs text-muted space-y-1.5">
               <div className="flex items-center gap-2 font-bold font-mono text-ink text-[11px] uppercase">
                 <ShieldCheck className="size-3.5 text-accent" />
                 <span>Institutional Verification Guarantee</span>
@@ -175,10 +171,10 @@ export default function HomePage() {
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-line pb-4">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold block mb-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold px-3 py-1 rounded-full bg-accent/10 border border-accent/25 inline-block mb-1">
                 PLATFORM CAPABILITIES
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-ink">
+              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-ink mt-1">
                 Engineered specifically for IIIT Trichy
               </h2>
             </div>
@@ -189,9 +185,9 @@ export default function HomePage() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* Pillar 1 */}
-            <div className="p-5 rounded-[3px] bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
+            <div className="p-6 rounded-2xl bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-accent font-bold uppercase">
+                <span className="text-[10px] font-mono text-accent font-bold uppercase px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
                   01 / STATUTORY RULE
                 </span>
                 <ShieldCheck className="size-4 text-accent" />
@@ -203,9 +199,9 @@ export default function HomePage() {
             </div>
 
             {/* Pillar 2 */}
-            <div className="p-5 rounded-[3px] bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
+            <div className="p-6 rounded-2xl bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-accent font-bold uppercase">
+                <span className="text-[10px] font-mono text-accent font-bold uppercase px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
                   02 / WEEKLY SCHEDULE
                 </span>
                 <Calendar className="size-4 text-accent" />
@@ -217,9 +213,9 @@ export default function HomePage() {
             </div>
 
             {/* Pillar 3 */}
-            <div className="p-5 rounded-[3px] bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
+            <div className="p-6 rounded-2xl bg-surface border border-line space-y-3 hover:border-accent/40 transition-all">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-accent font-bold uppercase">
+                <span className="text-[10px] font-mono text-accent font-bold uppercase px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
                   03 / RESOURCE SCHEDULING
                 </span>
                 <Clock className="size-4 text-accent" />

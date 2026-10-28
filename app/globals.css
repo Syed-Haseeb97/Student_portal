@@ -104,8 +104,8 @@ code, kbd, samp, pre {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 3px;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
   border: 1px solid rgba(217, 250, 88, 0.3);
   background: rgba(217, 250, 88, 0.05);
   color: #d9fa58;
@@ -114,24 +114,4 @@ code, kbd, samp, pre {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.eyebrow-pulse {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d9fa58;
-  box-shadow: 0 0 8px #d9fa58;
-  animation: pulse-dot 2s infinite ease-in-out;
-}
-
-@keyframes pulse-dot {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scale(0.75);
-  }
 }

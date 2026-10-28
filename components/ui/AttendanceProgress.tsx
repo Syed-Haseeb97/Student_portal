@@ -57,7 +57,7 @@ export function AttendanceProgress({
             <span className="text-muted flex items-center gap-1.5 font-mono text-[11px]">
               <span>Attendance</span>
               {showMarkerBadge && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded-[2px] bg-canvas border border-line text-muted">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-canvas border border-line text-muted">
                   Target: {thresholdPercent}%
                 </span>
               )}
@@ -67,9 +67,9 @@ export function AttendanceProgress({
             </span>
           </div>
         )}
-        <div className="relative h-2 w-full rounded-[2px] bg-canvas border border-line overflow-hidden">
+        <div className="relative h-2 w-full rounded-full bg-canvas border border-line overflow-hidden">
           <div
-            className={`h-full rounded-[2px] transition-all duration-300 ${
+            className={`h-full rounded-full transition-all duration-300 ${
               isNoData
                 ? "bg-muted/40"
                 : isCompliant

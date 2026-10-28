@@ -24,8 +24,8 @@ const variantStyles: Record<BadgeVariant, string> = {
 };
 
 const sizeStyles = {
-  sm: "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase rounded-[3px]",
-  md: "px-2.5 py-1 text-xs font-bold font-mono tracking-wider uppercase rounded-[3px]",
+  sm: "px-3 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase rounded-full",
+  md: "px-3.5 py-1 text-xs font-bold font-mono tracking-wider uppercase rounded-full",
 };
 
 export function Badge({

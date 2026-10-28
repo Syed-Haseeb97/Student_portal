@@ -57,7 +57,7 @@ export default function StudentProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Left Card: Identity Card */}
             <Card variant="raised" className="border-line/80 md:col-span-1 p-6 text-center space-y-4">
-              <div className="size-20 rounded-[3px] bg-accent/10 border border-accent/25 mx-auto flex items-center justify-center text-accent">
+              <div className="size-20 rounded-full bg-accent/10 border border-accent/25 mx-auto flex items-center justify-center text-accent">
                 <GraduationCap className="size-10" />
               </div>
               <div>
@@ -87,7 +87,7 @@ export default function StudentProfilePage() {
               </CardHeader>
               <CardContent className="space-y-4 pt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3.5 rounded-[3px] bg-surface border border-line space-y-1">
+                  <div className="p-3.5 rounded-2xl bg-surface border border-line space-y-1">
                     <span className="text-[10px] font-mono text-muted uppercase block">
                       Institutional Mailbox
                     </span>
@@ -97,7 +97,7 @@ export default function StudentProfilePage() {
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-[3px] bg-surface border border-line space-y-1">
+                  <div className="p-3.5 rounded-2xl bg-surface border border-line space-y-1">
                     <span className="text-[10px] font-mono text-muted uppercase block">
                       Graduation Batch Year
                     </span>
@@ -107,7 +107,7 @@ export default function StudentProfilePage() {
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-[3px] bg-surface border border-line space-y-1 sm:col-span-2">
+                  <div className="p-3.5 rounded-2xl bg-surface border border-line space-y-1 sm:col-span-2">
                     <span className="text-[10px] font-mono text-muted uppercase block">
                       Degree Programme & Branch
                     </span>
@@ -117,7 +117,7 @@ export default function StudentProfilePage() {
                     </p>
                   </div>
 
-                  <div className="p-3.5 rounded-[3px] bg-surface border border-line space-y-1 sm:col-span-2">
+                  <div className="p-3.5 rounded-2xl bg-surface border border-line space-y-1 sm:col-span-2">
                     <span className="text-[10px] font-mono text-muted uppercase block">
                       Permanent Institute Campus
                     </span>
@@ -128,7 +128,7 @@ export default function StudentProfilePage() {
                   </div>
                 </div>
 
-                <div className="rounded-[3px] border border-line bg-canvas p-3 text-[11px] text-muted space-y-1 font-mono">
+                <div className="rounded-2xl border border-line bg-canvas p-4 text-[11px] text-muted space-y-1 font-mono">
                   <span className="text-accent uppercase font-bold block">75% Ordinance Compliance Notice</span>
                   <p className="leading-relaxed">
                     Under the Senate regulations of IIIT Tiruchirappalli, a minimum of 75% attendance

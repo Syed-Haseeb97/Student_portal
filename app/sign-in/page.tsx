@@ -162,7 +162,7 @@ export default function SignInPage() {
               </form>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-[3px] border border-accent/40 bg-accent/10 p-4 text-xs sm:text-sm text-ink space-y-2">
+                <div className="rounded-2xl border border-accent/40 bg-accent/10 p-4 text-xs sm:text-sm text-ink space-y-2">
                   <div className="flex items-center gap-2 text-accent font-semibold font-mono text-xs">
                     <CheckCircle2 className="size-4 shrink-0" />
                     SIGN-IN LINK DISPATCHED
@@ -175,7 +175,7 @@ export default function SignInPage() {
                 </div>
 
                 {isMock && (
-                  <div className="rounded-[3px] border border-line bg-surface p-3 text-xs space-y-2">
+                  <div className="rounded-2xl border border-line bg-surface p-3 text-xs space-y-2">
                     <div className="text-[11px] font-mono text-accent uppercase font-semibold">
                       Local Development Mock Mode
                     </div>
@@ -217,7 +217,7 @@ export default function SignInPage() {
             {(status === "error" || status === "rate_limited") && (
               <div
                 role="alert"
-                className="rounded-[3px] border border-risk/40 bg-risk/10 p-3.5 text-xs leading-relaxed flex items-start gap-2.5 text-risk"
+                className="rounded-2xl border border-risk/40 bg-risk/10 p-3.5 text-xs leading-relaxed flex items-start gap-2.5 text-risk"
               >
                 <ShieldAlert className="size-4 shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>

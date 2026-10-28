@@ -29,7 +29,7 @@ export function AppShell({
             <p className="font-medium text-ink flex items-center gap-2">
               <span>Indian Institute of Information Technology, Tiruchirappalli</span>
               {isMock && (
-                <span className="text-[10px] font-mono text-warning bg-warning/10 border border-warning/20 px-1.5 py-0.2 rounded-[2px]">
+                <span className="text-[10px] font-mono text-warning bg-warning/10 border border-warning/20 px-2.5 py-0.5 rounded-full">
                   SYNTHETIC PREVIEW
                 </span>
               )}
