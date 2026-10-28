@@ -95,3 +95,40 @@ export async function enforceRateLimit(
 
   return { allowed: true, retryAfterSeconds: 0 };
 }
+
+/**
+ * Releases (decrements) a consumed rate limit attempt if a downstream operation fails.
+ */
+export async function releaseRateLimit(prefix: string, rawKey: string): Promise<void> {
+  const key = sanitizeKey(prefix, rawKey);
+  const bucket = memoryStore.get(key);
+  if (bucket) {
+    if (bucket.count <= 1) {
+      memoryStore.delete(key);
+    } else {
+      bucket.count -= 1;
+    }
+  }
+
+  if (
+    process.env.NEXT_PUBLIC_ENABLE_MOCK_API !== "true" &&
+    (process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+  ) {
+    try {
+      const { db } = getFirebaseAdmin();
+      const docRef = db.collection("rateLimits").doc(key);
+      const snap = await docRef.get();
+      if (snap.exists) {
+        const data = snap.data();
+        const count = typeof data?.count === "number" ? data.count : 0;
+        if (count <= 1) {
+          await docRef.delete();
+        } else {
+          await docRef.update({ count: count - 1 });
+        }
+      }
+    } catch {
+      // Ignore cleanup error
+    }
+  }
+}

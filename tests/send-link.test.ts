@@ -69,12 +69,14 @@ test("send-link enforces rate limits on excessive attempts", async () => {
 
 test("send-link returns 503 in production when RESEND_API_KEY is missing and emulator is inactive", async () => {
   const origNodeEnv = process.env.NODE_ENV;
+  const origProvider = process.env.EMAIL_PROVIDER;
   const origResendKey = process.env.RESEND_API_KEY;
   const origMock = process.env.NEXT_PUBLIC_ENABLE_MOCK_API;
   const origEmulator = process.env.FIREBASE_AUTH_EMULATOR_HOST;
 
   try {
     (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    process.env.EMAIL_PROVIDER = "resend";
     delete process.env.RESEND_API_KEY;
     process.env.NEXT_PUBLIC_ENABLE_MOCK_API = "false";
     delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
@@ -90,6 +92,8 @@ test("send-link returns 503 in production when RESEND_API_KEY is missing and emu
     assert.match(data.error, /Email delivery service is currently unavailable/i);
   } finally {
     (process.env as Record<string, string | undefined>).NODE_ENV = origNodeEnv;
+    if (origProvider !== undefined) process.env.EMAIL_PROVIDER = origProvider;
+    else delete process.env.EMAIL_PROVIDER;
     if (origResendKey !== undefined) process.env.RESEND_API_KEY = origResendKey;
     if (origMock !== undefined) process.env.NEXT_PUBLIC_ENABLE_MOCK_API = origMock;
     if (origEmulator !== undefined) process.env.FIREBASE_AUTH_EMULATOR_HOST = origEmulator;

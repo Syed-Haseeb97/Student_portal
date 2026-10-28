@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { readBoundedJson } from "@/lib/http/read-bounded-json";
 import { normalizeEmail, INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
-import { enforceRateLimit } from "@/lib/auth/rate-limit";
+import { enforceRateLimit, releaseRateLimit } from "@/lib/auth/rate-limit";
+import {
+  getEmailProvider,
+  isProviderConfigured,
+  sendPortalEmail,
+  sanitizeErrorMessage,
+} from "@/lib/email/mailer";
 
 const GENERIC_RESPONSE = {
   ok: true,
@@ -102,13 +107,15 @@ export async function POST(request: Request) {
     return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
+  const provider = getEmailProvider();
+  const isConfigured = isProviderConfigured(provider);
   const isEmulator = Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST);
   const isProduction = process.env.NODE_ENV === "production";
 
-  // In production without an active emulator, missing RESEND_API_KEY is a fatal configuration error.
-  if (!resendKey && !isEmulator && isProduction) {
-    console.error("[FATAL] RESEND_API_KEY is missing in production environment. Outbound email delivery is disabled.");
+  // In production without an active emulator, unconfigured provider is a fatal 503.
+  // Never log the sign-in link or credentials in production.
+  if (!isConfigured && !isEmulator && isProduction) {
+    console.error(`[FATAL] ${provider.toUpperCase()} email provider is not configured in production environment.`);
     return NextResponse.json(
       { error: "Email delivery service is currently unavailable. Please contact the administrator." },
       { status: 503 }
@@ -116,6 +123,7 @@ export async function POST(request: Request) {
   }
 
   // 6. Generate action link with Firebase Admin SDK
+  let link: string;
   try {
     const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL || "http://localhost:3000";
     const redirectUrl = baseUrl.endsWith("/sign-in/finish")
@@ -123,44 +131,55 @@ export async function POST(request: Request) {
       : `${baseUrl.replace(/\/$/, "")}/sign-in/finish`;
 
     const { auth } = getFirebaseAdmin();
-    const link = await auth.generateSignInWithEmailLink(email, {
+    link = await auth.generateSignInWithEmailLink(email, {
       url: redirectUrl,
       handleCodeInApp: true,
     });
-
-    // Dev / emulator fallback: only in non-production or when emulator is active
-    if (!resendKey || isEmulator) {
-      console.log("\n=======================================================");
-      console.log(" [DEV / EMULATOR SIGN-IN LINK]");
-      console.log(` Recipient: ${email}`);
-      console.log(` Action URL: ${link}`);
-      console.log(" Open the URL above in your browser to complete sign-in.");
-      console.log("=======================================================\n");
-      return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
+  } catch (authError) {
+    await releaseRateLimit("email", email);
+    await releaseRateLimit("ip", ip);
+    const sanitized = sanitizeErrorMessage(authError);
+    console.error("Firebase Admin failed to generate sign-in link:", sanitized);
+    if (!isProduction) {
+      return NextResponse.json({ error: sanitized }, { status: 500 });
     }
+    return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
+  }
 
-    // Live mode: send email with Resend
-    const resend = new Resend(resendKey);
-    const emailFrom = process.env.EMAIL_FROM || "IIITT Portal <attendance@iiitt.ac.in>";
+  // 7. Non-production / emulator fallback: log link to server console
+  if (!isConfigured || isEmulator) {
+    console.log("\n=======================================================");
+    console.log(" [DEV / EMULATOR SIGN-IN LINK]");
+    console.log(` Recipient: ${email}`);
+    console.log(` Action URL: ${link}`);
+    console.log(" Open the URL above in your browser to complete sign-in.");
+    console.log("=======================================================\n");
+    return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
+  }
 
-    await resend.emails.send({
-      from: emailFrom,
+  // 8. Live mode: dispatch email via configured provider
+  try {
+    await sendPortalEmail({
       to: email,
       subject: "IIIT Trichy Attendance Portal — Sign-In Link",
       html: buildEmailHtml(link, email),
-      text: `Sign in to IIIT Trichy Academic Attendance Portal\n\nClick the link below to sign in:\n${link}\n\nThis link expires in 15 minutes. Restricted to @iiitt.ac.in accounts.`,
+      text: `Sign in to IIIT Trichy Academic Attendance Portal\n\nClick the link below to sign in:\n${link}\n\nThis link expires in 15 minutes. Restricted to verified @iiitt.ac.in accounts.`,
     });
 
     return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
-  } catch (error) {
-    console.error("Error generating or dispatching sign-in link:", error);
-    // Anti-enumeration: still return generic response unless it was a configuration or fatal error in dev
+  } catch (dispatchError) {
+    // On dispatch failure, do not consume rate limit attempt
+    await releaseRateLimit("email", email);
+    await releaseRateLimit("ip", ip);
+
+    const sanitized = sanitizeErrorMessage(dispatchError);
+    console.error(`[EMAIL DELIVERY FAILURE] Failed to send sign-in link to ${email}: ${sanitized}`);
+
     if (process.env.NODE_ENV === "development") {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Failed to generate sign-in link" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: sanitized }, { status: 500 });
     }
+
+    // Generic response in production to maintain anti-enumeration and user privacy
     return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
   }
 }

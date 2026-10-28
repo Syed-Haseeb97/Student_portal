@@ -1,3 +1,5 @@
+import { getEmailProvider, extractAddress } from "@/lib/email/mailer";
+
 /**
  * Startup and runtime environment validation for IIIT Trichy Attendance Portal.
  * Provides clear, actionable error messages when required configuration is missing.
@@ -15,7 +17,11 @@ export function validatePortalEnv(): EnvValidationResult {
   const warnings: string[] = [];
 
   if (isMock) {
-    return { valid: true, missing: [], warnings: ["Running in MOCK API preview mode. Live Firebase and Resend services are bypassed."] };
+    return {
+      valid: true,
+      missing: [],
+      warnings: ["Running in MOCK API preview mode. Live Firebase and outbound email services are bypassed."],
+    };
   }
 
   // Server-side checks (when executed in server context)
@@ -33,12 +39,34 @@ export function validatePortalEnv(): EnvValidationResult {
       }
     }
 
-    if (!process.env.RESEND_API_KEY) {
-      warnings.push("RESEND_API_KEY is not configured. Outbound emails will fall back to server console logging.");
-    }
-
-    if (!process.env.EMAIL_FROM) {
-      warnings.push("EMAIL_FROM is not configured. Defaulting to 'IIITT Portal <attendance@iiitt.ac.in>'");
+    // Email provider checks
+    const provider = getEmailProvider();
+    if (provider === "gmail") {
+      if (!process.env.GMAIL_USER) {
+        missing.push("GMAIL_USER (Required when EMAIL_PROVIDER=gmail)");
+      }
+      if (!process.env.GMAIL_APP_PASSWORD) {
+        missing.push("GMAIL_APP_PASSWORD (16-character App Password required when EMAIL_PROVIDER=gmail)");
+      }
+      if (!process.env.EMAIL_FROM) {
+        missing.push("EMAIL_FROM (Required when EMAIL_PROVIDER=gmail and must match GMAIL_USER)");
+      } else if (process.env.GMAIL_USER) {
+        const fromAddr = extractAddress(process.env.EMAIL_FROM);
+        const userAddr = process.env.GMAIL_USER.trim().toLowerCase();
+        if (fromAddr !== userAddr) {
+          missing.push(
+            `EMAIL_FROM address mismatch: "${fromAddr}" does not match GMAIL_USER "${userAddr}". When EMAIL_PROVIDER=gmail, EMAIL_FROM must use the authenticated Gmail account address.`
+          );
+        }
+      }
+    } else {
+      // Resend provider
+      if (!process.env.RESEND_API_KEY) {
+        warnings.push("RESEND_API_KEY is not configured. Outbound emails will fall back to server console logging.");
+      }
+      if (!process.env.EMAIL_FROM) {
+        warnings.push("EMAIL_FROM is not configured. Defaulting to 'IIITT Portal <attendance@iiitt.ac.in>'");
+      }
     }
 
     if (!process.env.APP_URL && !process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL) {

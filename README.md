@@ -46,13 +46,42 @@ Official mobile-first academic attendance ledger, 75% statutory bunk margin calc
      firebase deploy --only firestore:rules
      ```
 
-### 2. Resend Outbound Email Setup
+### 2. Outbound Email Delivery Setup
+
+The portal supports two outbound email providers: **Gmail SMTP** (`EMAIL_PROVIDER=gmail`) and **Resend** (`EMAIL_PROVIDER=resend`).
+
+#### Option A: Gmail SMTP Configuration (Recommended)
+1. **Enable 2-Step Verification**:
+   - Navigate to your [Google Account Security](https://myaccount.google.com/security).
+   - Ensure **2-Step Verification** is enabled.
+2. **Generate a 16-character App Password**:
+   - Go to **Security** > **2-Step Verification** > **App passwords** (or search "App passwords" in account search).
+   - Create an app named `IIITT Attendance Portal`.
+   - Copy the generated 16-character string (format: `xxxx xxxx xxxx xxxx`).
+3. **Configure Environment Variables**:
+   ```env
+   EMAIL_PROVIDER=gmail
+   GMAIL_USER=your-email@gmail.com
+   GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx
+   EMAIL_FROM="IIIT Trichy Attendance Portal <your-email@gmail.com>"
+   ```
+4. **Important Operational Notes & Limitations**:
+   - **Address Alignment**: `EMAIL_FROM` must use the exact same email address as `GMAIL_USER`. Google SMTP will reject or flag messages if the sender address attempts spoofing.
+   - **Daily Sending Quota**: Free standard Gmail accounts are subject to an outbound limit of **~500 emails per 24-hour rolling window** (Google Workspace accounts allow up to ~2,000/day).
+   - **Spam Warning & Burst Suspension**: Sending rapid bursts of automated sign-in emails can trigger Gmail's automated heuristics, causing outbound rate limiting, message rejections, or temporary account suspension.
+5. **SMTP Diagnostic Script**:
+   Verify outbound delivery directly via CLI:
+   ```bash
+   npx tsx scripts/send-test-email.ts <recipient@iiitt.ac.in>
+   ```
+
+#### Option B: Resend Configuration
 1. Sign up or log into [Resend](https://resend.com).
-2. Generate an API Key in **API Keys** and set it as `RESEND_API_KEY`.
-3. **Institutional Domain Verification**:
+2. Generate an API Key under **API Keys** and set `RESEND_API_KEY`.
+3. Set `EMAIL_PROVIDER=resend`.
+4. **Institutional Domain Verification**:
    - By default, Resend's free `onboarding@resend.dev` only delivers to the owner's email address.
-   - To deliver to real students and faculty `@iiitt.ac.in`, add `iiitt.ac.in` under **Domains** in Resend.
-   - Configure the required DNS records (DKIM, SPF, MX) on the institute's DNS management console.
+   - To deliver to real students and faculty `@iiitt.ac.in`, add `iiitt.ac.in` under **Domains** in Resend and configure the DNS records (DKIM, SPF, MX).
    - Configure `EMAIL_FROM="IIITT Attendance <attendance@iiitt.ac.in>"`.
 
 ### 3. First Administrator Bootstrap
