@@ -18,7 +18,7 @@ export function setCustomMailTransportForTesting(transport: Transporter | null):
 export function extractAddress(fromHeader: string): string {
   if (!fromHeader) return "";
   const match = fromHeader.match(/<([^>]+)>/);
-  return (match ? match[1] : fromHeader).trim().toLowerCase();
+  if (match) return match[1].trim().toLowerCase(); const emailMatch = fromHeader.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/); if (emailMatch) return emailMatch[1].trim().toLowerCase(); return fromHeader.trim().toLowerCase();
 }
 
 /**
@@ -198,3 +198,4 @@ export async function sendPortalEmail({
     throw new Error(sanitized);
   }
 }
+
