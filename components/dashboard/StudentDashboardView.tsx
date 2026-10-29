@@ -16,6 +16,7 @@ import { StudentSubjectDetailModal } from "./StudentSubjectDetailModal";
 import { BranchTimetableView } from "@/components/timetable/BranchTimetableView";
 import { StudentNoticesView } from "@/components/notices/StudentNoticesView";
 import { resolveBranchFromRollOrEmail } from "@/lib/timetable/first-year-data";
+import { inferStudentFromRollOrEmail } from "@/lib/roster/validate";
 import {
   GraduationCap,
   ShieldCheck,
@@ -136,6 +137,14 @@ export function StudentDashboardView({
       user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email
     );
   }, [user?.rollNumber, user?.email, data?.student?.rollNumber, data?.student?.email]);
+
+  const studentBatch = useMemo(() => {
+    const identifier = user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || "";
+    const inferred = inferStudentFromRollOrEmail(identifier);
+    if (inferred?.batch) return inferred.batch;
+    if (data?.student?.batch) return data.student.batch;
+    return "2026";
+  }, [user?.rollNumber, user?.email, data?.student?.rollNumber, data?.student?.email, data?.student?.batch]);
 
   const departmentLabel = useMemo(() => {
     if (studentBranch === "11") return "Computer Science & Engineering";
@@ -321,7 +330,7 @@ export function StudentDashboardView({
           }`}
         >
           <Calendar className="size-4 shrink-0" />
-          <span className="sm:inline hidden">1st Year Timetable</span>
+          <span className="sm:inline hidden">{studentBatch === "2026" ? "1st Year Timetable" : "Weekly Timetable"}</span>
           <span className="sm:hidden inline">Timetable</span>
         </button>
 
@@ -346,6 +355,7 @@ export function StudentDashboardView({
         <BranchTimetableView
           userRollOrEmail={user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined}
           defaultBranch={studentBranch}
+          batch={studentBatch}
           allowBranchSwitching={false}
         />
       ) : activeTab === "notices" ? (

@@ -11,6 +11,7 @@ import {
   type CourseDetail,
   type BranchTimetable,
 } from "@/lib/timetable/first-year-data";
+import { inferStudentFromRollOrEmail } from "@/lib/roster/validate";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import {
@@ -32,6 +33,7 @@ import {
 interface BranchTimetableViewProps {
   userRollOrEmail?: string;
   defaultBranch?: "11" | "12" | "13" | "14";
+  batch?: string;
   className?: string;
   allowBranchSwitching?: boolean;
 }
@@ -41,6 +43,7 @@ const DAYS: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday
 export function BranchTimetableView({
   userRollOrEmail,
   defaultBranch,
+  batch,
   className = "",
   allowBranchSwitching = false,
 }: BranchTimetableViewProps) {
@@ -49,6 +52,19 @@ export function BranchTimetableView({
     if (defaultBranch) return defaultBranch;
     return resolveBranchFromRollOrEmail(userRollOrEmail);
   }, [defaultBranch, userRollOrEmail]);
+
+  // Determine intake batch (Batch 2026 is 1st Year, while 2025/2024/2023 are Seniors)
+  const studentBatch = useMemo(() => {
+    if (batch) return batch;
+    if (userRollOrEmail) {
+      const info = inferStudentFromRollOrEmail(userRollOrEmail);
+      if (info?.batch) return info.batch;
+    }
+    return "2026";
+  }, [batch, userRollOrEmail]);
+
+  const isSeniorBatch = studentBatch !== "2026";
+  const [showReferenceTimetable, setShowReferenceTimetable] = useState(false);
 
   const [userSelectedBranch, setUserSelectedBranch] = useState<"11" | "12" | "13" | "14">(inferredBranch);
   const selectedBranch = allowBranchSwitching ? userSelectedBranch : inferredBranch;
@@ -91,14 +107,16 @@ export function BranchTimetableView({
               <Calendar className="size-4" />
             </span>
             <h3 className="text-base sm:text-lg font-bold font-mono tracking-tight text-ink uppercase">
-              1st Year Academic Timetable (2026–27)
+              {isSeniorBatch ? `Academic Timetable · Batch ${studentBatch}` : "1st Year Academic Timetable (2026–27)"}
             </h3>
             <Badge variant="neutral" size="sm" className="hidden sm:inline-flex text-[10px] font-mono border-accent/40 text-accent">
-              Odd Semester I
+              {isSeniorBatch ? `Batch ${studentBatch}` : "Odd Semester I"}
             </Badge>
           </div>
           <p className="text-xs text-muted">
-            Official slot timetable, faculty contacts, and laboratory sessions for B.Tech Semester I.
+            {isSeniorBatch
+              ? `Slot schedule and faculty directory for Batch ${studentBatch} (${timetable.shortName}).`
+              : "Official slot timetable, faculty contacts, and laboratory sessions for B.Tech Semester I."}
           </p>
         </div>
 
@@ -141,7 +159,81 @@ export function BranchTimetableView({
         )}
       </div>
 
-      {/* View Options & Today Ticker Bar */}
+      {/* Senior Batch Timetable Status */}
+      {isSeniorBatch && !showReferenceTimetable ? (
+        <div className="rounded-2xl border border-amber-500/30 bg-surface/80 p-6 sm:p-10 text-center space-y-5 shadow-xs">
+          <div className="mx-auto size-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <Clock className="size-7 animate-pulse" />
+          </div>
+
+          <div className="space-y-2 max-w-xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-mono font-semibold">
+              <span>Batch {studentBatch}</span>
+              <span>·</span>
+              <span>{timetable.shortName}</span>
+            </div>
+
+            <h4 className="text-base sm:text-lg font-bold font-mono text-ink">
+              Timetable Pending
+            </h4>
+
+            <p className="text-sm text-muted leading-relaxed font-mono">
+              awaiting for this academic intake batch&apos;s timetable . if u think u could help email us at :{" "}
+              <a
+                href={`mailto:syed424892@gmail.com?subject=Timetable%20Contribution%20-%20Batch%20${studentBatch}%20${encodeURIComponent(timetable.shortName)}`}
+                className="inline-flex items-center gap-1 text-accent font-semibold underline underline-offset-4 hover:opacity-80 transition-opacity break-all"
+              >
+                syed424892@gmail.com
+                <Mail className="size-3.5 inline ml-0.5" />
+              </a>
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <a
+              href={`mailto:syed424892@gmail.com?subject=Timetable%20Contribution%20-%20Batch%20${studentBatch}%20${encodeURIComponent(timetable.shortName)}`}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-canvas font-mono font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-sm min-h-[40px] touch-manipulation"
+            >
+              <Mail className="size-4" />
+              <span>Email Timetable (syed424892@gmail.com)</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => setShowReferenceTimetable(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-raised border border-line text-muted hover:text-ink font-mono text-xs transition-colors cursor-pointer min-h-[40px] touch-manipulation"
+            >
+              <span>View 1st Year Reference</span>
+              <ChevronRight className="size-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Senior viewing 1st year reference banner */}
+          {isSeniorBatch && showReferenceTimetable && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <Clock className="size-4 text-amber-400 shrink-0" />
+                <span className="text-ink">
+                  Displaying 1st Year timetable for reference. Awaiting Batch {studentBatch} timetable — email{" "}
+                  <a href="mailto:syed424892@gmail.com" className="text-accent underline font-semibold">
+                    syed424892@gmail.com
+                  </a>{" "}
+                  if you have it!
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReferenceTimetable(false)}
+                className="text-[11px] text-muted hover:text-ink underline self-end sm:self-auto cursor-pointer"
+              >
+                Hide reference
+              </button>
+            </div>
+          )}
+
+          {/* View Options & Today Ticker Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-2">
           <Badge variant="neutral" size="sm" className="font-mono text-[11px]">
@@ -486,6 +578,8 @@ export function BranchTimetableView({
           ))}
         </div>
       </div>
+        </>
+      )}
 
       {/* Interactive Detail Modal on Cell Click */}
       {activeCourseModal && (
