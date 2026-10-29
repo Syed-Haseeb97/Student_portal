@@ -14,6 +14,7 @@
     "test:api": "node --conditions=react-server --import tsx --test tests/backend-routes.test.ts tests/e2e-auth-flow.test.ts"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "firebase": "^13.1.0",
     "firebase-admin": "^14.5.0",
     "lucide-react": "^0.468.0",
