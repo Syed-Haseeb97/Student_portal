@@ -73,9 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthProfile | null>(() => {
     if (typeof window !== "undefined" && isMockModeEnabled()) {
       const stored = window.localStorage.getItem("iiitt_mock_role");
-      if (stored === "signed_out") return null;
-      if (stored === "admin" || stored === "lecturer") return MOCK_PROFILES[stored];
-      return MOCK_PROFILES.student;
+      if (stored === "admin" || stored === "lecturer" || stored === "student") return MOCK_PROFILES[stored];
+      return null;
     }
     return null;
   });
@@ -83,9 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(() => {
     if (typeof window !== "undefined" && isMockModeEnabled()) {
       const stored = window.localStorage.getItem("iiitt_mock_role");
-      if (stored === "signed_out") return null;
-      if (stored === "admin" || stored === "lecturer") return stored;
-      return "student";
+      if (stored === "admin" || stored === "lecturer" || stored === "student") return stored;
+      return null;
     }
     return null;
   });
