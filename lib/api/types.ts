@@ -253,3 +253,42 @@ export interface StudentSessionRecord {
   cancelReason?: string | null;
   topic?: string | null;
 }
+
+// ==========================================
+// Notices, Deadlines & Assignment Types
+// ==========================================
+
+export type NoticeType = "notice" | "assignment";
+export type NoticePriority = "normal" | "important" | "urgent";
+
+export interface AcademicNotice {
+  id: string;
+  type: NoticeType;
+  title: string;
+  content: string;
+  courseCode?: string | null;
+  courseTitle?: string | null;
+  targetBranch?: "all" | "11" | "12" | "13" | "14";
+  priority: NoticePriority;
+  postedByUid: string;
+  postedByName: string;
+  postedByEmail: string;
+  postedByDepartment?: string | null;
+  createdAt: string; // ISO date
+  dueDate?: string | null; // For assignments (e.g. 2026-11-05T23:59)
+  maxMarks?: number | null;
+  submissionInfo?: string | null;
+}
+
+export interface CreateNoticePayload {
+  type: NoticeType;
+  title: string;
+  content: string;
+  courseCode?: string;
+  courseTitle?: string;
+  targetBranch?: "all" | "11" | "12" | "13" | "14";
+  priority?: NoticePriority;
+  dueDate?: string;
+  maxMarks?: number;
+  submissionInfo?: string;
+}

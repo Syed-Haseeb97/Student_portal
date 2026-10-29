@@ -6,7 +6,7 @@ import { createSession } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Calendar, Clock, MapPin, X, BookOpen, AlertCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, X, BookOpen, AlertCircle, Layers } from "lucide-react";
 
 interface SessionCreateModalProps {
   isOpen: boolean;
@@ -40,6 +40,7 @@ export function SessionCreateModal({
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [room, setRoom] = useState("LH-101");
+  const [classCount, setClassCount] = useState<number>(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,23 +82,47 @@ export function SessionCreateModal({
 
     setBusy(true);
 
-    const payload: SessionCreatePayload = {
-      offeringId,
-      sessionDate,
-      ...(startTime ? { startTime } : {}),
-      ...(endTime ? { endTime } : {}),
-      ...(room.trim() ? { room: room.trim() } : {}),
-    };
-
     const token = idToken || (await getIdToken()) || undefined;
-    const res = await createSession(payload, token);
-    setBusy(false);
+    let firstSessionId = "";
 
-    if (res.data) {
-      onSuccess(res.data.sessionId);
+    try {
+      for (let i = 0; i < classCount; i++) {
+        let sTime = startTime;
+        let eTime = endTime;
+
+        if (startTime && endTime && classCount > 1) {
+          const [sh, sm] = startTime.split(":").map(Number);
+          const [eh, em] = endTime.split(":").map(Number);
+          const durHours = Math.max(1, eh - sh);
+          const newStartH = Math.min(23, sh + i * durHours);
+          const newEndH = Math.min(23, newStartH + durHours);
+          sTime = `${String(newStartH).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
+          eTime = `${String(newEndH).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
+        }
+
+        const payload: SessionCreatePayload = {
+          offeringId,
+          sessionDate,
+          ...(sTime ? { startTime: sTime } : {}),
+          ...(eTime ? { endTime: eTime } : {}),
+          ...(room.trim() ? { room: room.trim() } : {}),
+        };
+
+        const res = await createSession(payload, token);
+        if (!res.data) {
+          throw new Error(res.error ?? "Failed to create class session.");
+        }
+        if (!firstSessionId) {
+          firstSessionId = res.data.sessionId;
+        }
+      }
+
+      setBusy(false);
+      onSuccess(firstSessionId);
       onClose();
-    } else {
-      setError(res.error ?? "Failed to create class session. Please check details.");
+    } catch (err: unknown) {
+      setBusy(false);
+      setError((err as Error).message);
     }
   }
 
@@ -114,9 +139,9 @@ export function SessionCreateModal({
           <div>
             <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent mb-1">
               <Calendar className="size-3.5" />
-              <span>Campus Timetable</span>
+              <span>Session Management</span>
             </div>
-            <h3 id="create-session-title" className="text-xl font-bold tracking-tight text-ink">
+            <h3 id="create-session-title" className="text-lg font-bold text-ink">
               Schedule Class Session
             </h3>
             <p className="text-xs text-muted mt-0.5">
@@ -172,6 +197,56 @@ export function SessionCreateModal({
             </div>
           </div>
 
+          {/* Classes Taken Count / Periods */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
+              <Layers className="size-3.5 text-accent" />
+              <span>Classes / Periods Taken Today</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setClassCount(1)}
+                className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                  classCount === 1
+                    ? "bg-accent text-[#171915] border-accent shadow-xs"
+                    : "bg-canvas text-muted border-line hover:text-ink hover:border-accent/50"
+                }`}
+              >
+                1 Period (1 hr)
+              </button>
+              <button
+                type="button"
+                onClick={() => setClassCount(2)}
+                className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                  classCount === 2
+                    ? "bg-accent text-[#171915] border-accent shadow-xs"
+                    : "bg-canvas text-muted border-line hover:text-ink hover:border-accent/50"
+                }`}
+              >
+                2 Periods (Double)
+              </button>
+              <button
+                type="button"
+                onClick={() => setClassCount(3)}
+                className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                  classCount === 3
+                    ? "bg-accent text-[#171915] border-accent shadow-xs"
+                    : "bg-canvas text-muted border-line hover:text-ink hover:border-accent/50"
+                }`}
+              >
+                3 Periods (Lab)
+              </button>
+            </div>
+            <p className="text-[10px] text-muted font-mono">
+              {classCount === 1
+                ? "Standard 1-hour lecture."
+                : classCount === 2
+                ? "Creates 2 consecutive session units for the double lecture so attendance percentage reflects 2 periods."
+                : "Creates 3 session units for the 3-hour practical/lab block."}
+            </p>
+          </div>
+
           {/* Date & Room */}
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
@@ -218,25 +293,17 @@ export function SessionCreateModal({
 
           <div className="p-3 rounded-xl bg-canvas border border-line/60 text-[11px] text-muted space-y-1">
             <p>
-              • Sessions are recorded in campus wall-clock time (Asia/Kolkata).
-            </p>
-            <p>
-              • Real-time conflict engine warns against double booking rooms across faculty offerings.
+              <strong>Ordinance Notice:</strong> Class roll calls record attendance directly to the permanent institutional database. All marked sessions contribute to each enrolled student&apos;s statutory 75% attendance ratio.
             </p>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-line/60">
-            <Button type="button" variant="secondary" size="md" onClick={onClose} disabled={busy}>
+          {/* Footer Action */}
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-line/60">
+            <Button variant="outline" size="sm" onClick={onClose} disabled={busy}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              busy={busy}
-            >
-              {busy ? "Scheduling..." : "Create Session"}
+            <Button variant="primary" size="sm" type="submit" busy={busy}>
+              <span>{classCount > 1 ? `Schedule ${classCount} Classes` : "Schedule Class"}</span>
             </Button>
           </div>
         </form>

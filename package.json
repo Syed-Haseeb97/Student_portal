@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --conditions=react-server --import tsx --test lib/attendance/calc.test.ts lib/roster/validate.test.ts lib/http/read-bounded-json.test.ts lib/api/client.test.ts tests/send-link.test.ts tests/email-provider.test.ts tests/api-me.test.ts tests/admin-auth.test.ts tests/auth-guards.test.ts",
+    "test": "node --conditions=react-server --import tsx --test lib/attendance/calc.test.ts lib/roster/validate.test.ts lib/timetable/first-year-data.test.ts lib/http/read-bounded-json.test.ts lib/api/client.test.ts tests/send-link.test.ts tests/email-provider.test.ts tests/api-me.test.ts tests/admin-auth.test.ts tests/auth-guards.test.ts tests/notices-and-faculty.test.ts",
     "check": "npm run lint && npm run typecheck && npm test",
     "test:rules": "tsx --test tests/firestore-rules.test.ts",
     "test:api": "node --conditions=react-server --import tsx --test tests/backend-routes.test.ts tests/e2e-auth-flow.test.ts"

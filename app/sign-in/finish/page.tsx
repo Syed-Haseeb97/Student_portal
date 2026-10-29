@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { completeInstitutionalSignIn, isInstitutionalSignInLink } from "@/lib/firebase/email-link";
 import { isMockModeEnabled } from "@/lib/api/client";
+import { isAuthorizedPortalEmail, getFacultyByEmail } from "@/lib/roster/validate";
 import { useAuth, type UserRole } from "@/components/auth/AuthProvider";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -31,7 +32,7 @@ export default function FinishSignInPage() {
   const executeSignIn = useCallback(
     async (targetEmail: string) => {
       const trimmedEmail = targetEmail.trim().toLowerCase();
-      if (!trimmedEmail || !trimmedEmail.endsWith("@iiitt.ac.in")) {
+      if (!trimmedEmail || !isAuthorizedPortalEmail(trimmedEmail)) {
         setStatus("error");
         setErrorMessage("Please enter a valid institutional @iiitt.ac.in email address.");
         return;
@@ -47,7 +48,7 @@ export default function FinishSignInPage() {
           let role: UserRole = "student";
           if (trimmedEmail.startsWith("admin") || trimmedEmail.includes("admin")) {
             role = "admin";
-          } else if (trimmedEmail.startsWith("fac") || trimmedEmail.includes("faculty")) {
+          } else if (trimmedEmail.startsWith("fac") || trimmedEmail.includes("faculty") || Boolean(getFacultyByEmail(trimmedEmail))) {
             role = "lecturer";
           }
           if (typeof window !== "undefined") {

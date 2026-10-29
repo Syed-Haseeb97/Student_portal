@@ -1,7 +1,14 @@
+import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
-import { INSTITUTIONAL_EMAIL_PATTERN, normalizeEmail } from "@/lib/roster/validate";
+import {
+  INSTITUTIONAL_EMAIL_PATTERN,
+  normalizeEmail,
+  inferStudentFromEmail,
+  getFacultyByEmail,
+  isAuthorizedPortalEmail,
+} from "@/lib/roster/validate";
 
 export const runtime = "nodejs";
 
@@ -9,7 +16,7 @@ function bearerToken(request: Request) {
   return /^Bearer (.+)$/.exec(request.headers.get("authorization") ?? "")?.[1] ?? null;
 }
 
-/** Match a verified Firebase identity to an admin-imported roster entry. */
+/** Match a verified Firebase identity to an admin-imported or auto-patterned roster entry. */
 export async function POST(request: Request) {
   const token = bearerToken(request);
   if (!token) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
@@ -18,11 +25,47 @@ export async function POST(request: Request) {
     const { auth, db } = getFirebaseAdmin();
     const identity = await auth.verifyIdToken(token, true);
     const email = normalizeEmail(identity.email ?? "");
-    if (identity.email_verified !== true || !INSTITUTIONAL_EMAIL_PATTERN.test(email)) {
-      return NextResponse.json({ error: "A verified @iiitt.ac.in email is required." }, { status: 403 });
+    if (identity.email_verified !== true || (!INSTITUTIONAL_EMAIL_PATTERN.test(email) && !isAuthorizedPortalEmail(email))) {
+      return NextResponse.json({ error: "A verified institutional or authorized faculty email is required." }, { status: 403 });
     }
 
-    const staffIdentity = await db.collection("staff").doc(identity.uid).get();
+    // 1. Staff check (admin or lecturer)
+    let staffIdentity = await db.collection("staff").doc(identity.uid).get();
+    if (!staffIdentity.exists) {
+      // Check if existing staff record exists by email
+      const staffByEmail = await db.collection("staff").where("email", "==", email).limit(1).get();
+      if (!staffByEmail.empty) {
+        const prevDoc = staffByEmail.docs[0]!;
+        await db.collection("staff").doc(identity.uid).set({
+          ...prevDoc.data(),
+          uid: identity.uid,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        staffIdentity = await db.collection("staff").doc(identity.uid).get();
+      } else {
+        // Check if email matches official 1st year faculty roster
+        const faculty = getFacultyByEmail(email);
+        if (faculty) {
+          await db.collection("staff").doc(identity.uid).set({
+            uid: identity.uid,
+            email,
+            role: "lecturer",
+            active: true,
+            name: faculty.name,
+            department: faculty.department,
+            staffId: faculty.staffId,
+            designation: faculty.designation,
+            phone: faculty.phone,
+            courses: faculty.courses,
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+            autoProvisioned: true,
+          }, { merge: true });
+          staffIdentity = await db.collection("staff").doc(identity.uid).get();
+        }
+      }
+    }
+
     if (staffIdentity.exists) {
       if (normalizeEmail(staffIdentity.get("email") ?? "") !== email) {
         return NextResponse.json({ error: "The signed-in email does not match the email on the provisioned staff account." }, { status: 403 });
@@ -33,11 +76,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, role: staffIdentity.get("role") });
     }
 
-    const roster = await db.collection("studentRoster")
+    // 2. Student roster matching
+    let roster = await db.collection("studentRoster")
       .where("emailNormalized", "==", email)
       .where("active", "==", true)
       .limit(2)
       .get();
+
+    // If no existing roster record, check if email matches the institutional student roll pattern:
+    // [YY][CourseCode][Roll]@iiitt.ac.in
+    // 11 = CSE, 12 = ECE, 13 = CSE AIDS, 14 = ECE VLSI
+    if (roster.empty) {
+      const inferred = inferStudentFromEmail(email);
+      if (inferred) {
+        const newRosterRef = db.collection("studentRoster").doc(inferred.rollNumber);
+        await newRosterRef.set({
+          rollNumber: inferred.rollNumber,
+          emailNormalized: email,
+          batch: inferred.batch,
+          programme: inferred.programme,
+          active: true,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+          autoProvisioned: true,
+        }, { merge: true });
+
+        const emailHash = createHash("sha256").update(email).digest("hex");
+        await db.collection("rosterEmailIndex").doc(emailHash).set({
+          emailNormalized: email,
+          rollNumber: inferred.rollNumber,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        roster = await db.collection("studentRoster")
+          .where("emailNormalized", "==", email)
+          .where("active", "==", true)
+          .limit(2)
+          .get();
+      }
+    }
+
     if (roster.size !== 1) {
       return NextResponse.json({ error: "This email is not uniquely matched to an active approved student roster entry. Contact the portal administrator." }, { status: 403 });
     }

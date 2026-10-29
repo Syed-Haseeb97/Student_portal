@@ -7,6 +7,7 @@ import {
   type UserCredential,
 } from "firebase/auth";
 import { getFirebaseClient } from "@/lib/firebase/client";
+import { isAuthorizedPortalEmail } from "@/lib/roster/validate";
 import type { ApiErrorResponse } from "@/lib/api/types";
 
 const EMAIL_DOMAIN = "@iiitt.ac.in";
@@ -16,12 +17,12 @@ export function normalizeInstitutionalEmail(value: string) {
 }
 
 export function isInstitutionalEmail(value: string) {
-  return /^[^\s@]+@iiitt\.ac\.in$/i.test(value.trim());
+  return isAuthorizedPortalEmail(value.trim());
 }
 
 export async function sendInstitutionalSignInLink(emailInput: string) {
   const email = normalizeInstitutionalEmail(emailInput);
-  if (!isInstitutionalEmail(email) || !email.endsWith(EMAIL_DOMAIN)) {
+  if (!isInstitutionalEmail(email)) {
     throw new Error("Use your institutional @iiitt.ac.in email address.");
   }
   const redirectUrl = process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL;

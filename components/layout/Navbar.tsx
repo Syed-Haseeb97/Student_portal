@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import {
   Menu,
@@ -32,7 +33,7 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
           {/* Logo & Institute Branding: Official logo and institute name only */}
           <Link
             href="/"
-            className="flex items-center gap-3 group focus-visible:outline-accent"
+            className="flex items-center gap-3 group focus-visible:outline-accent shrink-0"
           >
             <div className="relative size-10 rounded-full bg-surface border border-line p-1.5 shadow-sm transition-all group-hover:border-accent shrink-0 flex items-center justify-center">
               <Image
@@ -136,10 +137,10 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
             )}
           </nav>
 
-          {/* Right Status / User Controls */}
-          <div className="hidden sm:flex items-center gap-3">
+          {/* Right Action Cluster: User controls / Sign-In and Mobile Menu grouped together on the right edge */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             {isMock && switchRole && (
-              <div className="flex items-center gap-1 bg-surface border border-line rounded-full p-1 text-[10px] font-mono">
+              <div className="hidden lg:flex items-center gap-1 bg-surface border border-line rounded-full p-1 text-[10px] font-mono">
                 <span className="text-muted px-1.5 font-bold text-[9px] uppercase tracking-wider">Role:</span>
                 <button
                   type="button"
@@ -172,51 +173,74 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
             )}
 
             {!loading && user ? (
-              <div className="flex items-center gap-2.5 bg-surface border border-line p-1 pl-3 rounded-full">
-                <div className="flex items-center gap-2 text-xs">
-                  {role === "admin" ? (
-                    <ShieldAlert className="size-3.5 text-accent" />
-                  ) : role === "lecturer" ? (
-                    <Briefcase className="size-3.5 text-accent" />
-                  ) : (
-                    <GraduationCap className="size-3.5 text-accent" />
-                  )}
-                  <span className="font-bold text-ink">{displayName}</span>
-                  {identifier && (
-                    <>
-                      <span className="text-muted/60">•</span>
-                      <span className="text-[10px] font-mono text-accent font-bold uppercase">
-                        {identifier}
-                      </span>
-                    </>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => signOut()}
-                  className="p-1.5 rounded-full bg-canvas hover:bg-risk/15 hover:text-risk text-muted transition-colors border border-line cursor-pointer"
-                  title="Sign Out"
-                  aria-label="Sign Out"
-                >
-                  <LogOut className="size-3.5" />
-                </button>
-              </div>
-            ) : !loading ? (
-              <Button href="/sign-in" variant="primary" size="sm" className="font-semibold text-xs shadow-xs">
-                Sign In
-              </Button>
-            ) : null}
-          </div>
+              <>
+                {/* Desktop User Pill with Theme Toggle placed directly to the left of Sign Out */}
+                <div className="hidden sm:flex items-center gap-2 bg-surface border border-line p-1 pl-3 rounded-full">
+                  <div className="flex items-center gap-2 text-xs">
+                    {role === "admin" ? (
+                      <ShieldAlert className="size-3.5 text-accent" />
+                    ) : role === "lecturer" ? (
+                      <Briefcase className="size-3.5 text-accent" />
+                    ) : (
+                      <GraduationCap className="size-3.5 text-accent" />
+                    )}
+                    <span className="font-bold text-ink">{displayName}</span>
+                    {identifier && (
+                      <>
+                        <span className="text-muted/60">•</span>
+                        <span className="text-[10px] font-mono text-accent font-bold uppercase">
+                          {identifier}
+                        </span>
+                      </>
+                    )}
+                  </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-full border border-line bg-surface text-muted hover:text-ink cursor-pointer"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
+                  {/* Light/Dark Theme Toggle placed directly to the left of Sign Out */}
+                  <ThemeToggle />
+
+                  <button
+                    type="button"
+                    onClick={() => signOut()}
+                    className="p-1.5 rounded-full bg-canvas hover:bg-risk/15 hover:text-risk text-muted transition-colors border border-line cursor-pointer"
+                    title="Sign Out"
+                    aria-label="Sign Out"
+                  >
+                    <LogOut className="size-3.5" />
+                  </button>
+                </div>
+
+                {/* Mobile View Theme Toggle (accessible directly in top bar on smaller screens) */}
+                <div className="sm:hidden flex items-center">
+                  <ThemeToggle />
+                </div>
+              </>
+            ) : !loading ? (
+              <div className="flex items-center gap-2">
+                {/* Theme Toggle placed right next to Sign In button before login */}
+                <ThemeToggle />
+                <Button
+                  href="/sign-in"
+                  variant="primary"
+                  size="sm"
+                  className="font-bold text-xs h-9 px-4 rounded-full shadow-xs flex items-center justify-center"
+                >
+                  Sign In
+                </Button>
+              </div>
+            ) : null}
+
+            {/* Mobile Menu Button - Show when user is logged in or when mock switcher is active */}
+            {(user || isMock) && (
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden size-9 rounded-full border border-line bg-surface text-muted hover:text-ink cursor-pointer flex items-center justify-center shrink-0 transition-colors"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -346,9 +370,12 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                     </span>
                   )}
                 </div>
-                <Button variant="secondary" size="sm" onClick={() => signOut()} className="text-xs">
-                  Sign Out
-                </Button>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <Button variant="secondary" size="sm" onClick={() => signOut()} className="text-xs">
+                    Sign Out
+                  </Button>
+                </div>
               </div>
             ) : (
               <Button href="/sign-in" variant="primary" size="md" className="w-full text-center">

@@ -15,8 +15,11 @@ import { Button } from "@/components/ui/Button";
 import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
 import { SessionCreateModal } from "./SessionCreateModal";
 import { SessionCancelModal } from "./SessionCancelModal";
+import { BranchTimetableView } from "@/components/timetable/BranchTimetableView";
+import { LecturerNoticesManager } from "@/components/notices/LecturerNoticesManager";
 import {
   Calendar,
+  Bell,
   Clock,
   MapPin,
   Users,
@@ -51,6 +54,7 @@ export function LecturerDashboardView({
   const [statusFilter, setStatusFilter] = useState<"all" | SessionStatus>("all");
   const [offeringFilter, setOfferingFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [viewTab, setViewTab] = useState<"classes" | "timetable" | "notices">("classes");
 
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -211,6 +215,55 @@ export function LecturerDashboardView({
         </div>
       </div>
 
+      {/* View Switcher: Classes & Roll-Call vs Master Timetable */}
+      <div className="flex items-center gap-2 border-b border-line pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setViewTab("classes")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            viewTab === "classes"
+              ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
+              : "bg-surface border border-line text-muted hover:text-ink hover:border-line/80"
+          }`}
+        >
+          <ClipboardCheck className="size-4" />
+          <span>Classes & Fast Roll-Call</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewTab("timetable")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            viewTab === "timetable"
+              ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
+              : "bg-surface border border-line text-muted hover:text-ink hover:border-line/80"
+          }`}
+        >
+          <Calendar className="size-4" />
+          <span>1st Year Master Timetable</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewTab("notices")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            viewTab === "notices"
+              ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
+              : "bg-surface border border-line text-muted hover:text-ink hover:border-line/80"
+          }`}
+        >
+          <Bell className="size-4 text-amber-300" />
+          <span>Post Notices & Assignments</span>
+          <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+        </button>
+      </div>
+
+      {viewTab === "timetable" ? (
+        <BranchTimetableView allowBranchSwitching={true} />
+      ) : viewTab === "notices" ? (
+        <LecturerNoticesManager idToken={idToken} />
+      ) : (
+        <>
       {/* Loading State */}
       {loading && !data && (
         <DashboardSkeleton />
@@ -568,6 +621,9 @@ export function LecturerDashboardView({
               </div>
             )}
           </section>
+        </>
+      )}
+
         </>
       )}
 

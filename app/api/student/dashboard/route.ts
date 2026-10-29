@@ -1,6 +1,6 @@
 import { FieldPath } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
-import { INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
+import { INSTITUTIONAL_EMAIL_PATTERN, inferStudentFromEmail, COURSE_CODE_MAP } from "@/lib/roster/validate";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { evaluate, DEFAULT_POLICY } from "@/lib/attendance/calc";
 import type { AttendanceStatus, StudentDashboardData } from "@/lib/api/types";
@@ -162,7 +162,16 @@ export async function GET(request: Request) {
         // become stale when an authorized roster correction is imported.
         rollNumber: typeof roster.get("rollNumber") === "string" ? roster.get("rollNumber") : null,
         batch: typeof roster.get("batch") === "string" ? roster.get("batch") : null,
-        programme: typeof roster.get("programme") === "string" ? roster.get("programme") : null,
+        programme: (() => {
+          const inferred = inferStudentFromEmail(identity.email ?? "");
+          if (inferred?.programme) return inferred.programme;
+          const roll = typeof roster.get("rollNumber") === "string" ? String(roster.get("rollNumber")) : "";
+          const match = roll.match(/\b(?:26|2026)?(11|12|13|14)\d{2}\b/);
+          if (match && match[1] && COURSE_CODE_MAP[match[1]]) {
+            return COURSE_CODE_MAP[match[1]];
+          }
+          return typeof roster.get("programme") === "string" ? roster.get("programme") : null;
+        })(),
       },
       policy: { thresholdPercent: DEFAULT_POLICY.thresholdPercent, countsOnlyCompletedSessions: true },
       summaries,

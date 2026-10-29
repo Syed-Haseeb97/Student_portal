@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
-import { normalizeEmail } from "@/lib/roster/validate";
+import { normalizeEmail, getFacultyByEmail } from "@/lib/roster/validate";
 
 export const runtime = "nodejs";
 
@@ -51,7 +51,40 @@ export async function GET(request: Request) {
     const email = normalizeEmail(identity.email ?? "");
 
     // 1. Check if identity belongs to provisioned staff (admin or lecturer)
-    const staffDoc = await db.collection("staff").doc(identity.uid).get();
+    let staffDoc = await db.collection("staff").doc(identity.uid).get();
+    if (!staffDoc.exists) {
+      const byEmail = await db.collection("staff").where("email", "==", email).limit(1).get();
+      if (!byEmail.empty) {
+        const prevDoc = byEmail.docs[0]!;
+        await db.collection("staff").doc(identity.uid).set({
+          ...prevDoc.data(),
+          uid: identity.uid,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+        staffDoc = await db.collection("staff").doc(identity.uid).get();
+      } else {
+        const faculty = getFacultyByEmail(email);
+        if (faculty) {
+          await db.collection("staff").doc(identity.uid).set({
+            uid: identity.uid,
+            email,
+            role: "lecturer",
+            active: true,
+            name: faculty.name,
+            department: faculty.department,
+            staffId: faculty.staffId,
+            designation: faculty.designation,
+            phone: faculty.phone,
+            courses: faculty.courses,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            autoProvisioned: true,
+          }, { merge: true });
+          staffDoc = await db.collection("staff").doc(identity.uid).get();
+        }
+      }
+    }
+
     if (staffDoc.exists) {
       const data = staffDoc.data();
       if (data?.active !== true) {

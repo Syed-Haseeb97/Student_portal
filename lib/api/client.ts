@@ -20,6 +20,8 @@ import type {
   LecturerSessionSummary,
   AttendanceMark,
   StudentSessionRecord,
+  AcademicNotice,
+  CreateNoticePayload,
 } from "./types";
 import { normalizeAttendanceStatus } from "./types";
 import {
@@ -754,5 +756,96 @@ export async function getSubjectSessionHistory(
   } catch {
     const records = SYNTHETIC_SUBJECT_SESSIONS[offeringId] ?? [];
     return { status: 200, data: records, isMock: true };
+  }
+}
+
+/**
+ * Fetch notices and assignments for the student or faculty portal
+ */
+export async function getAcademicNotices(
+  targetBranch?: string,
+  idToken?: string
+): Promise<ApiResponse<AcademicNotice[]>> {
+  try {
+    const url = targetBranch && targetBranch !== "all"
+      ? `/api/notices?targetBranch=${encodeURIComponent(targetBranch)}`
+      : `/api/notices`;
+
+    const headers: Record<string, string> = {};
+    if (idToken) headers["Authorization"] = `Bearer ${idToken.trim()}`;
+
+    const res = await fetch(url, { headers });
+    const data = await res.json();
+    if (!res.ok) {
+      return { status: res.status, error: data?.error || "Failed to load notices", isMock: false };
+    }
+    return { status: 200, data: data.notices || [], isMock: false };
+  } catch (err) {
+    return {
+      status: 503,
+      error: err instanceof Error ? err.message : "Network error contacting notice board",
+      isMock: false,
+    };
+  }
+}
+
+/**
+ * Teachers and Admins can publish a new assignment or official notice
+ */
+export async function createAcademicNotice(
+  payload: CreateNoticePayload,
+  idToken?: string
+): Promise<ApiResponse<AcademicNotice>> {
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (idToken) headers["Authorization"] = `Bearer ${idToken.trim()}`;
+
+    const res = await fetch("/api/notices", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return { status: res.status, error: data?.error || "Failed to publish notice", isMock: false };
+    }
+    return { status: 200, data: data.notice, isMock: false };
+  } catch (err) {
+    return {
+      status: 503,
+      error: err instanceof Error ? err.message : "Network error publishing notice",
+      isMock: false,
+    };
+  }
+}
+
+/**
+ * Delete a published notice
+ */
+export async function deleteAcademicNotice(
+  noticeId: string,
+  idToken?: string
+): Promise<ApiResponse<void>> {
+  try {
+    const headers: Record<string, string> = {};
+    if (idToken) headers["Authorization"] = `Bearer ${idToken.trim()}`;
+
+    const res = await fetch(`/api/notices/${encodeURIComponent(noticeId)}`, {
+      method: "DELETE",
+      headers,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return { status: res.status, error: data?.error || "Failed to delete notice", isMock: false };
+    }
+    return { status: 200, isMock: false };
+  } catch (err) {
+    return {
+      status: 503,
+      error: err instanceof Error ? err.message : "Network error deleting notice",
+      isMock: false,
+    };
   }
 }

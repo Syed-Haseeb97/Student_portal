@@ -18,7 +18,10 @@ export function setCustomMailTransportForTesting(transport: Transporter | null):
 export function extractAddress(fromHeader: string): string {
   if (!fromHeader) return "";
   const match = fromHeader.match(/<([^>]+)>/);
-  if (match) return match[1].trim().toLowerCase(); const emailMatch = fromHeader.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/); if (emailMatch) return emailMatch[1].trim().toLowerCase(); return fromHeader.trim().toLowerCase();
+  if (match) return match[1].trim().toLowerCase();
+  const emailMatch = fromHeader.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (emailMatch) return emailMatch[1].trim().toLowerCase();
+  return fromHeader.trim().toLowerCase();
 }
 
 /**
@@ -138,22 +141,23 @@ export async function sendPortalEmail({
   const emailFrom = from || process.env.EMAIL_FROM || (provider === "gmail" ? process.env.GMAIL_USER : "IIITT Portal <attendance@iiitt.ac.in>");
 
   if (provider === "gmail") {
-    const transporter =
+    const createTransporter = (port = 465, secure = true) =>
       customTransport ||
       nodemailer.createTransport({
         host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
+        port,
+        secure,
         auth: {
           user: process.env.GMAIL_USER,
           pass: process.env.GMAIL_APP_PASSWORD,
         },
-        connectionTimeout: 15000,
-        greetingTimeout: 10000,
-        socketTimeout: 20000,
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 45000,
       });
 
     try {
+      const transporter = createTransporter(465, true);
       const info = await transporter.sendMail({
         from: emailFrom,
         to,
@@ -162,10 +166,29 @@ export async function sendPortalEmail({
         text,
       });
       return { success: true, messageId: info.messageId };
-    } catch (err) {
-      const sanitized = sanitizeErrorMessage(err);
-      console.error(`[SMTP ERROR] Gmail delivery failed: ${sanitized}`);
-      throw new Error(sanitized);
+    } catch (firstErr) {
+      if (customTransport) {
+        const sanitized = sanitizeErrorMessage(firstErr);
+        console.error(`[SMTP ERROR] Gmail delivery failed: ${sanitized}`);
+        throw new Error(sanitized);
+      }
+
+      console.warn(`[SMTP RETRY] Port 465 failed (${(firstErr as Error)?.message}), retrying via STARTTLS port 587...`);
+      try {
+        const fallbackTransporter = createTransporter(587, false);
+        const retryInfo = await fallbackTransporter.sendMail({
+          from: emailFrom,
+          to,
+          subject,
+          html,
+          text,
+        });
+        return { success: true, messageId: retryInfo.messageId };
+      } catch (retryErr) {
+        const sanitized = sanitizeErrorMessage(retryErr);
+        console.error(`[SMTP ERROR] Gmail delivery failed on retry: ${sanitized}`);
+        throw new Error(sanitized);
+      }
     }
   }
 
@@ -198,4 +221,3 @@ export async function sendPortalEmail({
     throw new Error(sanitized);
   }
 }
-

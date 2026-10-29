@@ -14,6 +14,11 @@ function getAdminApp() {
 
   let jsonString = raw.trim();
 
+  // Strip accidental duplicated variable name if pasted with prefix (e.g. FIREBASE_SERVICE_ACCOUNT_JSON=...)
+  if (jsonString.startsWith("FIREBASE_SERVICE_ACCOUNT_JSON=")) {
+    jsonString = jsonString.slice("FIREBASE_SERVICE_ACCOUNT_JSON=".length).trim();
+  }
+
   // Strip wrapping quotes if preserved literally by the environment loader
   if (
     (jsonString.startsWith("'") && jsonString.endsWith("'")) ||

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { readBoundedJson } from "@/lib/http/read-bounded-json";
-import { normalizeEmail, INSTITUTIONAL_EMAIL_PATTERN } from "@/lib/roster/validate";
+import { normalizeEmail, INSTITUTIONAL_EMAIL_PATTERN, isAuthorizedPortalEmail } from "@/lib/roster/validate";
 import { enforceRateLimit, releaseRateLimit } from "@/lib/auth/rate-limit";
 import {
   getEmailProvider,
@@ -70,10 +70,10 @@ export async function POST(request: Request) {
   const rawEmail = typeof body?.email === "string" ? body.email : "";
   const email = normalizeEmail(rawEmail);
 
-  // 2. Validate email domain pattern
-  if (!email || !INSTITUTIONAL_EMAIL_PATTERN.test(email)) {
+  // 2. Validate email domain pattern or official faculty roster
+  if (!email || !isAuthorizedPortalEmail(email)) {
     return NextResponse.json(
-      { error: "A valid institutional @iiitt.ac.in email address is required." },
+      { error: "A valid institutional @iiitt.ac.in or authorized faculty email address is required." },
       { status: 400 }
     );
   }

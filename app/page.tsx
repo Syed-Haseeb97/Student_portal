@@ -1,21 +1,28 @@
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { LandingAuthRedirect } from "@/components/landing/LandingAuthRedirect";
+import { LandingAccessCard } from "@/components/landing/LandingAccessCard";
 import {
   ShieldCheck,
   Clock,
   MapPin,
   Calendar,
   ExternalLink,
-  ArrowRight,
 } from "lucide-react";
 
 export const metadata = {
   title: "IIIT Tiruchirappalli | Academic Attendance & Student Portal",
   description:
     "Official attendance ledger, 75% statutory ordinance margin calculator, and classroom timetables for Indian Institute of Information Technology, Tiruchirappalli.",
+  icons: {
+    icon: [
+      { url: "/images/iiitt-logo.png", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    shortcut: "/images/iiitt-logo.png",
+    apple: "/images/iiitt-logo.png",
+  },
 };
 
 export default function HomePage() {
@@ -113,46 +120,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Column: Institutional Gateway Access */}
+          {/* Right Column: Institutional Gateway Access (Dynamic depending on auth state) */}
           <div className="lg:sticky lg:top-24 space-y-4">
-            <div className="p-6 sm:p-8 rounded-3xl bg-surface border border-line space-y-6">
-              <div className="space-y-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold px-3 py-1 rounded-full bg-accent/10 border border-accent/25 inline-block">
-                  INSTITUTIONAL ACCESS
-                </span>
-                <h2 className="text-xl sm:text-2xl font-bold uppercase text-ink tracking-tight">
-                  Sign In to Portal
-                </h2>
-                <p className="text-xs text-muted leading-relaxed">
-                  Authentication is strictly restricted to verified <span className="text-ink font-mono font-medium">@iiitt.ac.in</span> institutional email accounts linked to the official institute roster.
-                </p>
-              </div>
-
-              <div className="pt-2">
-                <Link
-                  href="/sign-in"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm"
-                >
-                  <span>Sign In with @iiitt.ac.in</span>
-                  <ArrowRight className="size-4" />
-                </Link>
-              </div>
-
-              <div className="border-t border-line pt-4 space-y-2 text-[11px] text-muted font-mono">
-                <div className="flex items-center justify-between">
-                  <span>Authentication Method</span>
-                  <span className="text-ink">Passwordless Email Link</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Authorized Domain</span>
-                  <span className="text-accent">@iiitt.ac.in</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Statutory Rule</span>
-                  <span className="text-ink">75% Attendance Policy</span>
-                </div>
-              </div>
-            </div>
+            <LandingAccessCard />
 
             {/* Quick Helper Notes */}
             <div className="p-4 rounded-2xl bg-surface border border-line text-xs text-muted space-y-1.5">
