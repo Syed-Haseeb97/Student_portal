@@ -213,7 +213,7 @@ export function NoticeCreateModal({
               <label className="text-muted uppercase text-[11px] font-bold">Target Audience</label>
               <select
                 value={targetBranch}
-                onChange={(e) => setTargetBranch(e.target.value as any)}
+                onChange={(e) => setTargetBranch(e.target.value as "all" | "11" | "12" | "13" | "14")}
                 className="w-full px-3 py-2 rounded-xl bg-canvas border border-line text-ink focus:outline-accent cursor-pointer"
               >
                 <option value="all">All 1st Year Students (All Branches)</option>

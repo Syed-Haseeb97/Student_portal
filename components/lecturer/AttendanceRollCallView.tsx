@@ -211,7 +211,7 @@ export function AttendanceRollCallView({
   const absentStudents = useMemo(() => {
     if (!data?.roster) return [];
     return data.roster.filter((s) => marks[s.studentUid] === "absent");
-  }, [data?.roster, marks]);
+  }, [data, marks]);
 
   async function handleFinalSubmit() {
     if (!isAllMarked || !data) return;

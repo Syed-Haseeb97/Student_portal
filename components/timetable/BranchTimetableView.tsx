@@ -52,14 +52,10 @@ export function BranchTimetableView({
 
   const [userSelectedBranch, setUserSelectedBranch] = useState<"11" | "12" | "13" | "14">(inferredBranch);
   const selectedBranch = allowBranchSwitching ? userSelectedBranch : inferredBranch;
-  const [viewMode, setViewMode] = useState<"grid" | "day">("grid");
-
-  // On small mobile screens (< 640px), default to the thumb-friendly Day View
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 640) {
-      setViewMode("day");
-    }
-  }, []);
+  const [viewMode, setViewMode] = useState<"grid" | "day">(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 640) return "day";
+    return "grid";
+  });
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>(() => {
     const dayIndex = new Date().getDay(); // 0 is Sunday, 1 is Monday ... 5 is Friday
     if (dayIndex >= 1 && dayIndex <= 5) {
