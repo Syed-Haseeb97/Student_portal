@@ -59,7 +59,7 @@ function getAdminApp() {
     throw new Error("Firebase service-account JSON is missing project_id, client_email, or private_key.");
   }
 
-  const expectedProject = process.env.FIREBASE_ADMIN_PROJECT_ID;
+  const expectedProject = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || serviceAccount.project_id;
   if (!expectedProject) {
     throw new Error("Missing FIREBASE_ADMIN_PROJECT_ID; refusing to initialize privileged Firebase access without an explicit project guard.");
   }

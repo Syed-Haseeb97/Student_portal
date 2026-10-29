@@ -57,6 +57,7 @@ function buildEmailHtml(signInLink: string, recipientEmail: string): string {
 }
 
 export async function POST(request: Request) {
+  try {
   // 1. Enforce payload size limit (max 1KB for email payload)
   const jsonResult = await readBoundedJson(request, 1024);
   if (!jsonResult.ok) {
@@ -181,5 +182,13 @@ export async function POST(request: Request) {
 
     // Generic response in production to maintain anti-enumeration and user privacy
     return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
+  }
+  } catch (outerErr) {
+    const sanitized = sanitizeErrorMessage(outerErr);
+    console.error("[CRITICAL SEND-LINK ERROR]", sanitized);
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === "development" ? sanitized : "Authentication service encountered an unexpected error. Please verify server configuration." },
+      { status: 500 }
+    );
   }
 }

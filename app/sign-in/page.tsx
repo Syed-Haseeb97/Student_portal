@@ -69,18 +69,37 @@ export default function SignInPage() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
+      let data: { error?: string; retryAfter?: number; ok?: boolean } | null = null;
+      try {
+        const text = await response.text();
+        if (text) {
+          data = JSON.parse(text);
+        }
+      } catch {
+        // Fallback for non-JSON or gateway responses
+      }
 
       if (response.status === 429) {
         setStatus("rate_limited");
-        setCooldown(data.retryAfter || 60);
-        setErrorMessage(data.error || "Too many sign-in requests. Please wait.");
+        setCooldown(data?.retryAfter || 60);
+        setErrorMessage(data?.error || "Too many sign-in requests. Please wait.");
+        return;
+      }
+
+      if (response.status === 504) {
+        setStatus("error");
+        setErrorMessage("Gateway Timeout: Mail server took too long to respond. Please check your Vercel email environment configuration.");
         return;
       }
 
       if (!response.ok) {
         setStatus("error");
-        setErrorMessage(data.error || "Unable to send sign-in link.");
+        setErrorMessage(
+          data?.error ||
+          (response.status === 500
+            ? "Server configuration error (500). Please ensure Firebase and Gmail environment variables are saved in Vercel and redeployed."
+            : `Unable to send sign-in link (HTTP ${response.status}).`)
+        );
         return;
       }
 
