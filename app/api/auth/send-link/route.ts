@@ -56,6 +56,8 @@ function buildEmailHtml(signInLink: string, recipientEmail: string): string {
   `.trim();
 }
 
+export const maxDuration = 15;
+
 export async function POST(request: Request) {
   try {
   // 1. Enforce payload size limit (max 1KB for email payload)
@@ -126,7 +128,16 @@ export async function POST(request: Request) {
   // 6. Generate action link with Firebase Admin SDK
   let link: string;
   try {
-    const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL || "http://localhost:3000";
+    const proto = request.headers.get("x-forwarded-proto") || "https";
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const detectedUrl = host ? `${proto}://${host}` : undefined;
+    const configuredUrl = process.env.APP_URL && !process.env.APP_URL.includes("localhost")
+      ? process.env.APP_URL
+      : process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL && !process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL.includes("localhost")
+      ? process.env.NEXT_PUBLIC_FIREBASE_EMAIL_LINK_REDIRECT_URL
+      : undefined;
+
+    const baseUrl = configuredUrl || detectedUrl || process.env.APP_URL || "http://localhost:3000";
     const redirectUrl = baseUrl.endsWith("/sign-in/finish")
       ? baseUrl
       : `${baseUrl.replace(/\/$/, "")}/sign-in/finish`;
