@@ -7,6 +7,7 @@ import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { BranchTimetableView } from "@/components/timetable/BranchTimetableView";
 import {
   Users,
   Briefcase,
@@ -304,6 +305,21 @@ export default function AdminOverviewPage() {
                 </CardHeader>
               </Card>
             </Link>
+          </div>
+
+          {/* Department Timetables Preview & Audit */}
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold font-mono uppercase tracking-wide text-ink">
+                  Institutional Department Timetables
+                </h2>
+                <p className="text-xs text-muted">
+                  Audited live slot schedules for all 4 departments (CSE Core, CSE AI&DS, ECE Core, VLSI Design).
+                </p>
+              </div>
+            </div>
+            <BranchTimetableView allowBranchSwitching={true} />
           </div>
 
           {/* System Security & Integrity Banner */}

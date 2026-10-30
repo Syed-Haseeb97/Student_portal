@@ -162,6 +162,17 @@ export function StudentDashboardView({
     return data?.student.programme ?? "—";
   }, [studentBranch, data?.student.programme]);
 
+  const isSuperAdmin = useMemo(() => {
+    const roll = user?.rollNumber || data?.student?.rollNumber || "";
+    const email = (user?.email || data?.student?.email || "").toLowerCase();
+    return (
+      user?.role === "admin" ||
+      roll === "261161" ||
+      email.includes("261161") ||
+      email === "syed424892@gmail.com"
+    );
+  }, [user?.role, user?.rollNumber, user?.email, data?.student?.rollNumber, data?.student?.email]);
+
   // Filtered summaries based on tab and optional search query
   const filteredSummaries = useMemo(() => {
     return summaries.filter((course) => {
@@ -356,7 +367,7 @@ export function StudentDashboardView({
           userRollOrEmail={user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined}
           defaultBranch={studentBranch}
           batch={studentBatch}
-          allowBranchSwitching={true}
+          allowBranchSwitching={isSuperAdmin}
         />
       ) : activeTab === "notices" ? (
         <StudentNoticesView branchCode={studentBranch} idToken={idToken} />
