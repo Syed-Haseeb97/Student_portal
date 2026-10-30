@@ -70,10 +70,11 @@ export default function SignInPage() {
       });
 
       let data: { error?: string; retryAfter?: number; ok?: boolean } | null = null;
+      let rawText = "";
       try {
-        const text = await response.text();
-        if (text) {
-          data = JSON.parse(text);
+        rawText = (await response.text()).trim();
+        if (rawText) {
+          data = JSON.parse(rawText);
         }
       } catch {
         // Fallback for non-JSON or gateway responses
@@ -96,6 +97,7 @@ export default function SignInPage() {
         setStatus("error");
         setErrorMessage(
           data?.error ||
+          (rawText && !rawText.startsWith("<") && rawText.length < 250 ? rawText : null) ||
           (response.status === 500
             ? "Server configuration error (500). Please ensure Firebase and Gmail environment variables are saved in Vercel and redeployed."
             : `Unable to send sign-in link (HTTP ${response.status}).`)

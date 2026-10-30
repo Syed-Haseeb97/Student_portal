@@ -27,6 +27,6 @@ export async function GET() {
     emailProvider,
     emailConfigured,
     adminInitialized: !adminError,
-    adminError: adminError ? adminError.slice(0, 100) : null,
+    adminError: adminError ?? null,
   });
 }
