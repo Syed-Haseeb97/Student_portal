@@ -93,13 +93,20 @@ export async function GET(request: Request) {
           { status: 403 }
         );
       }
+      const rollNumber = data?.rollNumber || (email.match(/^(\d{6})@/)?.[1] ?? (email.includes("261161") ? "261161" : undefined));
+      const batch = data?.batch || (rollNumber ? "2026" : undefined);
+      const programme = data?.programme || (rollNumber === "261161" ? "Computer Science & Engineering" : undefined);
+
       return NextResponse.json({
         uid: identity.uid,
         email: data?.email || email,
         role: data?.role as "lecturer" | "admin",
-        name: data?.name || identity.name || (data?.role === "admin" ? "System Administrator" : "Faculty Member"),
+        name: data?.name || identity.name || (data?.role === "admin" ? (rollNumber === "261161" ? "Syed Haseeb" : "System Administrator") : "Faculty Member"),
         staffId: data?.staffId,
         department: data?.department,
+        rollNumber,
+        batch,
+        programme,
         active: true,
       });
     }

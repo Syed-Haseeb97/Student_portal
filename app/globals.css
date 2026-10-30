@@ -153,6 +153,17 @@ html.light .landing-grid,
   text-transform: uppercase;
 }
 
+/* Mobile touch & tap optimization for buttons, links, and controls */
+button,
+a,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html.light .landing-eyebrow,
 [data-theme="light"] .landing-eyebrow {
   border: 1px solid rgba(94, 128, 12, 0.35);

@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth, type UserRole } from "@/components/auth/AuthProvider";
+import { SignOutConfirmModal } from "@/components/auth/SignOutConfirmModal";
 import {
   ArrowRight,
   ShieldCheck,
@@ -13,10 +14,12 @@ import {
   Users,
   UserCheck,
   BookOpen,
+  Calendar,
 } from "lucide-react";
 
 export function LandingAccessCard() {
   const { user, role, loading, signOut } = useAuth();
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   if (loading) {
     return (
@@ -67,8 +70,8 @@ export function LandingAccessCard() {
             </span>
             <button
               type="button"
-              onClick={() => signOut()}
-              className="text-xs text-muted hover:text-risk transition-colors flex items-center gap-1 font-mono cursor-pointer"
+              onClick={() => setShowSignOutModal(true)}
+              className="text-xs text-muted hover:text-risk transition-colors flex items-center gap-1 font-mono cursor-pointer touch-manipulation"
               title="Sign Out"
             >
               <LogOut className="size-3" />
@@ -90,7 +93,7 @@ export function LandingAccessCard() {
         <div className="pt-1">
           <Link
             href={roleHome}
-            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm group"
+            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm group touch-manipulation min-h-[44px]"
           >
             <span>Open {roleTitle}</span>
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
@@ -99,28 +102,46 @@ export function LandingAccessCard() {
 
         {/* Role-Specific Quick Shortcuts */}
         {role === "admin" && (
-          <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[10px]">
-            <Link
-              href="/admin/roster"
-              className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors"
-            >
-              <Users className="size-3.5 text-accent" />
-              <span>Roster</span>
-            </Link>
-            <Link
-              href="/admin/staff"
-              className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors"
-            >
-              <UserCheck className="size-3.5 text-accent" />
-              <span>Staff</span>
-            </Link>
-            <Link
-              href="/admin/academic"
-              className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors"
-            >
-              <BookOpen className="size-3.5 text-accent" />
-              <span>Catalog</span>
-            </Link>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
+              <Link
+                href="/dashboard"
+                className="p-2.5 rounded-2xl bg-canvas border border-accent/40 hover:border-accent text-center flex items-center justify-center gap-1.5 text-accent font-bold transition-colors touch-manipulation min-h-[40px]"
+              >
+                <GraduationCap className="size-3.5" />
+                <span>My Student Dashboard</span>
+              </Link>
+              <Link
+                href="/lecturer"
+                className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors touch-manipulation min-h-[40px]"
+              >
+                <Briefcase className="size-3.5 text-accent" />
+                <span>Faculty Portal</span>
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 gap-2 font-mono text-[10px]">
+              <Link
+                href="/admin/roster"
+                className="p-2 rounded-xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
+              >
+                <Users className="size-3.5 text-accent" />
+                <span>Roster</span>
+              </Link>
+              <Link
+                href="/admin/staff"
+                className="p-2 rounded-xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
+              >
+                <UserCheck className="size-3.5 text-accent" />
+                <span>Staff</span>
+              </Link>
+              <Link
+                href="/admin/academic"
+                className="p-2 rounded-xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
+              >
+                <BookOpen className="size-3.5 text-accent" />
+                <span>Catalog</span>
+              </Link>
+            </div>
           </div>
         )}
 
@@ -173,6 +194,13 @@ export function LandingAccessCard() {
             <span className="text-ink font-bold uppercase">{role}</span>
           </div>
         </div>
+
+        <SignOutConfirmModal
+          isOpen={showSignOutModal}
+          onClose={() => setShowSignOutModal(false)}
+          onConfirm={signOut}
+          userEmail={user?.email}
+        />
       </div>
     );
   }

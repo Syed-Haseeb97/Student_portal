@@ -37,9 +37,9 @@ const variantStyles: Record<ButtonVariant, string> = {
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "px-3.5 py-1.5 text-xs rounded-full gap-1.5",
-  md: "px-5 py-2.5 text-xs sm:text-sm rounded-full gap-2",
-  lg: "px-6 py-3 text-sm sm:text-base rounded-full gap-2.5",
+  sm: "px-3.5 py-2 sm:py-1.5 text-xs rounded-full gap-1.5 min-h-[38px] sm:min-h-0",
+  md: "px-5 py-2.5 text-xs sm:text-sm rounded-full gap-2 min-h-[42px] sm:min-h-0",
+  lg: "px-6 py-3 text-sm sm:text-base rounded-full gap-2.5 min-h-[48px] sm:min-h-0",
 };
 
 export function Button({
@@ -52,7 +52,7 @@ export function Button({
   href,
   ...props
 }: ButtonProps | LinkButtonProps) {
-  const commonClasses = `inline-flex items-center justify-center select-none transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${
+  const commonClasses = `inline-flex items-center justify-center select-none transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none cursor-pointer touch-manipulation active:scale-[0.98] ${
     variantStyles[variant]
   } ${sizeStyles[size]} ${className}`;
 
@@ -75,6 +75,7 @@ export function Button({
   const buttonProps = props as React.ButtonHTMLAttributes<HTMLButtonElement>;
   return (
     <button
+      type={buttonProps.type || "button"}
       disabled={disabled || busy}
       className={commonClasses}
       {...buttonProps}

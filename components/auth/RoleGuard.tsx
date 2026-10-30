@@ -14,6 +14,11 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
   const { user, role, loading } = useAuth();
   const router = useRouter();
 
+  // Administrators have superuser access to all views (student dashboard, faculty portal, admin console)
+  const isAuthorized = Boolean(
+    role && (allowedRoles.includes(role) || role === "admin")
+  );
+
   useEffect(() => {
     if (loading) return;
 
@@ -22,14 +27,13 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
       return;
     }
 
-    if (role && !allowedRoles.includes(role)) {
-      if (role === "admin") router.replace("/admin");
-      else if (role === "lecturer") router.replace("/lecturer");
+    if (role && !isAuthorized) {
+      if (role === "lecturer") router.replace("/lecturer");
       else router.replace("/dashboard");
     }
-  }, [user, role, loading, allowedRoles, router]);
+  }, [user, role, loading, isAuthorized, router]);
 
-  if (loading || !user || !role || !allowedRoles.includes(role)) {
+  if (loading || !user || !role || !isAuthorized) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
         <Loader2 className="size-6 animate-spin text-accent" />

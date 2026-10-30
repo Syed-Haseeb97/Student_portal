@@ -23,7 +23,7 @@ export default function StudentProfilePage() {
   const { user } = useAuth();
 
   return (
-    <RoleGuard allowedRoles={["student"]}>
+    <RoleGuard allowedRoles={["student", "admin"]}>
       <AppShell currentPath="/dashboard/profile">
         <div className="space-y-6 animate-in fade-in duration-300 max-w-4xl">
           {/* Header */}

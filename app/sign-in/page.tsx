@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { SignOutConfirmModal } from "@/components/auth/SignOutConfirmModal";
 import { Mail, ArrowLeft, ShieldAlert, CheckCircle2, RotateCcw, ArrowRight } from "lucide-react";
 
 export default function SignInPage() {
@@ -15,6 +16,7 @@ export default function SignInPage() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "rate_limited" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   // Handle countdown timer
   useEffect(() => {
@@ -45,11 +47,24 @@ export default function SignInPage() {
               <Button href={roleTarget} variant="primary" size="md">
                 Continue to {roleLabel} &rarr;
               </Button>
-              <Button onClick={() => signOut()} variant="outline" size="sm">
+              <Button
+                type="button"
+                onClick={() => setShowSignOutModal(true)}
+                variant="outline"
+                size="sm"
+                className="touch-manipulation"
+              >
                 Sign Out & Switch Account
               </Button>
             </div>
           </Card>
+
+          <SignOutConfirmModal
+            isOpen={showSignOutModal}
+            onClose={() => setShowSignOutModal(false)}
+            onConfirm={signOut}
+            userEmail={user.email}
+          />
         </div>
       </main>
     );

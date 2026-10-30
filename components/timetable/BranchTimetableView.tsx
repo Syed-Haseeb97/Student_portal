@@ -137,7 +137,7 @@ export function BranchTimetableView({
                   key={id}
                   type="button"
                   onClick={() => setUserSelectedBranch(code)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all relative cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-mono font-medium transition-all relative cursor-pointer min-h-[38px] touch-manipulation active:scale-[0.98] ${
                     isSelected
                       ? "bg-[#283226] text-accent border border-accent/50 shadow-xs"
                       : "text-muted hover:text-ink hover:bg-surface"
@@ -470,8 +470,9 @@ export function BranchTimetableView({
               const course = resolveSlotCourse(timetable, slotCode);
 
               return (
-                <Card
+                <button
                   key={slot.id}
+                  type="button"
                   onClick={() => {
                     if (course) {
                       setActiveCourseModal({
@@ -482,7 +483,7 @@ export function BranchTimetableView({
                       });
                     }
                   }}
-                  className={`p-4 transition-all cursor-pointer hover:border-accent/50 ${
+                  className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer touch-manipulation active:scale-[0.99] hover:border-accent/50 ${
                     course ? `${course.theme.bg} ${course.theme.border}` : "bg-surface border-line"
                   }`}
                 >
@@ -514,7 +515,7 @@ export function BranchTimetableView({
                       <ChevronRight className="size-3.5 text-muted shrink-0" />
                     </div>
                   )}
-                </Card>
+                </button>
               );
             })}
           </div>

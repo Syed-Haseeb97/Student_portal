@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   History,
   ArrowRight,
+  GraduationCap,
 } from "lucide-react";
 
 export default function AdminOverviewPage() {
@@ -90,6 +91,35 @@ export default function AdminOverviewPage() {
               <Button href="/admin/roster" variant="primary" size="sm" className="font-mono text-xs">
                 <FileSpreadsheet className="size-3.5 mr-1.5" />
                 Import Roster CSV
+              </Button>
+            </div>
+          </div>
+
+          {/* Superuser Dual Student Profile Switcher */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-accent/40 bg-accent/[0.04] flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="size-10 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                <GraduationCap className="size-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-accent">Superuser / Dual Access</span>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-accent/20 text-accent font-bold">Roll: 261161</span>
+                </div>
+                <h3 className="text-sm font-bold text-ink">Personal Student Ledger & Faculty Portals</h3>
+                <p className="text-xs text-muted leading-relaxed">
+                  You have full superuser access to your own student attendance dashboard, bunk calculator, 1st year timetable, and faculty marking portal.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Button href="/dashboard" variant="primary" size="sm" className="font-mono text-xs">
+                <GraduationCap className="size-3.5 mr-1.5" />
+                My Student Dashboard
+              </Button>
+              <Button href="/lecturer" variant="outline" size="sm" className="font-mono text-xs">
+                <Briefcase className="size-3.5 mr-1.5" />
+                Faculty Portal
               </Button>
             </div>
           </div>

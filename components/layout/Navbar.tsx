@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/Button";
+import { SignOutConfirmModal } from "@/components/auth/SignOutConfirmModal";
 import {
   Menu,
   X,
@@ -22,6 +23,7 @@ interface NavbarProps {
 export function Navbar({ currentPath = "/" }: NavbarProps) {
   const { user, role, isMock, signOut, loading, switchRole } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const displayName = user?.name ? user.name.split(" ")[0] : (user?.rollNumber || user?.staffId || "User");
   const identifier = user?.rollNumber || user?.staffId || (role ? role.toUpperCase() : "");
@@ -108,6 +110,22 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                   }`}
                 >
                   Admin Console
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className={`transition-colors hover:text-ink ${
+                    currentPath === "/dashboard" ? "text-accent border-b border-accent pb-0.5" : ""
+                  }`}
+                >
+                  Student Dashboard
+                </Link>
+                <Link
+                  href="/lecturer"
+                  className={`transition-colors hover:text-ink ${
+                    currentPath.startsWith("/lecturer") ? "text-accent border-b border-accent pb-0.5" : ""
+                  }`}
+                >
+                  Faculty Portal
                 </Link>
                 <Link
                   href="/admin/roster"
@@ -200,8 +218,8 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
 
                   <button
                     type="button"
-                    onClick={() => signOut()}
-                    className="p-1.5 rounded-full bg-canvas hover:bg-risk/15 hover:text-risk text-muted transition-colors border border-line cursor-pointer"
+                    onClick={() => setShowSignOutModal(true)}
+                    className="p-1.5 rounded-full bg-canvas hover:bg-risk/15 hover:text-risk text-muted transition-colors border border-line cursor-pointer touch-manipulation"
                     title="Sign Out"
                     aria-label="Sign Out"
                   >
@@ -292,9 +310,26 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                 <Link
                   href="/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-2 rounded-full hover:bg-raised text-ink"
+                  className="px-4 py-2 rounded-full hover:bg-raised text-ink flex items-center justify-between"
                 >
-                  Admin Console
+                  <span>Admin Console</span>
+                  <span className="text-[10px] font-mono uppercase text-accent font-bold">Admin</span>
+                </Link>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2 rounded-full hover:bg-raised text-ink flex items-center justify-between"
+                >
+                  <span>Student Dashboard</span>
+                  <span className="text-[10px] font-mono uppercase text-muted font-bold">My Attendance</span>
+                </Link>
+                <Link
+                  href="/lecturer"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2 rounded-full hover:bg-raised text-ink flex items-center justify-between"
+                >
+                  <span>Faculty Portal</span>
+                  <span className="text-[10px] font-mono uppercase text-muted font-bold">Faculty Mode</span>
                 </Link>
                 <Link
                   href="/admin/roster"
@@ -309,6 +344,13 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                   className="px-4 py-2 rounded-full hover:bg-raised text-ink"
                 >
                   Staff Management
+                </Link>
+                <Link
+                  href="/admin/academic"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2 rounded-full hover:bg-raised text-ink"
+                >
+                  Academic Catalog
                 </Link>
               </>
             )}
@@ -372,7 +414,16 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <ThemeToggle />
-                  <Button variant="secondary" size="sm" onClick={() => signOut()} className="text-xs">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setShowSignOutModal(true);
+                    }}
+                    className="text-xs touch-manipulation min-h-[36px]"
+                  >
                     Sign Out
                   </Button>
                 </div>
@@ -385,6 +436,14 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal for Sign Out */}
+      <SignOutConfirmModal
+        isOpen={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        onConfirm={signOut}
+        userEmail={user?.email}
+      />
     </header>
   );
 }

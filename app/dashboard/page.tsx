@@ -10,7 +10,7 @@ export default function StudentDashboardPage() {
   const isMock = isMockModeEnabled();
 
   return (
-    <RoleGuard allowedRoles={["student"]}>
+    <RoleGuard allowedRoles={["student", "admin"]}>
       <AppShell currentPath="/dashboard">
         <StudentDashboardView isMockDefault={isMock} />
       </AppShell>
