@@ -13,15 +13,14 @@ interface MemoryBucket {
 
 const memoryStore = new Map<string, MemoryBucket>();
 
-// Periodic cleanup of expired entries in memory store
-setInterval(() => {
+function cleanupExpiredMemory(): void {
   const now = Date.now();
   for (const [key, bucket] of memoryStore.entries()) {
     if (bucket.resetAt <= now) {
       memoryStore.delete(key);
     }
   }
-}, 60_000).unref();
+}
 
 function sanitizeKey(prefix: string, raw: string): string {
   const hash = createHash("sha256").update(raw.trim().toLowerCase()).digest("hex").slice(0, 32);
@@ -38,6 +37,7 @@ export async function enforceRateLimit(
   maxAttempts = 3,
   windowSeconds = 900
 ): Promise<RateLimitResult> {
+  cleanupExpiredMemory();
   const key = sanitizeKey(prefix, rawKey);
   const now = Date.now();
   const windowMs = windowSeconds * 1000;
@@ -100,6 +100,7 @@ export async function enforceRateLimit(
  * Releases (decrements) a consumed rate limit attempt if a downstream operation fails.
  */
 export async function releaseRateLimit(prefix: string, rawKey: string): Promise<void> {
+  cleanupExpiredMemory();
   const key = sanitizeKey(prefix, rawKey);
   const bucket = memoryStore.get(key);
   if (bucket) {

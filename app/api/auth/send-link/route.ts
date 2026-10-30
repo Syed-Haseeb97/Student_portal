@@ -56,6 +56,7 @@ function buildEmailHtml(signInLink: string, recipientEmail: string): string {
   `.trim();
 }
 
+export const runtime = "nodejs";
 export const maxDuration = 15;
 
 export async function POST(request: Request) {
