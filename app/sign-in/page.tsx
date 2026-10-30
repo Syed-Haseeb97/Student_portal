@@ -120,9 +120,12 @@ export default function SignInPage() {
         return;
       }
 
-      // Success: Save email to localStorage for automatic completion
+      // Success: Save email to localStorage, sessionStorage, and cookie for seamless automatic completion
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("emailForSignIn", email.trim().toLowerCase());
+        const cleanEmail = email.trim().toLowerCase();
+        window.localStorage.setItem("emailForSignIn", cleanEmail);
+        window.sessionStorage.setItem("emailForSignIn", cleanEmail);
+        document.cookie = `emailForSignIn=${encodeURIComponent(cleanEmail)}; path=/; max-age=3600; SameSite=Lax`;
       }
       setStatus("sent");
       setCooldown(60); // 60s cooldown for resend button

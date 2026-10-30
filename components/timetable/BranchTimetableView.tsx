@@ -45,7 +45,7 @@ export function BranchTimetableView({
   defaultBranch,
   batch,
   className = "",
-  allowBranchSwitching = false,
+  allowBranchSwitching = true,
 }: BranchTimetableViewProps) {
   // Infer student's department branch
   const inferredBranch = useMemo(() => {
@@ -67,6 +67,11 @@ export function BranchTimetableView({
   const [showReferenceTimetable, setShowReferenceTimetable] = useState(false);
 
   const [userSelectedBranch, setUserSelectedBranch] = useState<"11" | "12" | "13" | "14">(inferredBranch);
+
+  useEffect(() => {
+    setUserSelectedBranch(inferredBranch);
+  }, [inferredBranch]);
+
   const selectedBranch = allowBranchSwitching ? userSelectedBranch : inferredBranch;
   const [viewMode, setViewMode] = useState<"grid" | "day">(() => {
     if (typeof window !== "undefined" && window.innerWidth < 640) return "day";

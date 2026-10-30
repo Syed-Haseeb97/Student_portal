@@ -13,15 +13,65 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/Badge";
 import { Mail, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 
+function detectSignInEmail(): string {
+  if (typeof window === "undefined") return "";
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // 1. Explicit query parameter ?email=...
+    const directEmail = urlParams.get("email");
+    if (directEmail && directEmail.includes("@")) {
+      return directEmail.trim().toLowerCase();
+    }
+
+    // 2. Mock mode query parameter
+    const mockEmail = urlParams.get("mockEmail");
+    if (mockEmail && mockEmail.includes("@")) {
+      return mockEmail.trim().toLowerCase();
+    }
+
+    // 3. Embedded inside continueUrl
+    const continueUrl = urlParams.get("continueUrl");
+    if (continueUrl) {
+      try {
+        const parsed = new URL(continueUrl, window.location.origin);
+        const nested = parsed.searchParams.get("email");
+        if (nested && nested.includes("@")) return nested.trim().toLowerCase();
+      } catch {
+        const match = continueUrl.match(/[?&]email=([^&]+)/);
+        if (match && match[1]) {
+          const dec = decodeURIComponent(match[1]);
+          if (dec.includes("@")) return dec.trim().toLowerCase();
+        }
+      }
+    }
+
+    // 4. LocalStorage
+    const local = window.localStorage.getItem("emailForSignIn");
+    if (local && local.includes("@")) return local.trim().toLowerCase();
+
+    // 5. SessionStorage
+    const session = window.sessionStorage.getItem("emailForSignIn");
+    if (session && session.includes("@")) return session.trim().toLowerCase();
+
+    // 6. Cookie fallback
+    const cookieMatch = document.cookie.match(/(?:^|;\s*)emailForSignIn=([^;]+)/);
+    if (cookieMatch && cookieMatch[1]) {
+      const dec = decodeURIComponent(cookieMatch[1]);
+      if (dec.includes("@")) return dec.trim().toLowerCase();
+    }
+  } catch {
+    // fallback
+  }
+
+  return "";
+}
+
 export default function FinishSignInPage() {
   const router = useRouter();
   const { refreshProfile } = useAuth();
-  const [email, setEmail] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.localStorage.getItem("emailForSignIn") ?? "";
-    }
-    return "";
-  });
+  const [email, setEmail] = useState(() => detectSignInEmail());
   const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -61,6 +111,8 @@ export default function FinishSignInPage() {
           setSuccessMessage("Authentication confirmed and roster access verified.");
           if (typeof window !== "undefined") {
             window.localStorage.removeItem("emailForSignIn");
+            window.sessionStorage.removeItem("emailForSignIn");
+            document.cookie = "emailForSignIn=; path=/; max-age=0; SameSite=Lax";
           }
           await refreshProfile();
           setTimeout(() => router.push(target), 1200);
@@ -77,6 +129,8 @@ export default function FinishSignInPage() {
         setSuccessMessage("Institutional identity verified and access granted.");
         if (typeof window !== "undefined") {
           window.localStorage.removeItem("emailForSignIn");
+          window.sessionStorage.removeItem("emailForSignIn");
+          document.cookie = "emailForSignIn=; path=/; max-age=0; SameSite=Lax";
         }
         await refreshProfile();
         setTimeout(() => router.push(target), 1200);
@@ -92,32 +146,30 @@ export default function FinishSignInPage() {
     [isMock, refreshProfile, router]
   );
 
-  // Auto-complete if valid link and saved email exists
+  // Auto-complete if valid link and saved/detected email exists
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     let timer: NodeJS.Timeout | undefined;
-
-    if (isMock) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const mockEmail = urlParams.get("mockEmail");
-      if (mockEmail) {
-        timer = setTimeout(() => {
-          setEmail(mockEmail);
-          void executeSignIn(mockEmail);
-        }, 0);
-        return () => {
-          if (timer) clearTimeout(timer);
-        };
-      }
-    }
-
-    const savedEmail = window.localStorage.getItem("emailForSignIn");
+    const detected = detectSignInEmail();
     const currentUrl = window.location.href;
 
-    if (savedEmail && isInstitutionalSignInLink(currentUrl)) {
+    if (detected) {
+      setEmail(detected);
+    }
+
+    if (isMock && detected) {
       timer = setTimeout(() => {
-        void executeSignIn(savedEmail);
+        void executeSignIn(detected);
+      }, 0);
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
+    }
+
+    if (detected && isInstitutionalSignInLink(currentUrl)) {
+      timer = setTimeout(() => {
+        void executeSignIn(detected);
       }, 0);
     }
 

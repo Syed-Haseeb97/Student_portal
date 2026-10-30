@@ -139,9 +139,13 @@ export async function POST(request: Request) {
       : undefined;
 
     const baseUrl = configuredUrl || detectedUrl || process.env.APP_URL || "http://localhost:3000";
-    const redirectUrl = baseUrl.endsWith("/sign-in/finish")
+    const redirectBase = baseUrl.endsWith("/sign-in/finish")
       ? baseUrl
       : `${baseUrl.replace(/\/$/, "")}/sign-in/finish`;
+
+    const redirectUrl = redirectBase.includes("?")
+      ? `${redirectBase}&email=${encodeURIComponent(email)}`
+      : `${redirectBase}?email=${encodeURIComponent(email)}`;
 
     const { auth } = getFirebaseAdmin();
     link = await auth.generateSignInWithEmailLink(email, {

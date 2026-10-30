@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { LogOut, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -17,18 +18,25 @@ export function SignOutConfirmModal({
   onConfirm,
   userEmail,
 }: SignOutConfirmModalProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
+
+  const content = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150 min-h-[100dvh]"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="signout-modal-title"
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-surface border border-line p-6 shadow-2xl relative space-y-5 animate-in zoom-in-95 duration-150"
+        className="w-full max-w-md rounded-2xl bg-surface border border-line p-6 shadow-2xl relative space-y-5 animate-in zoom-in-95 duration-150 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -86,4 +94,6 @@ export function SignOutConfirmModal({
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }

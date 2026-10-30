@@ -356,7 +356,7 @@ export function StudentDashboardView({
           userRollOrEmail={user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined}
           defaultBranch={studentBranch}
           batch={studentBatch}
-          allowBranchSwitching={false}
+          allowBranchSwitching={true}
         />
       ) : activeTab === "notices" ? (
         <StudentNoticesView branchCode={studentBranch} idToken={idToken} />
