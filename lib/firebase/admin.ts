@@ -1,8 +1,14 @@
 import "server-only";
 import fs from "node:fs";
-import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { createRequire } from "node:module";
+import type { App } from "firebase-admin/app";
+import type { Auth } from "firebase-admin/auth";
+import type { Firestore } from "firebase-admin/firestore";
+
+const requireModule = createRequire(import.meta.url);
+const { cert, getApps, initializeApp } = requireModule("firebase-admin/app") as typeof import("firebase-admin/app");
+const { getAuth } = requireModule("firebase-admin/auth") as typeof import("firebase-admin/auth");
+const { getFirestore } = requireModule("firebase-admin/firestore") as typeof import("firebase-admin/firestore");
 
 /** Privileged server SDK. Never import this module from a Client Component. */
 function getAdminApp() {
@@ -81,7 +87,7 @@ function getAdminApp() {
   });
 }
 
-export function getFirebaseAdmin() {
+export function getFirebaseAdmin(): { app: App; auth: Auth; db: Firestore } {
   const app = getAdminApp();
   return { app, auth: getAuth(app), db: getFirestore(app) };
 }
