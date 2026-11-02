@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { StudentDashboardData, StudentSummary, AcademicNotice } from "@/lib/api/types";
 import { normalizeAttendanceStatus } from "@/lib/api/types";
-import { getStudentDashboard, getAcademicNotices, type MockScenario } from "@/lib/api/client";
+import { getStudentDashboard, getAcademicNotices } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { calculateGuidance } from "@/lib/attendance/calc";
 import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
@@ -103,7 +103,7 @@ function DistributionScale({
 export function StudentDashboardView({
   initialData,
   idToken,
-  isMockDefault = true,
+  isMockDefault: _isMockDefault = true,
 }: StudentDashboardViewProps) {
   const [data, setData] = useState<StudentDashboardData | null>(initialData ?? null);
   const [loading, setLoading] = useState<boolean>(!initialData);
@@ -119,12 +119,7 @@ export function StudentDashboardView({
   const { user, getIdToken } = useAuth();
 
   // Connect to student navigation context if present
-  let navContext: ReturnType<typeof useStudentNav> | null = null;
-  try {
-    navContext = useStudentNav();
-  } catch {
-    navContext = null;
-  }
+  const navContext = useStudentNav();
 
   const [localView, setLocalView] = useState<StudentNavView>("overview");
   const view = navContext?.view ?? localView;
@@ -767,7 +762,7 @@ export function StudentDashboardView({
 
                 <select
                   value={attendanceSort}
-                  onChange={(e) => setAttendanceSort(e.target.value as any)}
+                  onChange={(e) => setAttendanceSort(e.target.value as "lowest" | "highest" | "name")}
                   className="h-11 rounded-full border border-line bg-surface px-4 text-sm text-ink outline-none focus:border-ink/40 cursor-pointer font-mono"
                   aria-label="Sort subjects"
                 >

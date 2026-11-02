@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  OFFICIAL_FACULTY_ROSTER,
   getFacultyByEmail,
   isAuthorizedPortalEmail,
 } from "../lib/roster/validate";

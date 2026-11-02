@@ -34,12 +34,8 @@ interface StudentNavContextType {
 
 const StudentNavContext = createContext<StudentNavContextType | undefined>(undefined);
 
-export function useStudentNav() {
-  const context = useContext(StudentNavContext);
-  if (!context) {
-    throw new Error("useStudentNav must be used within a StudentAppShell");
-  }
-  return context;
+export function useStudentNav(): StudentNavContextType | null {
+  return useContext(StudentNavContext) ?? null;
 }
 
 const navItems: { id: StudentNavView; label: string; icon: typeof LayoutDashboard }[] = [

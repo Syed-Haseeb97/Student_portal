@@ -10,7 +10,7 @@ import { getFirebaseClient } from "@/lib/firebase/client";
 import { isAuthorizedPortalEmail } from "@/lib/roster/validate";
 import type { ApiErrorResponse } from "@/lib/api/types";
 
-const EMAIL_DOMAIN = "@iiitt.ac.in";
+const _EMAIL_DOMAIN = "@iiitt.ac.in";
 
 export function normalizeInstitutionalEmail(value: string) {
   return value.trim().toLowerCase();

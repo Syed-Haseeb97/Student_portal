@@ -6,17 +6,11 @@ import { getAcademicNotices } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageHeader } from "@/components/ui/PortalUI";
 import {
-  Bell,
   CalendarDays,
   Pin,
   ArrowLeft,
   Megaphone,
   Search,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  FileText,
-  Mail,
 } from "lucide-react";
 
 interface StudentNoticesViewProps {

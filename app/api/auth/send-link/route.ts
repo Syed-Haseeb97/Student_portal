@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { readBoundedJson } from "@/lib/http/read-bounded-json";
-import { normalizeEmail, INSTITUTIONAL_EMAIL_PATTERN, isAuthorizedPortalEmail } from "@/lib/roster/validate";
+import { normalizeEmail, isAuthorizedPortalEmail } from "@/lib/roster/validate";
 import { enforceRateLimit, releaseRateLimit } from "@/lib/auth/rate-limit";
 import {
   getEmailProvider,

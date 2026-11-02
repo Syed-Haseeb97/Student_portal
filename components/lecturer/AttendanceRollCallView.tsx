@@ -24,9 +24,7 @@ import {
   Check,
   X,
   RotateCcw,
-  AlertTriangle,
   UserMinus,
-  Sparkles,
 } from "lucide-react";
 
 interface AttendanceRollCallViewProps {

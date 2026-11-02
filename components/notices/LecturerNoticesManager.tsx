@@ -6,7 +6,6 @@ import { getAcademicNotices, deleteAcademicNotice } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { NoticeCreateModal } from "./NoticeCreateModal";
 import {
   Bell,
@@ -16,8 +15,6 @@ import {
   PlusCircle,
   Trash2,
   RotateCcw,
-  Sparkles,
-  AlertTriangle,
 } from "lucide-react";
 
 interface LecturerNoticesManagerProps {

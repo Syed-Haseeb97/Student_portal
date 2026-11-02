@@ -10,8 +10,6 @@ import {
   FileText,
   Clock,
   Sparkles,
-  Calendar,
-  AlertTriangle,
   Send,
 } from "lucide-react";
 

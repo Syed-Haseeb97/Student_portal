@@ -19,7 +19,6 @@ import {
   X,
   MapPin,
   ChevronRight,
-  Sparkles,
 } from "lucide-react";
 
 interface BranchTimetableViewProps {
