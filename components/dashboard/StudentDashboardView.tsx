@@ -8,9 +8,13 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { calculateGuidance } from "@/lib/attendance/calc";
 import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
 import { StudentSubjectDetailModal } from "./StudentSubjectDetailModal";
-import { BranchTimetableView, getCourseClassType, getCourseDisplayTitle } from "@/components/timetable/BranchTimetableView";
+import { BranchTimetableView } from "@/components/timetable/BranchTimetableView";
 import { StudentNoticesView } from "@/components/notices/StudentNoticesView";
-import { resolveBranchFromRollOrEmail, resolveSlotCourse, BRANCH_TIMETABLES, PERIOD_SLOTS, type DayOfWeek } from "@/lib/timetable/first-year-data";
+import { resolveBranchFromRollOrEmail } from "@/lib/timetable/first-year-data";
+import {
+  resolveUpcomingSchedule,
+  inferLabBatchFromRoll,
+} from "@/lib/timetable/schedule-resolver";
 import { inferStudentFromRollOrEmail } from "@/lib/roster/validate";
 import { useStudentNav, type StudentNavView } from "@/components/layout/StudentAppShell";
 import { AttendanceBar, PageHeader, Percent, StatusPill } from "@/components/ui/PortalUI";
@@ -266,83 +270,28 @@ export function StudentDashboardView({
     };
   }, [studentBranch, idToken, getIdToken, setUnreadNoticesCount]);
 
-  // Today's schedule resolution from authoritative hardcoded branch timetable
-  const { todaySessions, upNextSession } = useMemo(() => {
-    const timetable =
-      BRANCH_TIMETABLES[studentBranch] ||
-      BRANCH_TIMETABLES["11"];
+  // Live ticking clock to keep today's schedule and upcoming class strictly in sync with real time
+  const [liveNow, setLiveNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setLiveNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
-    const now = new Date();
-    const dayIndex = now.getDay();
-    const dayMap: Record<number, DayOfWeek> = {
-      1: "Monday",
-      2: "Tuesday",
-      3: "Wednesday",
-      4: "Thursday",
-      5: "Friday",
-    };
-    const effectiveDay: DayOfWeek = dayMap[dayIndex] ?? "Monday";
-    const slotCodes = timetable.schedule[effectiveDay] || [];
+  // Infer student's lab batch from roll number or email
+  const studentLabBatch = useMemo(() => {
+    return inferLabBatchFromRoll(data?.student?.rollNumber || user?.rollNumber || user?.email);
+  }, [data?.student?.rollNumber, user?.rollNumber, user?.email]);
 
-    const sessionsList: {
-      slotId: string;
-      start: string;
-      end: string;
-      code: string;
-      title: string;
-      type: string;
-      faculty: string;
-      room: string;
-      isNext?: boolean;
-      isPast?: boolean;
-    }[] = [];
-
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    slotCodes.forEach((slotCode: string | null, idx: number) => {
-      if (!slotCode || slotCode === "BREAK" || slotCode === "LUNCH") return;
-      const period = PERIOD_SLOTS[idx];
-      if (!period || period.isBreak) return;
-
-      const course = resolveSlotCourse(timetable, slotCode);
-      if (!course) return;
-
-      const [startH, startM] = period.startTime.split(":").map(Number);
-      const [endH, endM] = period.endTime.split(":").map(Number);
-      const startMinutes = startH * 60 + startM;
-      const endMinutes = endH * 60 + endM;
-      const classType = getCourseClassType(course);
-      const displayTitle = getCourseDisplayTitle(course, slotCode);
-
-      sessionsList.push({
-        slotId: period.id,
-        start: period.startTime,
-        end: period.endTime,
-        code: course.code,
-        title: displayTitle,
-        type: `${classType} · ${slotCode}`,
-        faculty: course.facultyName,
-        room: classType === "Lab" ? "Computer Lab 1 / ECE Lab" : "Lecture Theatre 102",
-        isPast: currentMinutes > endMinutes,
-        isNext: currentMinutes >= startMinutes && currentMinutes <= endMinutes,
-      });
-    });
-
-    const next =
-      sessionsList.find((s) => !s.isPast) ||
-      sessionsList[0] || {
-        slotId: "P1",
-        start: "09:20",
-        end: "10:10",
-        code: "CS1101",
-        title: "Intro to Computer Programming",
-        type: "Lecture · C1",
-        faculty: "Dr. Anoop Jacob Thomas",
-        room: "Lecture Theatre 102",
-      };
-
-    return { todaySessions: sessionsList, upNextSession: next };
-  }, [studentBranch]);
+  // Authoritative real-time schedule resolution (ongoing class, up-next class, and full daily session log)
+  const {
+    todaySessions,
+    isWeekend,
+    isDayComplete,
+    upNextSession,
+    heroBadge,
+  } = useMemo(() => {
+    return resolveUpcomingSchedule(studentBranch, studentLabBatch, liveNow);
+  }, [studentBranch, studentLabBatch, liveNow]);
 
   // Formatted date and greeting
   const hour = new Date().getHours();
@@ -510,20 +459,35 @@ export function StudentDashboardView({
               <section className="relative overflow-hidden rounded-2xl bg-hero p-6 text-on-hero shadow-xs">
                 <div className="absolute -top-20 -right-20 size-56 rounded-full border-[28px] border-on-hero/5 pointer-events-none" />
                 <div className="relative flex items-center justify-between">
-                  <p className="text-sm text-on-hero/60">Up next</p>
+                  <p className="text-sm text-on-hero/60">
+                    {heroBadge.status === "ongoing"
+                      ? "Ongoing class"
+                      : heroBadge.status === "upcoming_today"
+                      ? "Up next"
+                      : heroBadge.status === "weekend"
+                      ? "Next session"
+                      : "Up next"}
+                  </p>
                   <span className="flex items-center gap-1.5 rounded-full bg-on-hero/10 px-2.5 py-1 text-xs font-medium font-mono">
-                    <span className="size-1.5 animate-pulse rounded-full bg-[#7ee2b8]" /> Upcoming class
+                    <span
+                      className={`size-1.5 rounded-full ${
+                        heroBadge.status === "ongoing"
+                          ? "animate-ping bg-safe"
+                          : "animate-pulse bg-[#7ee2b8]"
+                      }`}
+                    />{" "}
+                    {heroBadge.label}
                   </span>
                 </div>
                 <h2 className="relative mt-6 font-serif text-3xl leading-tight">
                   {upNextSession.title}
                 </h2>
-                <p className="relative mt-1 text-sm text-on-hero/60">
+                <p className="relative mt-1 text-sm text-on-hero/60 font-mono">
                   {upNextSession.type} · {upNextSession.faculty}
                 </p>
                 <div className="relative mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-on-hero/80 font-mono">
                   <span className="flex items-center gap-2">
-                    <Clock className="size-4 text-on-hero/50" /> {upNextSession.start} – {upNextSession.end}
+                    <Clock className="size-4 text-on-hero/50" /> {heroBadge.timingLabel}
                   </span>
                   <span className="flex items-center gap-2">
                     <MapPin className="size-4 text-on-hero/50" /> {upNextSession.room}
@@ -634,7 +598,16 @@ export function StudentDashboardView({
               {/* Today's Schedule Card */}
               <section className="card p-6 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-serif text-2xl text-ink">Today</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-serif text-2xl text-ink">
+                      {isWeekend ? "Weekend" : "Today"}
+                    </h2>
+                    {isDayComplete && !isWeekend && (
+                      <span className="rounded-full bg-surface border border-line px-2 py-0.5 text-[10px] font-mono text-muted">
+                        Done for today
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setView("timetable")}
@@ -643,44 +616,83 @@ export function StudentDashboardView({
                     Full week &rarr;
                   </button>
                 </div>
-                <ol className="mt-5 space-y-1">
-                  {todaySessions.map((s, idx) => {
-                    return (
-                      <li
-                        key={`${s.slotId}-${idx}`}
-                        className={`flex items-center gap-4 rounded-xl px-3 py-2.5 ${
-                          s.isNext ? "bg-raised" : ""
-                        }`}
-                      >
-                        <span className={`w-11 font-mono text-xs ${s.isPast ? "text-muted" : "text-ink"}`}>
-                          {s.start}
-                        </span>
-                        <span
-                          className={`size-2 shrink-0 rounded-full ${
-                            s.isPast
-                              ? "bg-line"
-                              : s.isNext
-                              ? "bg-safe ring-4 ring-safe-soft"
-                              : "border border-muted/50"
-                          }`}
-                        />
-                        <div className={`min-w-0 flex-1 ${s.isPast ? "opacity-50" : ""}`}>
-                          <p
-                            className={`truncate text-sm ${
-                              s.isPast ? "text-muted line-through decoration-line" : "font-medium text-ink"
+
+                {isWeekend ? (
+                  <div className="mt-5 rounded-xl border border-dashed border-line/60 bg-surface/50 p-6 text-center">
+                    <p className="font-mono text-xs text-muted">
+                      No academic lectures scheduled for today. Enjoy your weekend!
+                    </p>
+                    <p className="mt-2 text-xs font-medium text-ink">
+                      Next class begins Monday at 09:20 AM.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {isDayComplete && (
+                      <div className="mt-3 flex items-center gap-2 rounded-lg bg-surface/80 border border-line px-3 py-1.5 text-xs text-muted font-mono">
+                        <CheckCircle2 className="size-3.5 text-safe" />
+                        <span>All academic classes completed for today.</span>
+                      </div>
+                    )}
+                    <ol className="mt-4 space-y-1">
+                      {todaySessions.map((s, idx) => {
+                        return (
+                          <li
+                            key={`${s.slotId}-${idx}`}
+                            className={`flex items-center gap-4 rounded-xl px-3 py-2.5 transition-colors ${
+                              s.isOngoing
+                                ? "bg-safe-soft/50 ring-1 ring-safe/30"
+                                : s.isNext
+                                ? "bg-raised"
+                                : ""
                             }`}
                           >
-                            {s.title}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {s.type} · {s.room}
-                          </p>
-                        </div>
-                        {s.isNext && <span className="text-xs font-medium text-safe font-mono">Next</span>}
-                      </li>
-                    );
-                  })}
-                </ol>
+                            <span
+                              className={`w-11 font-mono text-xs ${
+                                s.isPast ? "text-muted" : "text-ink font-medium"
+                              }`}
+                            >
+                              {s.start}
+                            </span>
+                            <span
+                              className={`size-2 shrink-0 rounded-full ${
+                                s.isPast
+                                  ? "bg-line"
+                                  : s.isOngoing
+                                  ? "bg-safe ring-4 ring-safe/25 animate-pulse"
+                                  : s.isNext
+                                  ? "bg-safe ring-4 ring-safe-soft"
+                                  : "border border-muted/50"
+                              }`}
+                            />
+                            <div className={`min-w-0 flex-1 ${s.isPast ? "opacity-50" : ""}`}>
+                              <p
+                                className={`truncate text-sm ${
+                                  s.isPast ? "text-muted line-through decoration-line" : "font-medium text-ink"
+                                }`}
+                              >
+                                {s.title}
+                              </p>
+                              <p className="text-xs text-muted">
+                                {s.type} · {s.room}
+                              </p>
+                            </div>
+                            {s.isOngoing && (
+                              <span className="text-xs font-semibold text-safe font-mono">
+                                Live
+                              </span>
+                            )}
+                            {!s.isOngoing && s.isNext && (
+                              <span className="text-xs font-medium text-safe font-mono">
+                                Next
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </>
+                )}
               </section>
 
               {/* Latest Notices Card */}

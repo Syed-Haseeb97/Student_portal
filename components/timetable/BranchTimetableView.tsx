@@ -31,153 +31,23 @@ interface BranchTimetableViewProps {
 
 const DAYS: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-export type AcademicClassType = "Lecture" | "Lab" | "Tutorial" | "Activity";
+export {
+  getCourseClassType,
+  getCourseDisplayTitle,
+  getSlotLabBatch,
+  inferLabBatchFromRoll,
+  getSlotBadge,
+  type AcademicClassType,
+} from "@/lib/timetable/schedule-resolver";
 
-/**
- * Accurately determines whether a course offering is a Laboratory, Tutorial, Activity, or Lecture.
- */
-export function getCourseClassType(course: CourseDetail): AcademicClassType {
-  const name = course.name.toLowerCase();
-  const code = course.code.toLowerCase();
-  if (
-    name.includes("laboratory") ||
-    name.includes("lab") ||
-    code.endsWith("02") ||
-    code.endsWith("05") ||
-    code.endsWith("04")
-  ) {
-    return "Lab";
-  }
-  if (name.includes("graphics") || name.includes("drawing") || name.includes("workshop")) {
-    return "Lab";
-  }
-  if (name.includes("nss") || name.includes("ncc") || name.includes("well-being")) {
-    return "Activity";
-  }
-  if (name.includes("tutorial") || name.includes("practice")) {
-    return "Tutorial";
-  }
-  return "Lecture";
-}
-
-/**
- * Concise, high-legibility display titles engineered so they never clip or truncate
- * through letter descenders in the timetable grid or dashboard cards.
- */
-export function getCourseDisplayTitle(course: CourseDetail, slotCode?: string): string {
-  const code = course.code.toUpperCase().trim();
-  const upperSlot = slotCode?.toUpperCase().trim() || "";
-
-  // Batch-specific lab titles
-  if (upperSlot.startsWith("F1")) return "Physics Lab (Batch 1)";
-  if (upperSlot.startsWith("F2")) return "Physics Lab (Batch 2)";
-  if (upperSlot.startsWith("F3")) return "Physics Lab (Batch 3)";
-  if (upperSlot.startsWith("G1") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 1)";
-  if (upperSlot.startsWith("G2") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 2)";
-  if (upperSlot.startsWith("G3") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 3)";
-  if (upperSlot.startsWith("D1") && code === "ME1101") return "Graphics Lab (Batch 1)";
-  if (upperSlot.startsWith("D2") && code === "ME1101") return "Graphics Lab (Batch 2)";
-  if (upperSlot.startsWith("D3") && code === "ME1101") return "Graphics Lab (Batch 3)";
-  if (upperSlot.startsWith("E1") && code === "EC1103") return "Electronics Lab (Batch 1)";
-  if (upperSlot.startsWith("E2") && code === "EC1103") return "Electronics Lab (Batch 2)";
-  if (upperSlot.startsWith("H1") && code === "EC1102") return "Electronics Lab (Batch 1)";
-
-  if (code === "CS1101") return "Computer Programming";
-  if (code === "CS1102") return "Programming Lab";
-  if (code === "PH1101") return "Physics";
-  if (code === "PH1102") return "Physics Lab";
-  if (code === "MA1103") return "Calculus & Matrices";
-  if (code === "ME1101") return "Engineering Graphics";
-  if (code === "EC1103") return "Intro to Electronics";
-  if (code === "HM1102") return "NSS / NCC & Well-Being";
-  if (code === "EC1101") return "Digital Logic Design";
-  if (code === "EC1102") return "Digital Logic Design Lab";
-  if (code === "EC1104") return "Semiconductor Devices";
-  if (code === "EC1105") return "Semiconductor Devices Lab";
-  if (code === "CS1103") return "Foundations of AI & DS";
-  if (code === "CS1104") return "AI & Data Science Lab";
-  if (code === "VL1101") return "Basic VLSI Design";
-  if (code === "VL1102") return "VLSI Design Lab";
-  if (code === "ME1102") return "Engineering Practice";
-  if (code === "ME2101") return "Basics of Mech. Eng.";
-  if (code === "HM1101") return "Technical English";
-  if (code === "MA1101") return "Engineering Maths 1";
-
-  const name = course.name.trim();
-  if (name.length > 25) {
-    return name
-      .replace(/Introduction to /gi, "")
-      .replace(/Introduction of /gi, "")
-      .replace(/Laboratory/gi, "Lab")
-      .replace(/Engineering/gi, "Eng.")
-      .replace(/Differential Calculus and Matrices/gi, "Calculus & Matrices");
-  }
-  return name;
-}
-
-/**
- * Identifies which lab batch (Batch 1, 2, or 3) a multi-period practical session belongs to.
- */
-export function getSlotLabBatch(slotCode: string): "1" | "2" | "3" | null {
-  const upper = slotCode.toUpperCase().trim();
-  if (upper.startsWith("F1") || upper.startsWith("G1") || upper.startsWith("D1") || upper.startsWith("E1") || upper.startsWith("H1")) return "1";
-  if (upper.startsWith("F2") || upper.startsWith("G2") || upper.startsWith("D2") || upper.startsWith("E2") || upper.startsWith("H2")) return "2";
-  if (upper.startsWith("F3") || upper.startsWith("G3") || upper.startsWith("D3") || upper.startsWith("E3") || upper.startsWith("H3")) return "3";
-  return null;
-}
-
-/**
- * Infers student lab batch (Batch 1: 1-22, Batch 2: 23-45, Batch 3: 46+) from student roll number.
- */
-export function inferLabBatchFromRoll(rollOrEmail?: string): "1" | "2" | "3" | null {
-  if (!rollOrEmail) return null;
-  const clean = rollOrEmail.toLowerCase().split("@")[0]!;
-  const match = clean.match(/^(?:20)?\d{2}(?:11|12|13|14)(\d{2,3})$/);
-  if (match && match[1]) {
-    const num = parseInt(match[1], 10);
-    if (num <= 22) return "1";
-    if (num <= 45) return "2";
-    return "3";
-  }
-  return null;
-}
-
-/**
- * Clarifies multi-period slots and lab batches (e.g. F11, F12, F13 for Batch 1)
- */
-export function getSlotBadge(slotCode: string, classType: AcademicClassType): string {
-  const upper = slotCode.toUpperCase().trim();
-
-  // Multi-slot physics lab batches
-  if (upper === "F11") return "F11 · Batch 1 (1/3)";
-  if (upper === "F12") return "F12 · Batch 1 (2/3)";
-  if (upper === "F13") return "F13 · Batch 1 (3/3)";
-  if (upper === "F21") return "F21 · Batch 2 (1/3)";
-  if (upper === "F22") return "F22 · Batch 2 (2/3)";
-  if (upper === "F23") return "F23 · Batch 2 (3/3)";
-  if (upper === "F31") return "F31 · Batch 3 (1/3)";
-  if (upper === "F32") return "F32 · Batch 3 (2/3)";
-  if (upper === "F33") return "F33 · Batch 3 (3/3)";
-
-  // Multi-slot programming lab
-  if (upper === "G11") return "G11 · Batch 1 (1/3)";
-  if (upper === "G12") return "G12 · Batch 1 (2/3)";
-  if (upper === "G13") return "G13 · Batch 1 (3/3)";
-
-  // Graphics lab
-  if (upper === "D11") return "D11 · Batch 1 (1/3)";
-  if (upper === "D12") return "D12 · Batch 1 (2/3)";
-  if (upper === "D13") return "D13 · Batch 1 (3/3)";
-
-  // Electronics lab
-  if (upper === "E11") return "E11 · Batch 1 (1/2)";
-  if (upper === "E12") return "E12 · Batch 1 (2/2)";
-
-  // NSS / NCC
-  if (upper.startsWith("H") || upper === "NSS" || upper === "NCC") return `${upper} · Activity`;
-
-  return `${upper} · ${classType}`;
-}
+import {
+  getCourseClassType,
+  getCourseDisplayTitle,
+  getSlotLabBatch,
+  inferLabBatchFromRoll,
+  getSlotBadge,
+  type AcademicClassType,
+} from "@/lib/timetable/schedule-resolver";
 
 const typeStyle: Record<AcademicClassType, string> = {
   Lecture: "bg-surface border-line hover:border-ink/40",
@@ -254,10 +124,15 @@ export function BranchTimetableView({
     period: PeriodSlot;
   } | null>(null);
 
-  // Current active period check
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const currentDayOfWeek = now.getDay() - 1; // 0 = Monday
+  // Live ticking clock so the current active slot updates dynamically
+  const [liveNow, setLiveNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setLiveNow(new Date()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentMinutes = liveNow.getHours() * 60 + liveNow.getMinutes();
+  const currentDayOfWeek = liveNow.getDay() - 1; // 0 = Monday
 
   const isPeriodNow = (dayIndex: number, period: PeriodSlot) => {
     if (dayIndex !== currentDayOfWeek) return false;
