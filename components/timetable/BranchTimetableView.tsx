@@ -52,10 +52,14 @@ import {
 } from "@/lib/timetable/schedule-resolver";
 
 const typeStyle: Record<AcademicClassType, string> = {
-  Lecture: "bg-surface border-line hover:border-ink/40",
-  Lab: "bg-safe-soft/75 border-safe/30 text-ink hover:border-safe/60 hover:bg-safe-soft",
-  Tutorial: "bg-warn-soft/75 border-warn/30 text-ink hover:border-warn/60 hover:bg-warn-soft",
-  Activity: "bg-surface border-line hover:border-ink/40",
+  Lecture:
+    "bg-surface border-ink/25 dark:border-white/20 text-ink hover:border-ink/70 dark:hover:border-white/70 hover:shadow-lg hover:shadow-ink/10 dark:hover:shadow-black/60",
+  Lab:
+    "bg-safe-soft/85 border-safe/50 dark:border-safe/45 text-ink hover:border-safe hover:bg-safe-soft hover:shadow-lg hover:shadow-safe/25 dark:hover:shadow-safe/20",
+  Tutorial:
+    "bg-warn-soft/85 border-warn/50 dark:border-warn/45 text-ink hover:border-warn hover:bg-warn-soft hover:shadow-lg hover:shadow-warn/25 dark:hover:shadow-warn/20",
+  Activity:
+    "bg-surface border-ink/25 dark:border-white/20 text-ink hover:border-ink/70 dark:hover:border-white/70 hover:shadow-lg hover:shadow-ink/10 dark:hover:shadow-black/60",
 };
 
 const typeDot: Record<AcademicClassType, string> = {
@@ -316,7 +320,7 @@ export function BranchTimetableView({
           </div>
 
           {/* DESKTOP WEEK GRID: Precision Height & Zero-Clipping Layout */}
-          <div className="card hidden overflow-x-auto p-4 lg:block shadow-xs">
+          <div className="card hidden overflow-x-auto p-4 lg:block shadow-xs border-ink/25 dark:border-white/20">
             <div
               className="grid min-w-[960px] gap-2.5"
               style={{
@@ -334,8 +338,10 @@ export function BranchTimetableView({
                 return (
                   <div
                     key={d}
-                    className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
-                      isToday ? "bg-solid text-on-solid shadow-xs" : "text-muted bg-surface/60 border border-line/60"
+                    className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                      isToday
+                        ? "bg-solid text-on-solid shadow-xs"
+                        : "text-muted bg-surface/90 border border-ink/25 dark:border-white/20 hover:border-ink/50 dark:hover:border-white/40"
                     }`}
                   >
                     <span className="font-semibold">{d}</span>
@@ -362,11 +368,11 @@ export function BranchTimetableView({
                       <span className="w-16 text-right font-mono normal-case tracking-normal text-muted font-medium">
                         {slot.startTime}
                       </span>
-                      <span className="h-px flex-1 bg-line" />
-                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-line text-xs font-semibold text-ink shadow-xs">
+                      <span className="h-px flex-1 bg-ink/20 dark:bg-white/15" />
+                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-ink/25 dark:border-white/20 text-xs font-semibold text-ink shadow-xs transition-transform duration-200 hover:scale-105">
                         <Clock className="size-3.5 text-safe" /> Lunch Break · 13:00 – 14:00
                       </span>
-                      <span className="h-px flex-1 bg-line" />
+                      <span className="h-px flex-1 bg-ink/20 dark:bg-white/15" />
                     </div>
                   );
                 }
@@ -381,11 +387,11 @@ export function BranchTimetableView({
                       <span className="w-16 text-right font-mono normal-case tracking-normal text-muted/70 font-medium">
                         {slot.startTime}
                       </span>
-                      <span className="h-px flex-1 bg-line/60" />
-                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface/80 border border-line text-[11px] text-muted">
+                      <span className="h-px flex-1 bg-ink/15 dark:bg-white/10" />
+                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface/90 border border-ink/20 dark:border-white/15 text-[11px] text-muted transition-transform duration-200 hover:scale-105">
                         <Clock className="size-3 text-muted" /> Tea Break · {slot.startTime} – {slot.endTime}
                       </span>
-                      <span className="h-px flex-1 bg-line/60" />
+                      <span className="h-px flex-1 bg-ink/15 dark:bg-white/10" />
                     </div>
                   );
                 }
@@ -412,8 +418,8 @@ export function BranchTimetableView({
                         return (
                           <div
                             key={`${day}-${slot.id}`}
-                            className={`rounded-xl border border-dashed border-line/50 transition-colors ${
-                              dayIndex === todayIndex ? "bg-raised/30" : "bg-transparent"
+                            className={`rounded-xl border border-dashed border-ink/20 dark:border-white/15 transition-all duration-200 hover:border-ink/40 dark:hover:border-white/30 hover:bg-surface/30 ${
+                              dayIndex === todayIndex ? "bg-raised/40" : "bg-transparent"
                             }`}
                             style={{
                               gridColumn: dayIndex + 2,
@@ -442,12 +448,12 @@ export function BranchTimetableView({
                               gridRow: gridRowNumber,
                             }}
                           >
-                            <div className="flex h-full w-full flex-col justify-between rounded-xl border border-dashed border-line/60 bg-surface/40 p-3 text-left opacity-50 hover:opacity-100 transition-opacity">
+                            <div className="flex h-full w-full flex-col justify-between rounded-xl border border-dashed border-ink/25 dark:border-white/20 bg-surface/50 p-3 text-left opacity-60 hover:opacity-100 hover:border-ink/50 dark:hover:border-white/40 hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default transform-gpu will-change-transform">
                               <div className="flex items-center justify-between text-[11px] font-mono text-muted leading-none">
                                 <span>
                                   {slot.startTime}–{slot.endTime}
                                 </span>
-                                <span className="rounded-full bg-paper border border-line px-1.5 py-0.5 text-[9px] font-mono font-medium text-muted">
+                                <span className="rounded-full bg-paper border border-ink/25 dark:border-white/20 px-1.5 py-0.5 text-[9px] font-mono font-medium text-muted">
                                   Physics Lab · Batch {slotLabBatch}
                                 </span>
                               </div>
@@ -487,40 +493,43 @@ export function BranchTimetableView({
                                 period: slot,
                               })
                             }
-                            className={`flex h-full w-full flex-col rounded-xl border p-3 text-left transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out cursor-pointer hover:-translate-y-0.5 hover:shadow-md transform-gpu will-change-transform ${
+                            className={`group relative flex h-full w-full flex-col overflow-hidden rounded-xl border p-3 text-left transition-all duration-200 ease-out cursor-pointer hover:-translate-y-1.5 hover:scale-[1.015] active:scale-[0.99] transform-gpu will-change-transform shadow-xs ${
                               typeStyle[classType]
-                            } ${isNext ? "ring-2 ring-safe shadow-sm" : ""}`}
+                            } ${isNext ? "ring-2 ring-safe shadow-sm shadow-safe/30" : ""}`}
                           >
+                            {/* Animated top sheen highlight on cursor hover */}
+                            <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-linear-to-b from-white/10 dark:from-white/15 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+
                             {/* Top row: Time range & Active Badge */}
-                            <div className="flex items-center justify-between gap-1 text-[11px] font-mono text-muted leading-none">
-                              <span>
+                            <div className="relative z-10 flex items-center justify-between gap-1 text-[11px] font-mono text-muted group-hover:text-ink leading-none transition-colors duration-150">
+                              <span className="font-medium">
                                 {slot.startTime}–{slot.endTime}
                               </span>
                               {isNext && (
-                                <span className="rounded-full bg-safe text-on-solid px-2 py-0.5 text-[10px] font-semibold">
+                                <span className="rounded-full bg-safe text-on-solid px-2 py-0.5 text-[10px] font-semibold shadow-xs animate-pulse">
                                   Now
                                 </span>
                               )}
                             </div>
 
                             {/* Middle row: Clean Title with comfortable line height and NO letter clipping */}
-                            <p className="mt-1 font-semibold leading-snug text-ink text-xs line-clamp-2 select-none">
+                            <p className="relative z-10 mt-1 font-semibold leading-snug text-ink text-xs line-clamp-2 select-none group-hover:text-ink transition-colors duration-150">
                               {displayTitle}
                             </p>
 
                             {/* Bottom row: Type dot + Slot part badge + Course Code */}
-                            <div className="mt-auto flex items-center justify-between gap-1 pt-2 text-[10px] text-muted leading-none">
+                            <div className="relative z-10 mt-auto flex items-center justify-between gap-1 pt-2 text-[10px] text-muted leading-none">
                               <span className="flex items-center gap-1.5 truncate">
                                 <span
-                                  className={`size-1.5 rounded-full shrink-0 ${
+                                  className={`size-1.5 rounded-full shrink-0 transition-transform duration-200 ease-out group-hover:scale-135 ${
                                     typeDot[classType]
                                   }`}
                                 />
-                                <span className="font-mono truncate font-medium">
+                                <span className="font-mono truncate font-medium group-hover:text-ink transition-colors duration-150">
                                   {slotBadge}
                                 </span>
                               </span>
-                              <span className="font-mono text-muted/80 shrink-0 font-medium">
+                              <span className="font-mono text-muted/80 shrink-0 font-medium group-hover:text-ink transition-colors duration-150">
                                 {course.code}
                               </span>
                             </div>
@@ -608,10 +617,10 @@ export function BranchTimetableView({
                       <span className="pt-3 font-mono text-xs text-muted">
                         {slot.startTime}
                       </span>
-                      <div className="flex flex-col rounded-xl border border-dashed border-line/60 bg-surface/40 p-3.5 text-left opacity-60">
+                      <div className="flex flex-col rounded-xl border border-dashed border-ink/25 dark:border-white/20 bg-surface/50 p-3.5 text-left opacity-65 hover:opacity-100 hover:border-ink/40 transition-all duration-200">
                         <div className="flex items-center justify-between text-xs font-mono text-muted">
                           <span>{slot.startTime} – {slot.endTime}</span>
-                          <span className="rounded-full bg-paper border border-line px-2 py-0.5 text-[10px]">
+                          <span className="rounded-full bg-paper border border-ink/20 dark:border-white/20 px-2 py-0.5 text-[10px]">
                             Physics Lab · Batch {slotLabBatch}
                           </span>
                         </div>
@@ -641,31 +650,31 @@ export function BranchTimetableView({
                           period: slot,
                         })
                       }
-                      className={`flex flex-col rounded-xl border p-4 text-left transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out cursor-pointer shadow-xs transform-gpu will-change-transform ${
+                      className={`group relative flex flex-col overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 ease-out cursor-pointer shadow-xs hover:-translate-y-1 hover:shadow-md transform-gpu will-change-transform ${
                         typeStyle[classType]
-                      } ${isNext ? "ring-2 ring-safe shadow-sm" : ""}`}
+                      } ${isNext ? "ring-2 ring-safe shadow-sm shadow-safe/30" : ""}`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-[11px] text-muted">
+                        <span className="font-mono text-[11px] text-muted group-hover:text-ink transition-colors duration-150">
                           {slot.startTime} – {slot.endTime}
                         </span>
                         {isNext && (
-                          <span className="rounded-full bg-safe text-on-solid px-2 py-0.5 text-[10px] font-semibold">
+                          <span className="rounded-full bg-safe text-on-solid px-2 py-0.5 text-[10px] font-semibold animate-pulse">
                             Now
                           </span>
                         )}
                       </div>
-                      <p className="mt-1.5 font-medium leading-snug text-ink text-sm">
+                      <p className="mt-1.5 font-medium leading-snug text-ink text-sm group-hover:text-ink transition-colors duration-150">
                         {displayTitle}
                       </p>
                       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
                         <span className="flex items-center gap-1.5">
                           <span
-                            className={`size-1.5 rounded-full ${
+                            className={`size-1.5 rounded-full transition-transform duration-200 group-hover:scale-135 ${
                               typeDot[classType]
                             }`}
                           />
-                          <span className="font-mono font-medium">{slotBadge}</span>
+                          <span className="font-mono font-medium group-hover:text-ink transition-colors duration-150">{slotBadge}</span>
                         </span>
                         <span className="text-muted/80 font-mono text-[11px]">
                           {course.code} · {course.facultyName}

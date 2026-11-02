@@ -639,12 +639,12 @@ export function StudentDashboardView({
                         return (
                           <li
                             key={`${s.slotId}-${idx}`}
-                            className={`flex items-center gap-4 rounded-xl px-3 py-2.5 transition-colors ${
+                            className={`group flex items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 hover:translate-x-1 border hover:shadow-xs ${
                               s.isOngoing
-                                ? "bg-safe-soft/50 ring-1 ring-safe/30"
+                                ? "bg-safe-soft/60 ring-1 ring-safe/40 border-safe/40 shadow-xs"
                                 : s.isNext
-                                ? "bg-raised"
-                                : ""
+                                ? "bg-raised border-ink/20 dark:border-white/20 shadow-xs"
+                                : "border-ink/10 dark:border-white/10 hover:border-ink/30 dark:hover:border-white/25 hover:bg-surface/60"
                             }`}
                           >
                             <span
