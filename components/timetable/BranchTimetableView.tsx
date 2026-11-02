@@ -144,7 +144,7 @@ export function BranchTimetableView({
                   onClick={() => setUserSelectedBranch(code)}
                   className={`px-3.5 py-2 rounded-lg text-xs font-mono font-medium transition-all relative cursor-pointer min-h-[38px] touch-manipulation active:scale-[0.98] ${
                     isSelected
-                      ? "bg-[#283226] text-accent border border-accent/50 shadow-xs"
+                      ? "bg-solid text-on-solid shadow-xs"
                       : "text-muted hover:text-ink hover:bg-surface"
                   }`}
                 >
@@ -154,10 +154,10 @@ export function BranchTimetableView({
             })}
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 bg-canvas px-4 py-2.5 rounded-xl border border-line font-mono text-xs">
+          <div className="flex items-center gap-2.5 bg-surface px-4 py-2.5 rounded-xl border border-line font-mono text-xs">
             <span className="text-muted text-[11px] uppercase font-bold">Your Department:</span>
-            <strong className="text-accent font-bold tracking-wide">{timetable.shortName}</strong>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/15 text-accent font-bold border border-accent/30">
+            <strong className="text-ink font-semibold tracking-wide">{timetable.shortName}</strong>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-safe-soft text-safe font-semibold border border-safe/25">
               Branch Code {timetable.branchCode}
             </span>
           </div>
@@ -424,7 +424,7 @@ export function BranchTimetableView({
                   onClick={() => setSelectedDay(d)}
                   className={`min-h-[40px] px-3.5 py-2 rounded-xl font-mono text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 touch-manipulation active:scale-[0.98] ${
                     isSel
-                      ? "bg-accent text-canvas font-bold shadow-xs"
+                      ? "bg-solid text-on-solid shadow-xs"
                       : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
                   }`}
                 >

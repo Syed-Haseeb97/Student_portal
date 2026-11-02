@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { LandingAuthRedirect } from "@/components/landing/LandingAuthRedirect";
 import { LandingAccessCard } from "@/components/landing/LandingAccessCard";
+import { BranchTimetableView } from "@/components/timetable/BranchTimetableView";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -14,7 +15,6 @@ import {
   CalendarDays,
   ShieldCheck,
   CheckCircle2,
-  BookOpen,
 } from "lucide-react";
 
 export const metadata = {
@@ -119,10 +119,10 @@ export default function HomePage() {
                 <ArrowRight className="size-4" />
               </Link>
               <Link
-                href="#showcase"
+                href="#timetables"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-line bg-surface text-ink px-6 py-3.5 text-sm font-medium hover:bg-raised active:scale-[0.98] transition-all"
               >
-                <span>Explore Preview</span>
+                <span>View Weekly Timetables</span>
               </Link>
             </div>
 
@@ -131,7 +131,7 @@ export default function HomePage() {
                 <span className="size-1.5 rounded-full bg-safe" /> 75% Ordinance Compliance
               </span>
               <span>•</span>
-              <span>Verified @iiitt.ac.in Roster</span>
+              <span>Zero-Database Offline Timetable</span>
             </div>
           </div>
 
@@ -245,6 +245,27 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* PUBLIC HARDCODED TIMETABLE SECTION (ZERO DATABASE READS / SAVES FREE TIER) */}
+        <section id="timetables" className="space-y-6 scroll-mt-24">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-mono text-muted">Authoritative Institutional Schedules</p>
+              <h2 className="mt-1 font-serif text-3xl sm:text-4xl text-ink">
+                1st Year Department Timetables (2026–27)
+              </h2>
+              <p className="mt-1 text-xs text-muted font-mono">
+                Hardcoded static schedule · Free to inspect without signing in or consuming database quota.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-safe" />
+              <span className="text-xs font-mono text-muted">CSE · ECE · AI&DS · VLSI</span>
+            </div>
+          </div>
+
+          <BranchTimetableView allowBranchSwitching={true} defaultBranch="11" />
         </section>
 
         {/* 3 CORE PILLARS */}

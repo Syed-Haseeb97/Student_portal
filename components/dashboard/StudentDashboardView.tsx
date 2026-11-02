@@ -15,6 +15,10 @@ import { inferStudentFromRollOrEmail } from "@/lib/roster/validate";
 import { useStudentNav, type StudentNavView } from "@/components/layout/StudentAppShell";
 import { AttendanceBar, PageHeader, Percent, StatusPill } from "@/components/ui/PortalUI";
 import {
+  LayoutDashboard,
+  CalendarDays,
+  ClipboardCheck,
+  Bell,
   ArrowUpRight,
   ChevronRight,
   Clock,
@@ -199,7 +203,7 @@ export function StudentDashboardView({
     [attendedTotal, classesTotal]
   );
 
-  // Authoritative branch and department resolution
+  // Authoritative branch and department resolution (11: CSE, 12: ECE, 13: AI&DS, 14: VLSI)
   const studentBranch = useMemo(() => {
     return resolveBranchFromRollOrEmail(
       user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email
@@ -248,7 +252,7 @@ export function StudentDashboardView({
     };
   }, [studentBranch, idToken, getIdToken, setUnreadNoticesCount]);
 
-  // Today's schedule resolution from authoritative branch timetable
+  // Today's schedule resolution from authoritative hardcoded branch timetable
   const { todaySessions, upNextSession } = useMemo(() => {
     const timetable =
       BRANCH_TIMETABLES[studentBranch] ||
@@ -360,7 +364,7 @@ export function StudentDashboardView({
   }, [summaries, attendanceFilter, attendanceSort, searchQuery]);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* Top Banner: Mode Indicator */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-surface border border-line text-xs font-mono">
         <div className="flex items-center gap-2.5">
@@ -420,307 +424,126 @@ export function StudentDashboardView({
         )}
       </div>
 
-      {/* Loading State */}
-      {loading && <DashboardSkeleton />}
+      {/* PRIMARY IN-PAGE NAVIGATION TABS (Visible across all devices for instant access) */}
+      <div className="flex items-center gap-2 border-b border-line pb-3 overflow-x-auto scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setView("overview")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
+            view === "overview"
+              ? "bg-solid text-on-solid shadow-xs"
+              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
+          }`}
+        >
+          <LayoutDashboard className="size-3.5" />
+          <span>Overview</span>
+        </button>
 
-      {/* Error / Unauthorized State */}
-      {!loading && error && (
-        <ErrorState title="Could not load attendance data" error={error} onRetry={() => loadDashboard()} />
-      )}
+        <button
+          type="button"
+          onClick={() => setView("timetable")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
+            view === "timetable"
+              ? "bg-solid text-on-solid shadow-xs"
+              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
+          }`}
+        >
+          <CalendarDays className="size-3.5" />
+          <span>Weekly Timetable</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-safe-soft text-safe font-semibold">
+            Offline / 0 DB Reads
+          </span>
+        </button>
 
-      {/* Empty State */}
-      {!loading && !error && data && summaries.length === 0 && (
-        <EmptyState
-          icon={GraduationCap}
-          title="No Course Enrollments Found"
-          description="Your profile is recognized on the approved roster, but you have no active course registrations for this term. If this is unexpected, contact your department office."
-          actionLabel="Refresh Records"
-          onAction={() => loadDashboard()}
-        />
-      )}
+        <button
+          type="button"
+          onClick={() => setView("attendance")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
+            view === "attendance"
+              ? "bg-solid text-on-solid shadow-xs"
+              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
+          }`}
+        >
+          <ClipboardCheck className="size-3.5" />
+          <span>Attendance & Margins {summaries.length > 0 ? `(${summaries.length})` : ""}</span>
+        </button>
 
-      {/* TAB CONTENT */}
-      {!loading && !error && data && summaries.length > 0 && (
-        <>
-          {/* VIEW: OVERVIEW */}
-          {view === "overview" && (
-            <div className="space-y-8 view-enter">
-              <PageHeader eyebrow={formattedDate} title={`${greeting}, ${firstName}`}>
-                <div className="flex items-center gap-3 rounded-full border border-line bg-surface px-4 py-2 text-sm">
-                  <span className="text-muted font-mono text-xs">
-                    Semester II · {studentBranch === "11" ? "CSE" : studentBranch === "12" ? "ECE" : "B.Tech"}
-                  </span>
-                  <span className="h-4 w-px bg-line" />
-                  <span className="font-medium text-ink font-mono text-xs">Week 8 of 16</span>
-                </div>
-              </PageHeader>
+        <button
+          type="button"
+          onClick={() => setView("notices")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
+            view === "notices"
+              ? "bg-solid text-on-solid shadow-xs"
+              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
+          }`}
+        >
+          <Bell className="size-3.5" />
+          <span>Notices & Deadlines</span>
+          {notices.length > 0 && (
+            <span className={`size-1.5 rounded-full ${view === "notices" ? "bg-on-solid" : "bg-risk"}`} />
+          )}
+        </button>
+      </div>
 
-              {/* 2-Column Upper Grid: Overall Attendance & Up Next / Needs Attention */}
-              <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-                {/* Overall Attendance Card */}
-                <section className="card flex flex-col p-6 sm:p-8">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted">Overall attendance</p>
-                      <Percent value={overallPercentage} className="mt-3 block text-7xl text-ink sm:text-8xl" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setView("attendance")}
-                      className="flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-ink/30 hover:text-ink cursor-pointer"
-                    >
-                      All subjects <ArrowUpRight className="size-3.5" />
-                    </button>
-                  </div>
-
-                  <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
-                    <span className="font-medium text-ink">
-                      {compliantCourses.length} of {summaries.length} subjects
-                    </span>{" "}
-                    are above the {threshold}% requirement. Each subject is counted separately, so a surplus in
-                    one can’t cover another.
-                  </p>
-
-                  <dl className="mt-8 grid grid-cols-3 divide-x divide-line border-y border-line py-4 text-center">
-                    {[
-                      ["Attended", attendedTotal],
-                      ["Missed", classesTotal - attendedTotal],
-                      ["Held", classesTotal],
-                    ].map(([label, n]) => (
-                      <div key={label}>
-                        <dd className="font-serif text-3xl text-ink">{n}</dd>
-                        <dt className="mt-1 text-xs text-muted">{label}</dt>
-                      </div>
-                    ))}
-                  </dl>
-
-                  <DistributionScale summaries={summaries} threshold={threshold} />
-                </section>
-
-                {/* Right Column: Up Next & Needs Attention */}
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
-                  {/* Up Next Card */}
-                  <section className="relative overflow-hidden rounded-2xl bg-hero p-6 text-on-hero">
-                    <div className="absolute -top-20 -right-20 size-56 rounded-full border-[28px] border-on-hero/5 pointer-events-none" />
-                    <div className="relative flex items-center justify-between">
-                      <p className="text-sm text-on-hero/60">Up next</p>
-                      <span className="flex items-center gap-1.5 rounded-full bg-on-hero/10 px-2.5 py-1 text-xs font-medium">
-                        <span className="size-1.5 animate-pulse rounded-full bg-[#7ee2b8]" /> Upcoming session
-                      </span>
-                    </div>
-                    <h2 className="relative mt-6 font-serif text-3xl leading-tight">
-                      {upNextSession.title}
-                    </h2>
-                    <p className="relative mt-1 text-sm text-on-hero/60">
-                      {upNextSession.type} · {upNextSession.faculty}
-                    </p>
-                    <div className="relative mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-on-hero/80">
-                      <span className="flex items-center gap-2">
-                        <Clock className="size-4 text-on-hero/50" /> {upNextSession.start} – {upNextSession.end}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <MapPin className="size-4 text-on-hero/50" /> {upNextSession.room}
-                      </span>
-                    </div>
-                  </section>
-
-                  {/* Needs Attention Card */}
-                  <section className="rounded-2xl border border-risk/20 bg-risk-soft p-6">
-                    <div className="flex items-center gap-2 text-sm font-medium text-risk">
-                      <TriangleAlert className="size-4" /> Needs attention
-                    </div>
-                    <div className="mt-4 space-y-3">
-                      {shortfallCourses.length > 0 ? (
-                        shortfallCourses.slice(0, 3).map((c) => {
-                          const val = c.percentage ?? (c.total > 0 ? (c.attended / c.total) * 100 : 0);
-                          const g = calculateGuidance(c.attended, c.total, threshold);
-                          return (
-                            <button
-                              key={c.offeringId}
-                              type="button"
-                              onClick={() => setSelectedCourse(c)}
-                              className="group flex w-full items-center gap-3 rounded-xl bg-surface/70 p-3 text-left transition-colors hover:bg-surface cursor-pointer"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-ink">{c.courseTitle}</p>
-                                <p className="mt-0.5 text-xs text-muted">
-                                  Attend the next{" "}
-                                  <span className="font-semibold text-risk">
-                                    {g.sessionsToRecover} classes
-                                  </span>{" "}
-                                  to recover
-                                </p>
-                              </div>
-                              <Percent value={val} className="text-2xl text-risk" />
-                              <ChevronRight className="size-4 text-muted transition-transform group-hover:translate-x-0.5" />
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div className="rounded-xl bg-surface/70 p-4 text-xs text-muted flex items-center gap-2.5">
-                          <CheckCircle2 className="size-4 text-safe shrink-0" />
-                          <span>All enrolled courses are compliant (≥ {threshold}%). Excellent record.</span>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                </div>
-              </div>
-
-              {/* 2-Column Lower Grid: Subjects List & Today / Latest Notices */}
-              <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-                {/* Subjects Compact List */}
-                <section className="card">
-                  <div className="flex items-center justify-between px-6 pt-6 pb-2">
-                    <h2 className="font-serif text-2xl text-ink">Subjects</h2>
-                    <span className="text-xs text-muted">Tap a subject for history and bunk planner</span>
-                  </div>
-                  <ul className="divide-y divide-line px-2 pb-2">
-                    {summaries.map((c) => {
-                      const val = c.percentage ?? (c.total > 0 ? (c.attended / c.total) * 100 : 0);
-                      return (
-                        <li key={c.offeringId}>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedCourse(c)}
-                            className="group grid w-full grid-cols-[1fr_auto] items-center gap-x-5 gap-y-3 rounded-xl px-4 py-4 text-left transition-colors hover:bg-raised cursor-pointer sm:grid-cols-[minmax(0,1fr)_140px_72px_16px]"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-ink">{c.courseTitle}</p>
-                              <p className="mt-0.5 font-mono text-xs text-muted">
-                                {c.courseCode ?? c.offeringId} · {c.attended}/{c.total}
-                              </p>
-                            </div>
-                            <AttendanceBar
-                              value={val}
-                              threshold={threshold}
-                              className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto"
-                            />
-                            <Percent
-                              value={val}
-                              className={`col-start-2 row-start-1 text-right text-2xl sm:col-start-auto sm:row-start-auto ${
-                                val >= threshold ? "text-ink" : "text-risk"
-                              }`}
-                            />
-                            <ChevronRight className="hidden size-4 text-muted transition-transform group-hover:translate-x-0.5 sm:block" />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-
-                {/* Right Column: Today's Schedule & Latest Notices */}
-                <div className="space-y-5">
-                  {/* Today's Schedule Card */}
-                  <section className="card p-6">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-serif text-2xl text-ink">Today</h2>
-                      <button
-                        type="button"
-                        onClick={() => setView("timetable")}
-                        className="text-xs font-medium text-muted hover:text-ink cursor-pointer"
-                      >
-                        Full week
-                      </button>
-                    </div>
-                    <ol className="mt-5 space-y-1">
-                      {todaySessions.map((s, idx) => {
-                        return (
-                          <li
-                            key={`${s.slotId}-${idx}`}
-                            className={`flex items-center gap-4 rounded-xl px-3 py-2.5 ${
-                              s.isNext ? "bg-raised" : ""
-                            }`}
-                          >
-                            <span className={`w-11 font-mono text-xs ${s.isPast ? "text-muted" : "text-ink"}`}>
-                              {s.start}
-                            </span>
-                            <span
-                              className={`size-2 shrink-0 rounded-full ${
-                                s.isPast
-                                  ? "bg-line"
-                                  : s.isNext
-                                  ? "bg-safe ring-4 ring-safe-soft"
-                                  : "border border-muted/50"
-                              }`}
-                            />
-                            <div className={`min-w-0 flex-1 ${s.isPast ? "opacity-50" : ""}`}>
-                              <p
-                                className={`truncate text-sm ${
-                                  s.isPast ? "text-muted line-through decoration-line" : "font-medium text-ink"
-                                }`}
-                              >
-                                {s.title}
-                              </p>
-                              <p className="text-xs text-muted">
-                                {s.type} · {s.room}
-                              </p>
-                            </div>
-                            {s.isNext && <span className="text-xs font-medium text-safe">Next</span>}
-                          </li>
-                        );
-                      })}
-                    </ol>
-                  </section>
-
-                  {/* Latest Notices Card */}
-                  <section className="card p-6">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-serif text-2xl text-ink">Latest notices</h2>
-                      <button
-                        type="button"
-                        onClick={() => setView("notices")}
-                        className="text-xs font-medium text-muted hover:text-ink cursor-pointer"
-                      >
-                        View all
-                      </button>
-                    </div>
-                    <ul className="mt-4 divide-y divide-line">
-                      {notices.slice(0, 3).map((n) => {
-                        return (
-                          <li key={n.id}>
-                            <button
-                              type="button"
-                              onClick={() => setView("notices")}
-                              className="flex w-full items-start gap-3 py-3 text-left cursor-pointer"
-                            >
-                              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-risk" />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm leading-snug font-medium text-ink">{n.title}</p>
-                                <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                                  {n.priority === "urgent" && <Pin className="size-3 text-risk" />}
-                                  <span>{n.type === "assignment" ? "Assignment" : "Circular"}</span>
-                                  <span>·</span>
-                                  <span>
-                                    {new Date(n.createdAt).toLocaleDateString("en-IN", {
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </span>
-                                </p>
-                              </div>
-                            </button>
-                          </li>
-                        );
-                      })}
-                      {notices.length === 0 && (
-                        <li className="py-4 text-center text-xs text-muted">
-                          No active circulars at this moment.
-                        </li>
-                      )}
-                    </ul>
-                  </section>
-                </div>
-              </div>
+      {/* VIEW 1: HARDCODED STATIC TIMETABLE (ZERO FIRESTORE READS, NEVER VANISHES) */}
+      {view === "timetable" && (
+        <div className="space-y-6 view-enter">
+          <PageHeader
+            eyebrow="Hardcoded Institutional Schedule · Zero Database Reads"
+            title="Weekly Timetable"
+          >
+            <div className="flex items-center gap-2 font-mono text-xs text-muted">
+              <span className="size-2 rounded-full bg-safe" />
+              <span>Instant client-side matrix · Saved on Free Tier</span>
             </div>
+          </PageHeader>
+
+          <BranchTimetableView
+            userRollOrEmail={
+              user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined
+            }
+            defaultBranch={studentBranch}
+            batch={studentBatch}
+            allowBranchSwitching={isSuperAdmin}
+          />
+        </div>
+      )}
+
+      {/* VIEW 2: NOTICES */}
+      {view === "notices" && (
+        <div className="space-y-6 view-enter">
+          <PageHeader eyebrow="Campus Circulars & Deadlines" title="Notices" />
+          <StudentNoticesView branchCode={studentBranch} idToken={idToken} />
+        </div>
+      )}
+
+      {/* VIEW 3: ATTENDANCE & MARGINS */}
+      {view === "attendance" && (
+        <div className="space-y-8 view-enter">
+          <PageHeader eyebrow={`${threshold}% minimum in every subject`} title="Attendance" />
+
+          {/* Loading State */}
+          {loading && <DashboardSkeleton />}
+
+          {/* Error State */}
+          {!loading && error && (
+            <ErrorState title="Could not load attendance data" error={error} onRetry={() => loadDashboard()} />
           )}
 
-          {/* VIEW: ATTENDANCE */}
-          {view === "attendance" && (
-            <div className="space-y-8 view-enter">
-              <PageHeader eyebrow={`${threshold}% minimum in every subject`} title="Attendance" />
+          {/* Empty State */}
+          {!loading && !error && data && summaries.length === 0 && (
+            <EmptyState
+              icon={GraduationCap}
+              title="No Course Enrollments Found"
+              description="Your profile is recognized on the approved roster, but you have no active course registrations for this term. If this is unexpected, contact your department office."
+              actionLabel="Refresh Records"
+              onAction={() => loadDashboard()}
+            />
+          )}
 
+          {/* Attendance Cards Grid */}
+          {!loading && !error && summaries.length > 0 && (
+            <div className="space-y-8">
               {/* Filter and Search Bar */}
               <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <div className="flex rounded-full border border-line bg-surface p-1" role="tablist">
@@ -830,30 +653,331 @@ export function StudentDashboardView({
               )}
             </div>
           )}
+        </div>
+      )}
 
-          {/* VIEW: TIMETABLE */}
-          {view === "timetable" && (
-            <div className="space-y-6 view-enter">
-              <PageHeader eyebrow="Authoritative Academic Schedule" title="Weekly Timetable" />
-              <BranchTimetableView
-                userRollOrEmail={
-                  user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined
-                }
-                defaultBranch={studentBranch}
-                batch={studentBatch}
-                allowBranchSwitching={isSuperAdmin}
-              />
+      {/* VIEW 4: OVERVIEW (MAIN COMPREHENSIVE HUB) */}
+      {view === "overview" && (
+        <div className="space-y-8 view-enter">
+          <PageHeader eyebrow={formattedDate} title={`${greeting}, ${firstName}`}>
+            <div className="flex items-center gap-3 rounded-full border border-line bg-surface px-4 py-2 text-sm">
+              <span className="text-muted font-mono text-xs">
+                Semester II · {studentBranch === "11" ? "CSE" : studentBranch === "12" ? "ECE" : studentBranch === "13" ? "AI&DS" : "VLSI"}
+              </span>
+              <span className="h-4 w-px bg-line" />
+              <span className="font-medium text-ink font-mono text-xs">Week 8 of 16</span>
+            </div>
+          </PageHeader>
+
+          {/* Non-blocking sync error notification */}
+          {!loading && error && (
+            <div className="rounded-2xl border border-warn/30 bg-warn-soft p-4 text-xs font-mono text-warn flex items-center justify-between gap-3">
+              <span>Attendance sync offline ({error}). Your hardcoded timetable below is fully operational.</span>
+              <button
+                type="button"
+                onClick={() => loadDashboard()}
+                className="underline hover:text-ink font-bold cursor-pointer"
+              >
+                Retry Sync
+              </button>
             </div>
           )}
 
-          {/* VIEW: NOTICES */}
-          {view === "notices" && (
-            <div className="space-y-6 view-enter">
-              <PageHeader eyebrow="Campus Circulars & Deadlines" title="Notices" />
-              <StudentNoticesView branchCode={studentBranch} idToken={idToken} />
+          {/* 2-Column Upper Grid: Overall Attendance & Up Next / Needs Attention */}
+          <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+            {/* Overall Attendance Card */}
+            <section className="card flex flex-col p-6 sm:p-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted">Overall attendance</p>
+                  <Percent value={overallPercentage} className="mt-3 block text-7xl text-ink sm:text-8xl" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setView("attendance")}
+                  className="flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-ink/30 hover:text-ink cursor-pointer"
+                >
+                  All subjects <ArrowUpRight className="size-3.5" />
+                </button>
+              </div>
+
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
+                <span className="font-medium text-ink">
+                  {compliantCourses.length} of {summaries.length} subjects
+                </span>{" "}
+                are above the {threshold}% requirement. Each subject is counted separately, so a surplus in
+                one can’t cover another.
+              </p>
+
+              <dl className="mt-8 grid grid-cols-3 divide-x divide-line border-y border-line py-4 text-center">
+                {[
+                  ["Attended", attendedTotal],
+                  ["Missed", classesTotal - attendedTotal],
+                  ["Held", classesTotal],
+                ].map(([label, n]) => (
+                  <div key={label}>
+                    <dd className="font-serif text-3xl text-ink">{n}</dd>
+                    <dt className="mt-1 text-xs text-muted">{label}</dt>
+                  </div>
+                ))}
+              </dl>
+
+              <DistributionScale summaries={summaries} threshold={threshold} />
+            </section>
+
+            {/* Right Column: Up Next & Needs Attention */}
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
+              {/* Up Next Card */}
+              <section className="relative overflow-hidden rounded-2xl bg-hero p-6 text-on-hero">
+                <div className="absolute -top-20 -right-20 size-56 rounded-full border-[28px] border-on-hero/5 pointer-events-none" />
+                <div className="relative flex items-center justify-between">
+                  <p className="text-sm text-on-hero/60">Up next</p>
+                  <span className="flex items-center gap-1.5 rounded-full bg-on-hero/10 px-2.5 py-1 text-xs font-medium">
+                    <span className="size-1.5 animate-pulse rounded-full bg-[#7ee2b8]" /> Upcoming session
+                  </span>
+                </div>
+                <h2 className="relative mt-6 font-serif text-3xl leading-tight">
+                  {upNextSession.title}
+                </h2>
+                <p className="relative mt-1 text-sm text-on-hero/60">
+                  {upNextSession.type} · {upNextSession.faculty}
+                </p>
+                <div className="relative mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-on-hero/80">
+                  <span className="flex items-center gap-2">
+                    <Clock className="size-4 text-on-hero/50" /> {upNextSession.start} – {upNextSession.end}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <MapPin className="size-4 text-on-hero/50" /> {upNextSession.room}
+                  </span>
+                </div>
+              </section>
+
+              {/* Needs Attention Card */}
+              <section className="rounded-2xl border border-risk/20 bg-risk-soft p-6">
+                <div className="flex items-center gap-2 text-sm font-medium text-risk">
+                  <TriangleAlert className="size-4" /> Needs attention
+                </div>
+                <div className="mt-4 space-y-3">
+                  {shortfallCourses.length > 0 ? (
+                    shortfallCourses.slice(0, 3).map((c) => {
+                      const val = c.percentage ?? (c.total > 0 ? (c.attended / c.total) * 100 : 0);
+                      const g = calculateGuidance(c.attended, c.total, threshold);
+                      return (
+                        <button
+                          key={c.offeringId}
+                          type="button"
+                          onClick={() => setSelectedCourse(c)}
+                          className="group flex w-full items-center gap-3 rounded-xl bg-surface/70 p-3 text-left transition-colors hover:bg-surface cursor-pointer"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-ink">{c.courseTitle}</p>
+                            <p className="mt-0.5 text-xs text-muted">
+                              Attend the next{" "}
+                              <span className="font-semibold text-risk">
+                                {g.sessionsToRecover} classes
+                              </span>{" "}
+                              to recover
+                            </p>
+                          </div>
+                          <Percent value={val} className="text-2xl text-risk" />
+                          <ChevronRight className="size-4 text-muted transition-transform group-hover:translate-x-0.5" />
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-xl bg-surface/70 p-4 text-xs text-muted flex items-center gap-2.5">
+                      <CheckCircle2 className="size-4 text-safe shrink-0" />
+                      <span>All enrolled courses are compliant (≥ {threshold}%). Excellent record.</span>
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
-          )}
-        </>
+          </div>
+
+          {/* 2-Column Lower Grid: Subjects List & Today's Schedule & Latest Notices */}
+          <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+            {/* Subjects Compact List */}
+            <section className="card">
+              <div className="flex items-center justify-between px-6 pt-6 pb-2">
+                <h2 className="font-serif text-2xl text-ink">Subjects</h2>
+                <span className="text-xs text-muted">Tap a subject for history and bunk planner</span>
+              </div>
+              <ul className="divide-y divide-line px-2 pb-2">
+                {summaries.map((c) => {
+                  const val = c.percentage ?? (c.total > 0 ? (c.attended / c.total) * 100 : 0);
+                  return (
+                    <li key={c.offeringId}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCourse(c)}
+                        className="group grid w-full grid-cols-[1fr_auto] items-center gap-x-5 gap-y-3 rounded-xl px-4 py-4 text-left transition-colors hover:bg-raised cursor-pointer sm:grid-cols-[minmax(0,1fr)_140px_72px_16px]"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-ink">{c.courseTitle}</p>
+                          <p className="mt-0.5 font-mono text-xs text-muted">
+                            {c.courseCode ?? c.offeringId} · {c.attended}/{c.total}
+                          </p>
+                        </div>
+                        <AttendanceBar
+                          value={val}
+                          threshold={threshold}
+                          className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto"
+                        />
+                        <Percent
+                          value={val}
+                          className={`col-start-2 row-start-1 text-right text-2xl sm:col-start-auto sm:row-start-auto ${
+                            val >= threshold ? "text-ink" : "text-risk"
+                          }`}
+                        />
+                        <ChevronRight className="hidden size-4 text-muted transition-transform group-hover:translate-x-0.5 sm:block" />
+                      </button>
+                    </li>
+                  );
+                })}
+                {summaries.length === 0 && (
+                  <li className="p-8 text-center text-xs text-muted font-mono">
+                    Attendance records pending from course instructors.
+                  </li>
+                )}
+              </ul>
+            </section>
+
+            {/* Right Column: Today's Schedule & Latest Notices */}
+            <div className="space-y-5">
+              {/* Today's Schedule Card */}
+              <section className="card p-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-serif text-2xl text-ink">Today</h2>
+                  <button
+                    type="button"
+                    onClick={() => setView("timetable")}
+                    className="text-xs font-medium text-safe hover:underline cursor-pointer"
+                  >
+                    Full week timetable &rarr;
+                  </button>
+                </div>
+                <ol className="mt-5 space-y-1">
+                  {todaySessions.map((s, idx) => {
+                    return (
+                      <li
+                        key={`${s.slotId}-${idx}`}
+                        className={`flex items-center gap-4 rounded-xl px-3 py-2.5 ${
+                          s.isNext ? "bg-raised" : ""
+                        }`}
+                      >
+                        <span className={`w-11 font-mono text-xs ${s.isPast ? "text-muted" : "text-ink"}`}>
+                          {s.start}
+                        </span>
+                        <span
+                          className={`size-2 shrink-0 rounded-full ${
+                            s.isPast
+                              ? "bg-line"
+                              : s.isNext
+                              ? "bg-safe ring-4 ring-safe-soft"
+                              : "border border-muted/50"
+                          }`}
+                        />
+                        <div className={`min-w-0 flex-1 ${s.isPast ? "opacity-50" : ""}`}>
+                          <p
+                            className={`truncate text-sm ${
+                              s.isPast ? "text-muted line-through decoration-line" : "font-medium text-ink"
+                            }`}
+                          >
+                            {s.title}
+                          </p>
+                          <p className="text-xs text-muted">
+                            {s.type} · {s.room}
+                          </p>
+                        </div>
+                        {s.isNext && <span className="text-xs font-medium text-safe">Next</span>}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+
+              {/* Latest Notices Card */}
+              <section className="card p-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-serif text-2xl text-ink">Latest notices</h2>
+                  <button
+                    type="button"
+                    onClick={() => setView("notices")}
+                    className="text-xs font-medium text-muted hover:text-ink cursor-pointer"
+                  >
+                    View all
+                  </button>
+                </div>
+                <ul className="mt-4 divide-y divide-line">
+                  {notices.slice(0, 3).map((n) => {
+                    return (
+                      <li key={n.id}>
+                        <button
+                          type="button"
+                          onClick={() => setView("notices")}
+                          className="flex w-full items-start gap-3 py-3 text-left cursor-pointer"
+                        >
+                          <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-risk" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm leading-snug font-medium text-ink">{n.title}</p>
+                            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                              {n.priority === "urgent" && <Pin className="size-3 text-risk" />}
+                              <span>{n.type === "assignment" ? "Assignment" : "Circular"}</span>
+                              <span>·</span>
+                              <span>
+                                {new Date(n.createdAt).toLocaleDateString("en-IN", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            </p>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {notices.length === 0 && (
+                    <li className="py-4 text-center text-xs text-muted">
+                      No active circulars at this moment.
+                    </li>
+                  )}
+                </ul>
+              </section>
+            </div>
+          </div>
+
+          {/* FULL DEPARTMENT TIMETABLE SECTION EMBEDDED DIRECTLY ON OVERVIEW (ZERO DB READS) */}
+          <section className="space-y-4 pt-6 border-t border-line">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-2xl sm:text-3xl text-ink">
+                  {studentBatch === "2026" ? "1st Year Department Timetable" : `Academic Timetable · Batch ${studentBatch}`}
+                </h2>
+                <p className="text-xs text-muted font-mono">
+                  Hardcoded static schedule · Stored on device to save Firebase free tier database quota.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setView("timetable")}
+                className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-safe hover:underline self-start sm:self-auto cursor-pointer"
+              >
+                <span>Full Timetable View</span>
+                <ArrowUpRight className="size-3.5" />
+              </button>
+            </div>
+
+            <BranchTimetableView
+              userRollOrEmail={
+                user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined
+              }
+              defaultBranch={studentBranch}
+              batch={studentBatch}
+              allowBranchSwitching={isSuperAdmin}
+            />
+          </section>
+        </div>
       )}
 
       {/* Course Detail Drawer / Modal */}
