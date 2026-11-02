@@ -259,7 +259,7 @@ export function LecturerDashboardView({
       </div>
 
       {viewTab === "timetable" ? (
-        <BranchTimetableView allowBranchSwitching={true} />
+        <BranchTimetableView allowBranchSwitching={true} allowBatchSwitching={true} />
       ) : viewTab === "notices" ? (
         <LecturerNoticesManager idToken={idToken} />
       ) : (

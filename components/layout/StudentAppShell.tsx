@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { SoundToggle } from "@/components/theme/SoundToggle";
 import { SignOutConfirmModal } from "@/components/auth/SignOutConfirmModal";
 import { resolveBranchFromRollOrEmail } from "@/lib/timetable/first-year-data";
 import type { StudentSummary } from "@/lib/api/types";
@@ -227,28 +228,34 @@ export function StudentAppShell({
               </div>
             )}
 
-            {/* Segmented Light/Dark Toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
-              className="mt-3.5 flex w-full items-center justify-between rounded-lg border border-line p-1 text-xs font-medium text-muted cursor-pointer"
-            >
-              <span
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 transition-colors ${
-                  theme === "light" ? "bg-raised text-ink shadow-xs" : ""
-                }`}
+            {/* Segmented Light/Dark Toggle and Sound FX Toggle */}
+            <div className="mt-3.5 space-y-1.5">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+                className="flex w-full items-center justify-between rounded-lg border border-line p-1 text-xs font-medium text-muted cursor-pointer"
               >
-                <Sun className="size-3.5" /> Light
-              </span>
-              <span
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 transition-colors ${
-                  theme === "dark" ? "bg-solid text-on-solid shadow-xs" : ""
-                }`}
-              >
-                <Moon className="size-3.5" /> Dark
-              </span>
-            </button>
+                <span
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 transition-colors ${
+                    theme === "light" ? "bg-raised text-ink shadow-xs" : ""
+                  }`}
+                >
+                  <Sun className="size-3.5" /> Light
+                </span>
+                <span
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 transition-colors ${
+                    theme === "dark" ? "bg-solid text-on-solid shadow-xs" : ""
+                  }`}
+                >
+                  <Moon className="size-3.5" /> Dark
+                </span>
+              </button>
+              <SoundToggle
+                showLabel={true}
+                className="w-full justify-center rounded-lg py-1.5 text-xs font-medium"
+              />
+            </div>
 
             {/* Sign Out Button */}
             <button
@@ -286,6 +293,7 @@ export function StudentAppShell({
                 })}
               </div>
             )}
+            <SoundToggle className="grid size-9 place-items-center rounded-full p-0" />
             <button
               type="button"
               onClick={toggleTheme}

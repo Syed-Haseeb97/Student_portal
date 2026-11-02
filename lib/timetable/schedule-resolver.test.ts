@@ -123,3 +123,31 @@ test("Schedule Resolver: Friday evening points to Monday's first class", () => {
   assert.equal(result.upNextSession.start, "09:20");
   assert.equal(result.upNextSession.code, "CS1101");
 });
+
+test("Lab Batch Inference: Automatically resolves practical lab batch from roll number with strict boundary checking", () => {
+  // Batch 1: Rolls 1 through 22
+  assert.equal(inferLabBatchFromRoll("261101"), "1");
+  assert.equal(inferLabBatchFromRoll("261115"), "1");
+  assert.equal(inferLabBatchFromRoll("261122"), "1");
+  assert.equal(inferLabBatchFromRoll("261101@iiitt.ac.in"), "1");
+  assert.equal(inferLabBatchFromRoll("20261105"), "1");
+  assert.equal(inferLabBatchFromRoll("roll-10"), "1");
+
+  // Batch 2: Rolls 23 through 45
+  assert.equal(inferLabBatchFromRoll("261123"), "2");
+  assert.equal(inferLabBatchFromRoll("261135"), "2");
+  assert.equal(inferLabBatchFromRoll("261145"), "2");
+  assert.equal(inferLabBatchFromRoll("261230@iiitt.ac.in"), "2");
+  assert.equal(inferLabBatchFromRoll("20261245"), "2");
+
+  // Batch 3: Rolls 46 and above
+  assert.equal(inferLabBatchFromRoll("261146"), "3");
+  assert.equal(inferLabBatchFromRoll("261161"), "3");
+  assert.equal(inferLabBatchFromRoll("261161@iiitt.ac.in"), "3");
+  assert.equal(inferLabBatchFromRoll("261372"), "3");
+  assert.equal(inferLabBatchFromRoll("roll-55"), "3");
+
+  // Unresolvable rolls or empty strings return null
+  assert.equal(inferLabBatchFromRoll(""), null);
+  assert.equal(inferLabBatchFromRoll(undefined), null);
+});

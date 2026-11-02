@@ -912,6 +912,7 @@ export function StudentDashboardView({
             defaultBranch={studentBranch}
             batch={studentBatch}
             allowBranchSwitching={isSuperAdmin}
+            allowBatchSwitching={isSuperAdmin}
           />
         </div>
       )}

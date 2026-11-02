@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { SoundToggle } from "@/components/theme/SoundToggle";
 import { Button } from "@/components/ui/Button";
 import { SignOutConfirmModal } from "@/components/auth/SignOutConfirmModal";
 import {
@@ -214,7 +215,8 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                     )}
                   </div>
 
-                  {/* Light/Dark Theme Toggle placed directly to the left of Sign Out */}
+                  {/* Audio FX and Light/Dark Theme Toggles placed directly side-by-side */}
+                  <SoundToggle />
                   <ThemeToggle />
 
                   <button
@@ -228,14 +230,16 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                   </button>
                 </div>
 
-                {/* Mobile View Theme Toggle (accessible directly in top bar on smaller screens) */}
-                <div className="sm:hidden flex items-center">
+                {/* Mobile View Audio FX and Theme Toggles */}
+                <div className="sm:hidden flex items-center gap-1.5">
+                  <SoundToggle />
                   <ThemeToggle />
                 </div>
               </>
             ) : !loading ? (
               <div className="flex items-center gap-2">
-                {/* Theme Toggle placed right next to Sign In button before login */}
+                {/* Audio FX and Theme Toggles placed right next to Sign In button before login */}
+                <SoundToggle />
                 <ThemeToggle />
                 <Button
                   href="/sign-in"
@@ -414,6 +418,7 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <SoundToggle />
                   <ThemeToggle />
                   <Button
                     type="button"

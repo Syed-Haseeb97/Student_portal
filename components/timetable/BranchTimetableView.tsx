@@ -20,6 +20,7 @@ import {
   MapPin,
   ChevronRight,
 } from "lucide-react";
+import { playHoverSound, playClickSound } from "@/lib/audio/sound-effects";
 
 interface BranchTimetableViewProps {
   userRollOrEmail?: string;
@@ -27,6 +28,7 @@ interface BranchTimetableViewProps {
   batch?: string;
   className?: string;
   allowBranchSwitching?: boolean;
+  allowBatchSwitching?: boolean;
 }
 
 const DAYS: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -75,6 +77,7 @@ export function BranchTimetableView({
   batch,
   className = "",
   allowBranchSwitching = true,
+  allowBatchSwitching = false,
 }: BranchTimetableViewProps) {
   // Infer student's department branch
   const inferredBranch = useMemo(() => {
@@ -98,7 +101,9 @@ export function BranchTimetableView({
 
   // Infer student's lab batch from roll number (e.g. 261161 -> Batch 3)
   const inferredLabBatch = useMemo(() => inferLabBatchFromRoll(userRollOrEmail), [userRollOrEmail]);
-  const [selectedLabBatch, setSelectedLabBatch] = useState<"all" | "1" | "2" | "3">(inferredLabBatch || "all");
+  const [userSelectedLabBatch, setUserSelectedLabBatch] = useState<"all" | "1" | "2" | "3">(() => {
+    return inferredLabBatch || "1";
+  });
 
   useEffect(() => {
     setUserSelectedBranch(inferredBranch);
@@ -106,9 +111,14 @@ export function BranchTimetableView({
 
   useEffect(() => {
     if (inferredLabBatch) {
-      setSelectedLabBatch(inferredLabBatch);
+      setUserSelectedLabBatch(inferredLabBatch);
     }
   }, [inferredLabBatch]);
+
+  // Strict Lockout: If allowBatchSwitching is false (default for students), strictly lock to inferred batch
+  const effectiveLabBatch: "all" | "1" | "2" | "3" = allowBatchSwitching
+    ? userSelectedLabBatch
+    : (inferredLabBatch || "1");
 
   const selectedBranch = allowBranchSwitching ? userSelectedBranch : inferredBranch;
   const timetable: BranchTimetable = BRANCH_TIMETABLES[selectedBranch] || BRANCH_TIMETABLES["11"];
@@ -190,7 +200,10 @@ export function BranchTimetableView({
                   <button
                     key={code}
                     type="button"
-                    onClick={() => setUserSelectedBranch(code)}
+                    onClick={() => {
+                      playClickSound();
+                      setUserSelectedBranch(code);
+                    }}
                     className={`rounded-lg px-3 py-1.5 font-mono text-xs font-medium transition-colors cursor-pointer ${
                       active
                         ? "bg-solid text-on-solid shadow-xs"
@@ -205,47 +218,63 @@ export function BranchTimetableView({
           )}
         </div>
 
-        {/* Lab Practical Batch Filter Switcher */}
+        {/* Practical Lab Batch: Interactive Switcher for Admin/Faculty, Strictly Locked for Students */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-line/60">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-muted">Physics Lab Batch:</span>
-            <div className="flex items-center gap-1 rounded-xl border border-line bg-paper p-1">
-              {(
-                [
-                  ["all", "All Batches"],
-                  ["1", "Batch 1 (Roll 1–22)"],
-                  ["2", "Batch 2 (Roll 23–45)"],
-                  ["3", "Batch 3 (Roll 46+)"],
-                ] as const
-              ).map(([batchKey, label]) => {
-                const active = selectedLabBatch === batchKey;
-                const isAssigned = inferredLabBatch === batchKey;
-                return (
-                  <button
-                    key={batchKey}
-                    type="button"
-                    onClick={() => setSelectedLabBatch(batchKey)}
-                    className={`rounded-lg px-2.5 py-1 font-mono text-xs font-medium transition-colors cursor-pointer ${
-                      active
-                        ? "bg-solid text-on-solid shadow-xs"
-                        : "text-muted hover:bg-surface hover:text-ink"
-                    }`}
-                  >
-                    <span>{label}</span>
-                    {isAssigned && (
-                      <span className="ml-1.5 inline-block size-1.5 rounded-full bg-safe align-middle" />
-                    )}
-                  </button>
-                );
-              })}
+          {allowBatchSwitching ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs text-muted">Practical Lab Batch:</span>
+              <div className="flex items-center gap-1 rounded-xl border border-line bg-paper p-1">
+                {(
+                  [
+                    ["all", "All Batches"],
+                    ["1", "Batch 1 (Roll 1–22)"],
+                    ["2", "Batch 2 (Roll 23–45)"],
+                    ["3", "Batch 3 (Roll 46+)"],
+                  ] as const
+                ).map(([batchKey, label]) => {
+                  const active = userSelectedLabBatch === batchKey;
+                  const isAssigned = inferredLabBatch === batchKey;
+                  return (
+                    <button
+                      key={batchKey}
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setUserSelectedLabBatch(batchKey);
+                      }}
+                      className={`rounded-lg px-2.5 py-1 font-mono text-xs font-medium transition-colors cursor-pointer ${
+                        active
+                          ? "bg-solid text-on-solid shadow-xs"
+                          : "text-muted hover:bg-surface hover:text-ink"
+                      }`}
+                    >
+                      <span>{label}</span>
+                      {isAssigned && (
+                        <span className="ml-1.5 inline-block size-1.5 rounded-full bg-safe align-middle" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="font-mono text-[11px] text-muted hidden sm:inline">
+                · Programming & Graphics labs are common to all batches
+              </span>
             </div>
-            <span className="font-mono text-[11px] text-muted hidden sm:inline">
-              · Programming & Graphics labs are common to all batches
-            </span>
-          </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs text-muted">Practical Lab Batch:</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-safe-soft px-3 py-1 font-mono text-xs font-semibold text-safe border border-safe/30">
+                <span className="size-1.5 rounded-full bg-safe animate-pulse" />
+                Batch {effectiveLabBatch} (Assigned)
+              </span>
+              <span className="font-mono text-[11px] text-muted hidden sm:inline">
+                · Automatically resolved from roll · Locked to your batch
+              </span>
+            </div>
+          )}
           {inferredLabBatch && (
             <span className="font-mono text-xs text-muted">
-              Assigned: <strong className="text-ink">Batch {inferredLabBatch}</strong> based on roll {userRollOrEmail?.split("@")[0]}
+              Roll: <strong className="text-ink">{userRollOrEmail?.split("@")[0]}</strong> (Batch {inferredLabBatch})
             </span>
           )}
         </div>
@@ -285,7 +314,10 @@ export function BranchTimetableView({
             </a>
             <button
               type="button"
-              onClick={() => setShowReferenceTimetable(true)}
+              onClick={() => {
+                playClickSound();
+                setShowReferenceTimetable(true);
+              }}
               className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2.5 font-mono text-xs text-muted hover:text-ink cursor-pointer"
             >
               <span>View 1st Year Reference</span>
@@ -432,9 +464,9 @@ export function BranchTimetableView({
                       const classType = getCourseClassType(course);
                       const slotLabBatch = getSlotLabBatch(slotCode);
                       const isOtherBatch =
-                        selectedLabBatch !== "all" &&
+                        effectiveLabBatch !== "all" &&
                         slotLabBatch !== null &&
-                        slotLabBatch !== selectedLabBatch;
+                        slotLabBatch !== effectiveLabBatch;
                       const displayTitle = getCourseDisplayTitle(course, slotCode);
                       const slotBadge = getSlotBadge(slotCode, classType);
 
@@ -448,26 +480,26 @@ export function BranchTimetableView({
                               gridRow: gridRowNumber,
                             }}
                           >
-                            <div className="flex h-full w-full flex-col justify-between rounded-xl border border-dashed border-[#8c8577] dark:border-[#4d5c48] bg-surface/60 p-3 text-left opacity-75 hover:opacity-100 hover:border-[#645e54] dark:hover:border-white/50 hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default transform-gpu will-change-transform">
-                              <div className="flex items-center justify-between text-[11px] font-mono text-muted leading-none">
+                            <div className="flex h-full w-full flex-col justify-between rounded-xl border border-dashed border-[#8c8577]/40 dark:border-white/10 bg-surface/30 p-3 text-left transition-colors duration-150">
+                              <div className="flex items-center justify-between text-[11px] font-mono text-muted/60 leading-none">
                                 <span>
                                   {slot.startTime}–{slot.endTime}
                                 </span>
-                                <span className="rounded-full bg-paper border border-[#8c8577]/60 dark:border-white/20 px-1.5 py-0.5 text-[9px] font-mono font-medium text-muted">
-                                  Physics Lab · Batch {slotLabBatch}
+                                <span className="rounded-full bg-paper/60 border border-line/40 px-1.5 py-0.5 text-[9px] font-mono text-muted/60">
+                                  Free
                                 </span>
                               </div>
-                              <div className="my-auto">
-                                <p className="font-medium text-muted text-xs line-clamp-1">
-                                  {displayTitle}
+                              <div className="my-auto text-center">
+                                <p className="font-mono text-xs font-semibold text-muted/80">
+                                  Free Period / Self-Study
                                 </p>
-                                <p className="text-[10px] text-muted/80 font-mono mt-0.5">
-                                  Free for Batch {selectedLabBatch} (Lab held on {slotLabBatch === "1" ? "Mon" : slotLabBatch === "2" ? "Tue" : "Fri"})
+                                <p className="text-[10px] text-muted/60 font-mono mt-0.5">
+                                  No practical session for Batch {effectiveLabBatch}
                                 </p>
                               </div>
-                              <div className="flex items-center justify-between text-[10px] font-mono text-muted/60 leading-none">
-                                <span>Batch {slotLabBatch} Session</span>
-                                <span>{course.code}</span>
+                              <div className="flex items-center justify-between text-[10px] font-mono text-muted/40 leading-none">
+                                <span>Self-Study</span>
+                                <span>Library / Lab Prep</span>
                               </div>
                             </div>
                           </div>
@@ -485,14 +517,16 @@ export function BranchTimetableView({
                         >
                           <button
                             type="button"
-                            onClick={() =>
+                            onMouseEnter={() => playHoverSound()}
+                            onClick={() => {
+                              playClickSound();
                               setSelectedCourse({
                                 course,
                                 slotCode,
                                 day,
                                 period: slot,
-                              })
-                            }
+                              });
+                            }}
                             className={`group relative flex h-full w-full flex-col overflow-hidden rounded-xl border p-3 text-left transition-all duration-200 ease-out cursor-pointer hover:-translate-y-1.5 hover:scale-[1.015] active:scale-[0.99] transform-gpu will-change-transform shadow-xs ${
                               typeStyle[classType]
                             } ${isNext ? "ring-2 ring-safe shadow-sm shadow-safe/30" : ""}`}
@@ -513,7 +547,7 @@ export function BranchTimetableView({
                             </div>
 
                             {/* Middle row: Clean Title with comfortable line height and NO letter clipping */}
-                            <p className="relative z-10 mt-1 font-semibold leading-snug text-ink text-xs line-clamp-2 select-none group-hover:text-ink transition-colors duration-150">
+                            <p className="relative z-10 mt-1 font-semibold leading-normal text-ink text-xs line-clamp-2 select-none group-hover:text-ink transition-colors duration-150 pb-0.5">
                               {displayTitle}
                             </p>
 
@@ -554,7 +588,10 @@ export function BranchTimetableView({
                   <button
                     key={d}
                     type="button"
-                    onClick={() => setMobileDay(i)}
+                    onClick={() => {
+                      playClickSound();
+                      setMobileDay(i);
+                    }}
                     className={`rounded-xl py-2.5 text-sm font-medium transition-colors cursor-pointer ${
                       active ? "bg-solid text-on-solid shadow-xs" : "text-muted hover:text-ink"
                     }`}
@@ -605,9 +642,9 @@ export function BranchTimetableView({
                 const classType = getCourseClassType(course);
                 const slotLabBatch = getSlotLabBatch(slotCode);
                 const isOtherBatch =
-                  selectedLabBatch !== "all" &&
+                  effectiveLabBatch !== "all" &&
                   slotLabBatch !== null &&
-                  slotLabBatch !== selectedLabBatch;
+                  slotLabBatch !== effectiveLabBatch;
                 const displayTitle = getCourseDisplayTitle(course, slotCode);
                 const slotBadge = getSlotBadge(slotCode, classType);
 
@@ -617,18 +654,18 @@ export function BranchTimetableView({
                       <span className="pt-3 font-mono text-xs text-muted">
                         {slot.startTime}
                       </span>
-                      <div className="flex flex-col rounded-xl border border-dashed border-[#8c8577] dark:border-[#4d5c48] bg-surface/60 p-3.5 text-left opacity-75 hover:opacity-100 hover:border-[#645e54] transition-all duration-200">
-                        <div className="flex items-center justify-between text-xs font-mono text-muted">
+                      <div className="flex flex-col rounded-xl border border-dashed border-[#8c8577]/40 dark:border-white/10 bg-surface/30 p-3.5 text-left transition-colors duration-150">
+                        <div className="flex items-center justify-between text-xs font-mono text-muted/60">
                           <span>{slot.startTime} – {slot.endTime}</span>
-                          <span className="rounded-full bg-paper border border-[#8c8577]/60 dark:border-white/20 px-2 py-0.5 text-[10px]">
-                            Physics Lab · Batch {slotLabBatch}
+                          <span className="rounded-full bg-paper/60 border border-line/40 px-2 py-0.5 text-[10px]">
+                            Free
                           </span>
                         </div>
-                        <p className="mt-1 font-medium text-muted text-xs">
-                          {displayTitle}
+                        <p className="mt-1 font-semibold text-muted/80 text-xs font-mono">
+                          Free Period / Self-Study
                         </p>
-                        <p className="mt-1 text-[11px] text-muted/80 font-mono">
-                          Free for Batch {selectedLabBatch} (Lab held on {slotLabBatch === "1" ? "Mon" : slotLabBatch === "2" ? "Tue" : "Fri"})
+                        <p className="mt-0.5 text-[11px] text-muted/50 font-mono">
+                          No practical session for Batch {effectiveLabBatch}
                         </p>
                       </div>
                     </li>
@@ -642,14 +679,16 @@ export function BranchTimetableView({
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
+                      onMouseEnter={() => playHoverSound()}
+                      onClick={() => {
+                        playClickSound();
                         setSelectedCourse({
                           course,
                           slotCode,
                           day: selectedDayName,
                           period: slot,
-                        })
-                      }
+                        });
+                      }}
                       className={`group relative flex flex-col overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 ease-out cursor-pointer shadow-xs hover:-translate-y-1 hover:shadow-md transform-gpu will-change-transform ${
                         typeStyle[classType]
                       } ${isNext ? "ring-2 ring-safe shadow-sm shadow-safe/30" : ""}`}
@@ -719,7 +758,10 @@ export function BranchTimetableView({
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedCourse(null)}
+                onClick={() => {
+                  playClickSound();
+                  setSelectedCourse(null);
+                }}
                 className="grid size-9 shrink-0 place-items-center rounded-full border border-line text-muted hover:text-ink hover:bg-raised transition-colors cursor-pointer"
               >
                 <X className="size-4" />

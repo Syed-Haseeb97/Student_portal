@@ -98,18 +98,31 @@ export function getSlotLabBatch(slotCode: string): "1" | "2" | "3" | null {
 }
 
 /**
- * Infers student lab batch (Batch 1: 1-22, Batch 2: 23-45, Batch 3: 46+) from student roll number.
+ * Infers student lab batch (Batch 1: 1-22, Batch 2: 23-45, Batch 3: 46+) from student roll number or institutional email.
+ * Supports standard formats: 261161, 261101, 261125, 20261161, 2611001, 61, etc.
  */
 export function inferLabBatchFromRoll(rollOrEmail?: string): "1" | "2" | "3" | null {
   if (!rollOrEmail) return null;
-  const clean = rollOrEmail.toLowerCase().split("@")[0]!;
-  const match = clean.match(/^(?:20)?\d{2}(?:11|12|13|14)(\d{2,3})$/);
+  const clean = rollOrEmail.toLowerCase().trim().split("@")[0]!;
+  
+  // Format 1: Standard institutional roll pattern [YY][Dept][Roll], e.g. 261161, 20261161, 2611001
+  const match = clean.match(/^(?:20)?\d{2}(?:11|12|13|14)(\d{1,4})$/);
   if (match && match[1]) {
     const num = parseInt(match[1], 10);
     if (num <= 22) return "1";
     if (num <= 45) return "2";
     return "3";
   }
+
+  // Format 2: Direct roll number e.g. "61", "roll-61", "r-22"
+  const numMatch = clean.match(/(?:roll|no|r)?[-_ ]*(\d{1,3})$/);
+  if (numMatch && numMatch[1]) {
+    const num = parseInt(numMatch[1], 10);
+    if (num >= 1 && num <= 22) return "1";
+    if (num >= 23 && num <= 45) return "2";
+    if (num >= 46) return "3";
+  }
+
   return null;
 }
 

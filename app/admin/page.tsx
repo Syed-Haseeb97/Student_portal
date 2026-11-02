@@ -319,7 +319,7 @@ export default function AdminOverviewPage() {
                 </p>
               </div>
             </div>
-            <BranchTimetableView allowBranchSwitching={true} />
+            <BranchTimetableView allowBranchSwitching={true} allowBatchSwitching={true} />
           </div>
 
           {/* System Security & Integrity Banner */}
