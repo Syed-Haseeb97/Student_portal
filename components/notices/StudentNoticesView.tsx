@@ -4,44 +4,84 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import type { AcademicNotice } from "@/lib/api/types";
 import { getAcademicNotices } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/PortalUI";
 import {
   Bell,
-  Calendar,
-  Clock,
-  User,
-  AlertTriangle,
-  FileText,
-  Bookmark,
-  ChevronRight,
-  RotateCcw,
-  Sparkles,
-  X,
-  Mail,
-  GraduationCap,
+  CalendarDays,
+  Pin,
+  ArrowLeft,
+  Megaphone,
+  Search,
   CheckCircle2,
+  Clock,
+  Sparkles,
+  FileText,
+  Mail,
 } from "lucide-react";
 
 interface StudentNoticesViewProps {
   branchCode?: string;
   idToken?: string;
   className?: string;
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
 }
+
+const CATEGORIES = ["All", "Academic", "Assignments", "Exams", "Campus"] as const;
+type Category = (typeof CATEGORIES)[number];
+
+const READ_STORAGE_KEY = "student-portal-read-notices";
 
 export function StudentNoticesView({
   branchCode = "all",
   idToken,
   className = "",
+  selectedId: controlledSelectedId,
+  onSelect: controlledOnSelect,
 }: StudentNoticesViewProps) {
   const [notices, setNotices] = useState<AcademicNotice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "assignment" | "notice">("all");
-  const [selectedNotice, setSelectedNotice] = useState<AcademicNotice | null>(null);
+  const [category, setCategory] = useState<Category>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const [readIds, setReadIds] = useState<string[]>([]);
 
   const { getIdToken } = useAuth();
+
+  // Load read notices from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(READ_STORAGE_KEY);
+      if (stored) {
+        setReadIds(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore localStorage read failures
+    }
+  }, []);
+
+  const saveReadIds = (nextIds: string[]) => {
+    setReadIds(nextIds);
+    try {
+      localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(nextIds));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const selectedId = controlledSelectedId !== undefined ? controlledSelectedId : localSelectedId;
+
+  const handleSelect = (id: string | null) => {
+    if (controlledOnSelect) {
+      controlledOnSelect(id);
+    } else {
+      setLocalSelectedId(id);
+    }
+    if (id && !readIds.includes(id)) {
+      saveReadIds([...readIds, id]);
+    }
+  };
 
   const loadNotices = useCallback(async () => {
     setLoading(true);
@@ -65,16 +105,45 @@ export function StudentNoticesView({
     void loadNotices();
   }, [loadNotices]);
 
+  // Notice category normalization
+  const getNoticeCategory = (notice: AcademicNotice): Category => {
+    if (notice.type === "assignment") return "Assignments";
+    const lower = (notice.title + " " + notice.content).toLowerCase();
+    if (lower.includes("exam") || lower.includes("mid-sem") || lower.includes("test")) return "Exams";
+    if (lower.includes("hostel") || lower.includes("library") || lower.includes("campus") || lower.includes("sports")) return "Campus";
+    return "Academic";
+  };
+
+  // Filtered list
   const filteredNotices = useMemo(() => {
-    if (filter === "all") return notices;
-    return notices.filter((n) => n.type === filter);
-  }, [notices, filter]);
+    const q = searchQuery.trim().toLowerCase();
+    return notices
+      .filter((n) => {
+        if (category === "All") return true;
+        return getNoticeCategory(n) === category;
+      })
+      .filter((n) => {
+        if (!q) return true;
+        return (
+          n.title.toLowerCase().includes(q) ||
+          n.content.toLowerCase().includes(q) ||
+          (n.courseCode || "").toLowerCase().includes(q) ||
+          n.postedByName.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [notices, category, searchQuery]);
 
-  const assignmentsCount = useMemo(() => notices.filter((n) => n.type === "assignment").length, [notices]);
-  const circularsCount = useMemo(() => notices.filter((n) => n.type === "notice").length, [notices]);
+  const selectedNotice = notices.find((n) => n.id === selectedId) ?? null;
+  const unreadCount = notices.filter((n) => !readIds.includes(n.id)).length;
 
-  // Helper to format due date and calculate remaining days
-  const getDueInfo = (dueDateStr?: string | null) => {
+  const markAllRead = () => {
+    const allIds = notices.map((n) => n.id);
+    saveReadIds(allIds);
+  };
+
+  // Helper to calculate deadline status
+  const getDeadlineMeta = (dueDateStr?: string | null) => {
     if (!dueDateStr) return null;
     const due = new Date(dueDateStr);
     const now = new Date();
@@ -83,8 +152,8 @@ export function StudentNoticesView({
 
     const formatted = due.toLocaleDateString("en-IN", {
       weekday: "short",
-      month: "short",
       day: "numeric",
+      month: "short",
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -98,303 +167,304 @@ export function StudentNoticesView({
   };
 
   return (
-    <div className={`space-y-5 ${className}`}>
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-4 sm:p-5 rounded-2xl border border-line">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-accent/10 text-accent">
-              <Bell className="size-4" />
-            </span>
-            <h3 className="text-base sm:text-lg font-bold font-mono tracking-tight text-ink uppercase">
-              Notice Board & Assignment Deadlines
-            </h3>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30">
-              Live Feed
-            </span>
+    <div className={`space-y-8 ${className}`}>
+      {/* Page Header with Unread Counter and Mark all read button */}
+      <PageHeader
+        eyebrow={unreadCount > 0 ? `${unreadCount} unread` : "You’re all caught up"}
+        title="Notices"
+      >
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={markAllRead}
+            className="rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-muted transition-colors hover:text-ink cursor-pointer"
+          >
+            Mark all as read
+          </button>
+        )}
+      </PageHeader>
+
+      {/* Split layout: List on Left, Sticky Reader on Right (portal_ui pattern) */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        {/* LEFT COLUMN: Filters, Search & Notice Cards */}
+        <div className={selectedNotice ? "hidden lg:block space-y-4" : "space-y-4"}>
+          {/* Category Pill Tabs */}
+          <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 scrollbar-none sm:mx-0 sm:px-0">
+            {CATEGORIES.map((c) => {
+              const active = category === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+                    active
+                      ? "border-solid bg-solid text-on-solid shadow-xs"
+                      : "border-line bg-surface text-muted hover:text-ink hover:bg-raised"
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
           </div>
-          <p className="text-xs text-muted">
-            Official announcements, assignment briefs, and critical submission deadlines posted by your faculty.
-          </p>
+
+          {/* Search Box */}
+          <label className="relative block">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search circulars, assignments or instructors..."
+              className="h-10 w-full rounded-full border border-line bg-surface pr-4 pl-10 text-xs sm:text-sm text-ink outline-none placeholder:text-muted/70 focus:border-ink/40 font-mono"
+            />
+          </label>
+
+          {/* Loading State */}
+          {loading && (
+            <div className="card divide-y divide-line p-8 text-center text-sm text-muted">
+              Loading notices...
+            </div>
+          )}
+
+          {/* Error State */}
+          {!loading && error && (
+            <div className="card p-6 text-center text-sm text-risk bg-risk-soft/40 border-risk/30">
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={() => loadNotices()}
+                className="mt-3 inline-block rounded-full border border-risk/40 px-4 py-1.5 text-xs font-semibold text-risk hover:bg-risk/10"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && !error && filteredNotices.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-line py-16 text-center text-sm text-muted font-mono">
+              No notices match your filter.
+            </div>
+          )}
+
+          {/* Notice Cards List */}
+          {!loading && !error && filteredNotices.length > 0 && (
+            <ul className="card divide-y divide-line overflow-hidden shadow-xs">
+              {filteredNotices.map((n) => {
+                const isUnread = !readIds.includes(n.id);
+                const active = n.id === selectedId;
+                const notifCategory = getNoticeCategory(n);
+                const deadline = getDeadlineMeta(n.dueDate);
+                const formattedDate = new Date(n.createdAt).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                });
+
+                return (
+                  <li key={n.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(n.id)}
+                      className={`flex w-full gap-4 p-5 text-left transition-colors cursor-pointer ${
+                        active ? "bg-raised" : "hover:bg-raised/60"
+                      }`}
+                    >
+                      {/* Unread Red Dot */}
+                      <span
+                        className={`mt-2 size-2 shrink-0 rounded-full ${
+                          isUnread ? "bg-risk" : "bg-transparent"
+                        }`}
+                      />
+
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-center gap-2 text-xs text-muted">
+                          {n.priority === "urgent" && (
+                            <span className="flex items-center gap-1 font-semibold text-risk">
+                              <Pin className="size-3" /> Urgent
+                            </span>
+                          )}
+                          <span>{notifCategory}</span>
+                          <span>·</span>
+                          <span className="font-mono">{formattedDate}</span>
+                          {n.courseCode && (
+                            <>
+                              <span>·</span>
+                              <span className="font-mono font-medium text-ink">{n.courseCode}</span>
+                            </>
+                          )}
+                        </div>
+
+                        <p
+                          className={`leading-snug text-sm ${
+                            isUnread ? "font-semibold text-ink" : "text-ink/80"
+                          }`}
+                        >
+                          {n.title}
+                        </p>
+
+                        <p className="text-xs text-muted">
+                          {n.postedByName}
+                          {n.postedByDepartment ? ` · ${n.postedByDepartment}` : ""}
+                        </p>
+
+                        {deadline && (
+                          <div className="pt-1">
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-mono font-medium ${
+                                deadline.urgent
+                                  ? "bg-risk-soft text-risk font-semibold"
+                                  : "bg-warn-soft text-warn"
+                              }`}
+                            >
+                              <CalendarDays className="size-3" />
+                              {deadline.isOverdue
+                                ? `Overdue (${deadline.formatted})`
+                                : `Due ${deadline.formatted}`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 bg-canvas p-1 rounded-xl border border-line text-xs font-mono overflow-x-auto scrollbar-none self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setFilter("all")}
-            className={`min-h-[38px] px-3.5 py-2 rounded-lg transition-all cursor-pointer touch-manipulation active:scale-[0.98] ${
-              filter === "all" ? "bg-raised text-accent font-bold shadow-xs border border-accent/40" : "text-muted hover:text-ink"
-            }`}
-          >
-            All ({notices.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("assignment")}
-            className={`min-h-[38px] px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 touch-manipulation active:scale-[0.98] ${
-              filter === "assignment" ? "bg-raised text-amber-300 font-bold shadow-xs border border-amber-500/40" : "text-muted hover:text-ink"
-            }`}
-          >
-            <span>Assignments</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
-              {assignmentsCount}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("notice")}
-            className={`min-h-[38px] px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 touch-manipulation active:scale-[0.98] ${
-              filter === "notice" ? "bg-raised text-cyan-300 font-bold shadow-xs border border-cyan-500/40" : "text-muted hover:text-ink"
-            }`}
-          >
-            <span>Notices</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono">
-              {circularsCount}
-            </span>
-          </button>
-        </div>
-      </div>
+        {/* RIGHT COLUMN: Reading Pane (Sticky on Desktop) */}
+        <div className={selectedNotice ? "block" : "hidden lg:block"}>
+          {selectedNotice ? (
+            <article className="card p-6 sm:p-8 lg:sticky lg:top-8 space-y-6 shadow-xs animate-in fade-in duration-200">
+              {/* Back button on mobile */}
+              <button
+                type="button"
+                onClick={() => handleSelect(null)}
+                className="flex items-center gap-2 text-sm font-medium text-muted hover:text-ink lg:hidden cursor-pointer"
+              >
+                <ArrowLeft className="size-4" /> All notices
+              </button>
 
-      {/* Loading state */}
-      {loading && notices.length === 0 && (
-        <div className="p-8 text-center text-xs font-mono text-muted bg-surface rounded-2xl border border-line animate-pulse">
-          Loading latest faculty announcements and deadlines...
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && filteredNotices.length === 0 && (
-        <div className="p-8 text-center bg-surface/50 rounded-2xl border border-dashed border-line text-xs font-mono space-y-2">
-          <p className="text-muted">No notices or active assignments match the selected filter.</p>
-          <Button variant="outline" size="sm" onClick={() => loadNotices()}>
-            <RotateCcw className="size-3 mr-1.5" />
-            Refresh Feed
-          </Button>
-        </div>
-      )}
-
-      {/* Notice Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredNotices.map((notice) => {
-          const isAssignment = notice.type === "assignment";
-          const dueInfo = getDueInfo(notice.dueDate);
-
-          return (
-            <Card
-              key={notice.id}
-              onClick={() => setSelectedNotice(notice)}
-              className={`p-4 sm:p-5 transition-all cursor-pointer hover:border-accent/60 relative overflow-hidden flex flex-col justify-between ${
-                isAssignment
-                  ? "bg-amber-500/[0.03] border-amber-500/30 hover:border-amber-500/60"
-                  : "bg-surface border-line hover:border-line/90"
-              }`}
-            >
-              <div className="space-y-3">
-                {/* Header Tag Row */}
-                <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] font-mono">
-                  <div className="flex items-center gap-1.5">
-                    {isAssignment ? (
-                      <span className="px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                        <Bookmark className="size-3" />
-                        ASSIGNMENT
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
-                        <FileText className="size-3" />
-                        CIRCULAR
-                      </span>
-                    )}
-
-                    {notice.courseCode && (
-                      <span className="px-2 py-0.5 rounded-full font-bold bg-canvas border border-line text-ink">
-                        {notice.courseCode}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Priority / Target */}
-                  {notice.priority === "urgent" && (
-                    <span className="px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
-                      <AlertTriangle className="size-3" />
-                      URGENT
-                    </span>
-                  )}
-                  {notice.priority === "important" && (
-                    <span className="px-2 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      IMPORTANT
-                    </span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <div>
-                  <h4 className="font-bold text-ink text-sm sm:text-base leading-snug line-clamp-2">
-                    {notice.title}
-                  </h4>
-                  {notice.courseTitle && (
-                    <p className="text-[11px] text-muted font-mono mt-0.5 truncate">
-                      {notice.courseTitle}
-                    </p>
-                  )}
-                </div>
-
-                {/* Content preview */}
-                <p className="text-xs text-muted/90 line-clamp-3 leading-relaxed">
-                  {notice.content}
-                </p>
-
-                {/* Assignment Deadline Pill Callout */}
-                {isAssignment && dueInfo && (
-                  <div
-                    className={`p-2.5 rounded-xl border text-xs font-mono flex items-center justify-between ${
-                      dueInfo.isOverdue
-                        ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                        : dueInfo.urgent
-                        ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                        : "bg-surface border-line text-ink"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Clock className="size-3.5 shrink-0" />
-                      <span>Due: <strong>{dueInfo.formatted}</strong></span>
-                    </div>
-                    <span className="text-[10px] font-bold uppercase">
-                      {dueInfo.isOverdue
-                        ? "Past Due"
-                        : dueInfo.diffDays === 0
-                        ? "Due Today"
-                        : `${dueInfo.diffDays}d remaining`}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Card Footer: Instructor Info & Date */}
-              <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs text-muted font-mono">
-                <div className="flex items-center gap-2 truncate">
-                  <div className="size-6 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0 text-[10px] font-bold">
-                    {notice.postedByName.charAt(0) || "F"}
-                  </div>
-                  <span className="truncate text-ink font-medium">{notice.postedByName}</span>
-                </div>
-
-                <div className="flex items-center gap-1 text-[11px] shrink-0 text-muted/80">
-                  <span>{new Date(notice.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}</span>
-                  <ChevronRight className="size-3.5 text-muted ml-1" />
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Detail Modal */}
-      {selectedNotice && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200"
-          onClick={() => setSelectedNotice(null)}
-        >
-          <div
-            className="w-full max-w-lg bg-raised border border-line rounded-2xl p-6 shadow-2xl relative space-y-5 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedNotice(null)}
-              className="absolute top-4 right-4 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl text-muted hover:text-ink hover:bg-canvas transition-colors touch-manipulation cursor-pointer"
-              aria-label="Close"
-            >
-              <X className="size-4" />
-            </button>
-
-            {/* Header */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 flex-wrap text-xs font-mono">
-                {selectedNotice.type === "assignment" ? (
-                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    ASSIGNMENT
+              {/* Notice Metadata */}
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                {selectedNotice.priority === "urgent" ? (
+                  <span className="flex items-center gap-1 rounded-full bg-risk px-2.5 py-0.5 font-semibold text-white">
+                    <Pin className="size-3" /> Urgent
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                    ACADEMIC CIRCULAR
+                  <span className="rounded-full bg-solid px-2.5 py-0.5 font-medium text-on-solid">
+                    {getNoticeCategory(selectedNotice)}
                   </span>
                 )}
+                <span>·</span>
+                <span className="font-mono">
+                  {new Date(selectedNotice.createdAt).toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
                 {selectedNotice.courseCode && (
-                  <Badge variant="neutral" size="sm">
-                    {selectedNotice.courseCode}
-                  </Badge>
-                )}
-                {selectedNotice.maxMarks && (
-                  <span className="px-2 py-0.5 rounded-full font-bold bg-accent/20 text-accent font-mono text-[10px]">
-                    {selectedNotice.maxMarks} Marks
-                  </span>
+                  <>
+                    <span>·</span>
+                    <span className="font-mono font-semibold text-ink">
+                      {selectedNotice.courseCode}
+                    </span>
+                  </>
                 )}
               </div>
 
-              <h3 className="text-lg font-bold text-ink leading-snug">
+              {/* Title in Instrument Serif */}
+              <h2 className="font-serif text-3xl sm:text-4xl leading-tight text-ink">
                 {selectedNotice.title}
-              </h3>
-              {selectedNotice.courseTitle && (
-                <p className="text-xs text-muted font-mono">{selectedNotice.courseTitle}</p>
-              )}
-            </div>
+              </h2>
 
-            {/* Deadline Block (if assignment) */}
-            {selectedNotice.dueDate && (
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono space-y-1 text-amber-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted">Submission Deadline:</span>
-                  <strong className="text-amber-300">
-                    {new Date(selectedNotice.dueDate).toLocaleString("en-IN", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </strong>
+              {/* Author Attribution */}
+              <div className="flex items-center gap-3 border-y border-line py-3 text-xs text-muted">
+                <div className="min-w-0">
+                  <p className="font-medium text-ink">
+                    From {selectedNotice.postedByName}
+                    {selectedNotice.postedByDepartment ? ` · ${selectedNotice.postedByDepartment}` : ""}
+                  </p>
+                  <p className="font-mono text-muted/80">{selectedNotice.postedByEmail}</p>
                 </div>
-                {selectedNotice.submissionInfo && (
-                  <div className="pt-1.5 border-t border-amber-500/20 text-[11px] text-amber-300/90">
-                    <strong>Submission Method:</strong> {selectedNotice.submissionInfo}
-                  </div>
-                )}
               </div>
-            )}
 
-            {/* Full Content */}
-            <div className="space-y-2 text-sm leading-relaxed text-ink/90 whitespace-pre-wrap bg-surface p-4 rounded-xl border border-line">
-              <p>{selectedNotice.content}</p>
-            </div>
-
-            {/* Faculty Issuer Info */}
-            <div className="pt-3 border-t border-line space-y-2 text-xs font-mono">
-              <span className="text-[10px] uppercase font-bold text-muted">Issued By:</span>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-ink text-sm">{selectedNotice.postedByName}</p>
-                  <p className="text-muted text-[11px]">{selectedNotice.postedByDepartment || "Course Faculty"}</p>
-                </div>
-                {selectedNotice.postedByEmail && (
-                  <a
-                    href={`mailto:${selectedNotice.postedByEmail}`}
-                    className="flex items-center gap-1.5 p-2 rounded-lg bg-canvas hover:bg-surface border border-line text-accent text-xs"
+              {/* Assignment Deadline Box */}
+              {selectedNotice.dueDate && (() => {
+                const meta = getDeadlineMeta(selectedNotice.dueDate);
+                return (
+                  <div
+                    className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-mono ${
+                      meta?.urgent
+                        ? "bg-risk-soft text-risk border border-risk/30"
+                        : "bg-warn-soft text-warn border border-warn/30"
+                    }`}
                   >
-                    <Mail className="size-3.5" />
-                    <span>Contact</span>
-                  </a>
-                )}
-              </div>
-            </div>
+                    <div className="flex items-center gap-2.5">
+                      <CalendarDays className="size-4 shrink-0" />
+                      <span>
+                        Submission Deadline: <strong>{meta?.formatted}</strong>
+                      </span>
+                    </div>
+                    {meta?.urgent && (
+                      <span className="rounded-full bg-risk px-2 py-0.5 text-[10px] font-bold text-white uppercase">
+                        Action Required
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
 
-            <button
-              type="button"
-              onClick={() => setSelectedNotice(null)}
-              className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-canvas font-mono font-bold text-xs transition-colors cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
+              {/* Assignment Specifics (Marks & Upload Info) */}
+              {(selectedNotice.maxMarks || selectedNotice.submissionInfo) && (
+                <div className="grid grid-cols-2 gap-3 rounded-xl border border-line bg-paper p-3 text-xs font-mono">
+                  {selectedNotice.maxMarks && (
+                    <div>
+                      <span className="text-muted block text-[10px] uppercase">Maximum Marks</span>
+                      <strong className="text-ink">{selectedNotice.maxMarks} Points</strong>
+                    </div>
+                  )}
+                  {selectedNotice.submissionInfo && (
+                    <div>
+                      <span className="text-muted block text-[10px] uppercase">Mode</span>
+                      <span className="text-ink truncate block">{selectedNotice.submissionInfo}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Notice Body Content */}
+              <div className="space-y-4 pt-2 text-[15px] leading-relaxed text-ink/85">
+                {selectedNotice.content.split("\n\n").map((paragraph, idx) => (
+                  <p key={idx} className="leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+
+              {/* Close / Action footer */}
+              <div className="pt-4 border-t border-line flex items-center justify-between text-xs text-muted">
+                <span className="font-mono">Notice ID: {selectedNotice.id}</span>
+                <span className="font-mono">IIIT Tiruchirappalli</span>
+              </div>
+            </article>
+          ) : (
+            <div className="flex h-full min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-line p-8 text-center text-muted">
+              <div className="size-12 rounded-2xl bg-surface border border-line grid place-items-center text-muted mb-3">
+                <Megaphone className="size-6" strokeWidth={1.5} />
+              </div>
+              <p className="font-serif text-xl text-ink">Select a notice to read</p>
+              <p className="mt-1 max-w-xs text-xs text-muted">
+                Tap on any announcement from the feed to view the complete institutional circular or assignment brief.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
