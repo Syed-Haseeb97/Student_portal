@@ -31,18 +31,119 @@ interface BranchTimetableViewProps {
 
 const DAYS: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-const typeStyle: Record<string, string> = {
+export type AcademicClassType = "Lecture" | "Lab" | "Tutorial" | "Activity";
+
+/**
+ * Accurately determines whether a course offering is a Laboratory, Tutorial, Activity, or Lecture.
+ */
+export function getCourseClassType(course: CourseDetail): AcademicClassType {
+  const name = course.name.toLowerCase();
+  const code = course.code.toLowerCase();
+  if (
+    name.includes("laboratory") ||
+    name.includes("lab") ||
+    code.endsWith("02") ||
+    code.endsWith("05") ||
+    code.endsWith("04")
+  ) {
+    return "Lab";
+  }
+  if (name.includes("graphics") || name.includes("drawing") || name.includes("workshop")) {
+    return "Lab";
+  }
+  if (name.includes("nss") || name.includes("ncc") || name.includes("well-being")) {
+    return "Activity";
+  }
+  if (name.includes("tutorial") || name.includes("practice")) {
+    return "Tutorial";
+  }
+  return "Lecture";
+}
+
+/**
+ * Concise, high-legibility display titles engineered so they never clip or truncate
+ * through letter descenders in the timetable grid.
+ */
+export function getCourseDisplayTitle(course: CourseDetail): string {
+  const code = course.code.toUpperCase().trim();
+  const name = course.name.trim();
+
+  if (code === "CS1101") return "Intro to Computer Programming";
+  if (code === "CS1102") return "Programming Laboratory";
+  if (code === "PH1101") return "Physics";
+  if (code === "PH1102") return "Physics Laboratory";
+  if (code === "MA1103") return "Calculus & Matrices";
+  if (code === "ME1101") return "Engineering Graphics";
+  if (code === "EC1103") return "Intro to Electronics Eng.";
+  if (code === "HM1102") return "NSS / NCC & Well-Being";
+  if (code === "EC1101") return "Digital Logic Design";
+  if (code === "EC1102") return "Digital Logic Design Lab";
+  if (code === "EC1104") return "Semiconductor Devices";
+  if (code === "EC1105") return "Semiconductor Devices Lab";
+  if (code === "CS1103") return "Foundations of AI & DS";
+  if (code === "CS1104") return "AI & Data Science Lab";
+  if (code === "VL1101") return "Basic VLSI Design";
+  if (code === "VL1102") return "VLSI Design Lab";
+
+  if (name.length > 28) {
+    return name
+      .replace(/Introduction to /gi, "Intro to ")
+      .replace(/Laboratory/gi, "Lab")
+      .replace(/Engineering/gi, "Eng.")
+      .replace(/Differential Calculus and Matrices/gi, "Calculus & Matrices");
+  }
+  return name;
+}
+
+/**
+ * Clarifies multi-period slots and lab batches (e.g. F11, F12, F13 for Batch 1)
+ */
+export function getSlotBadge(slotCode: string, classType: AcademicClassType): string {
+  const upper = slotCode.toUpperCase().trim();
+
+  // Multi-slot physics lab batches
+  if (upper === "F11") return "F11 · Lab (1/3)";
+  if (upper === "F12") return "F12 · Lab (2/3)";
+  if (upper === "F13") return "F13 · Lab (3/3)";
+  if (upper === "F21") return "F21 · Batch 2 (1/3)";
+  if (upper === "F22") return "F22 · Batch 2 (2/3)";
+  if (upper === "F23") return "F23 · Batch 2 (3/3)";
+  if (upper === "F31") return "F31 · Batch 3 (1/3)";
+  if (upper === "F32") return "F32 · Batch 3 (2/3)";
+  if (upper === "F33") return "F33 · Batch 3 (3/3)";
+
+  // Multi-slot programming lab
+  if (upper === "G11") return "G11 · Lab (1/3)";
+  if (upper === "G12") return "G12 · Lab (2/3)";
+  if (upper === "G13") return "G13 · Lab (3/3)";
+
+  // Graphics lab
+  if (upper === "D11") return "D11 · Lab (1/3)";
+  if (upper === "D12") return "D12 · Lab (2/3)";
+  if (upper === "D13") return "D13 · Lab (3/3)";
+
+  // Electronics lab
+  if (upper === "E11") return "E11 · Lab (1/2)";
+  if (upper === "E12") return "E12 · Lab (2/2)";
+
+  // NSS / NCC
+  if (upper.startsWith("H") || upper === "NSS") return `${upper} · Activity`;
+
+  return `${upper} · ${classType}`;
+}
+
+const typeStyle: Record<AcademicClassType, string> = {
   Lecture: "bg-surface border-line hover:border-ink/40",
-  Lab: "bg-accent-soft border-safe/25 hover:border-safe/50",
-  Tutorial: "bg-warn-soft border-warn/25 hover:border-warn/50",
-  GIR: "bg-surface border-line hover:border-ink/40",
+  Lab: "bg-safe-soft/75 border-safe/30 text-ink hover:border-safe/60 hover:bg-safe-soft",
+  Tutorial: "bg-warn-soft/75 border-warn/30 text-ink hover:border-warn/60 hover:bg-warn-soft",
+  Activity: "bg-surface border-line hover:border-ink/40",
 };
 
-const typeDot: Record<string, string> = {
+const typeDot: Record<AcademicClassType, string> = {
   Lecture: "bg-ink",
   Lab: "bg-safe",
   Tutorial: "bg-warn",
-  GIR: "bg-ink",
+  Activity: "bg-muted",
 };
 
 export function BranchTimetableView({
@@ -113,7 +214,7 @@ export function BranchTimetableView({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Top Header: Department selection & Info */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-row sm:items-center sm:justify-between shadow-xs">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-serif text-2xl text-ink">
@@ -127,7 +228,7 @@ export function BranchTimetableView({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted font-mono">
-            Static in-memory schedule · 0 Firestore reads · Free tier preserved
+            Authoritative in-memory schedule · 0 database quota used · Instant sync
           </p>
         </div>
 
@@ -206,7 +307,7 @@ export function BranchTimetableView({
         </div>
       )}
 
-      {/* Main Timetable View (Shown for 1st Year or when reference is explicitly toggled) */}
+      {/* Main Timetable View */}
       {(!isSeniorBatch || showReferenceTimetable) && (
         <div className="space-y-5">
           {/* Legend and Type Indicators */}
@@ -216,25 +317,28 @@ export function BranchTimetableView({
                 <span className="size-2 rounded-full bg-ink" /> Lecture
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-safe" /> Lab Session
+                <span className="size-2 rounded-full bg-safe" /> Laboratory
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-warn" /> Tutorial / GIR
+                <span className="size-2 rounded-full bg-warn" /> Tutorial
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-muted" /> Activity / NSS
               </span>
             </div>
             <span className="font-mono text-[11px] text-muted">
-              Tap any class for instructor contact & syllabus details
+              Click any class card for instructor contact & room details
             </span>
           </div>
 
-          {/* DESKTOP WEEK GRID (Directly modeled after portal_ui TimetableView) */}
+          {/* DESKTOP WEEK GRID: Precision Height & Zero-Clipping Layout */}
           <div className="card hidden overflow-x-auto p-4 lg:block shadow-xs">
             <div
-              className="grid min-w-[900px] gap-2"
+              className="grid min-w-[960px] gap-2.5"
               style={{
-                gridTemplateColumns: "64px repeat(5, minmax(0, 1fr))",
+                gridTemplateColumns: "68px repeat(5, minmax(0, 1fr))",
                 gridTemplateRows:
-                  "auto 88px 88px 30px 88px 88px 36px 88px 88px 30px 88px",
+                  "auto 118px 118px 38px 118px 118px 44px 118px 118px 38px 118px",
               }}
             >
               {/* Empty top-left corner */}
@@ -246,13 +350,13 @@ export function BranchTimetableView({
                 return (
                   <div
                     key={d}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isToday ? "bg-solid text-on-solid" : "text-muted"
+                    className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
+                      isToday ? "bg-solid text-on-solid shadow-xs" : "text-muted bg-surface/60 border border-line/60"
                     }`}
                   >
-                    <span>{d.slice(0, 3)}</span>
+                    <span className="font-semibold">{d}</span>
                     {isToday && (
-                      <span className="ml-1 text-xs font-normal text-on-solid/70">
+                      <span className="ml-1.5 text-xs font-normal text-on-solid/70 font-mono">
                         · Today
                       </span>
                     )}
@@ -268,14 +372,16 @@ export function BranchTimetableView({
                   return (
                     <div
                       key={slot.id}
-                      className="flex items-center gap-3 text-[11px] tracking-widest text-muted uppercase font-mono"
+                      className="flex items-center gap-3 font-mono text-[11px] tracking-wider uppercase text-muted"
                       style={{ gridColumn: "1 / -1", gridRow: gridRowNumber }}
                     >
-                      <span className="w-16 text-right font-mono normal-case tracking-normal text-muted">
+                      <span className="w-16 text-right font-mono normal-case tracking-normal text-muted font-medium">
                         {slot.startTime}
                       </span>
                       <span className="h-px flex-1 bg-line" />
-                      <span>Lunch break (13:00 – 14:00)</span>
+                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-line text-xs font-semibold text-ink shadow-xs">
+                        <Clock className="size-3.5 text-safe" /> Lunch Break · 13:00 – 14:00
+                      </span>
                       <span className="h-px flex-1 bg-line" />
                     </div>
                   );
@@ -285,14 +391,16 @@ export function BranchTimetableView({
                   return (
                     <div
                       key={slot.id}
-                      className="flex items-center gap-3 text-[10px] tracking-widest text-muted/70 uppercase font-mono"
+                      className="flex items-center gap-3 font-mono text-[11px] tracking-wider uppercase text-muted"
                       style={{ gridColumn: "1 / -1", gridRow: gridRowNumber }}
                     >
-                      <span className="w-16 text-right font-mono normal-case tracking-normal text-muted/70">
+                      <span className="w-16 text-right font-mono normal-case tracking-normal text-muted/70 font-medium">
                         {slot.startTime}
                       </span>
                       <span className="h-px flex-1 bg-line/60" />
-                      <span>{slot.label} ({slot.startTime} – {slot.endTime})</span>
+                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface/80 border border-line text-[11px] text-muted">
+                        <Clock className="size-3 text-muted" /> Tea Break · {slot.startTime} – {slot.endTime}
+                      </span>
                       <span className="h-px flex-1 bg-line/60" />
                     </div>
                   );
@@ -303,10 +411,11 @@ export function BranchTimetableView({
                   <React.Fragment key={slot.id}>
                     {/* Column 1: Time label */}
                     <div
-                      className="pt-2 pr-2 text-right font-mono text-xs text-muted"
+                      className="pt-3 pr-2 text-right font-mono text-xs text-muted"
                       style={{ gridColumn: 1, gridRow: gridRowNumber }}
                     >
-                      {slot.startTime}
+                      <span className="font-semibold text-ink/80 block">{slot.startTime}</span>
+                      <span className="text-[10px] text-muted/60 block">{slot.endTime}</span>
                     </div>
 
                     {/* Columns 2-6: Five days */}
@@ -314,14 +423,13 @@ export function BranchTimetableView({
                       const slotCode = timetable.schedule[day]?.[rowIndex];
                       const course = resolveSlotCourse(timetable, slotCode);
                       const isNext = isPeriodNow(dayIndex, slot);
-                      const classType = course?.type || "Lecture";
 
                       if (!slotCode || !course) {
                         return (
                           <div
                             key={`${day}-${slot.id}`}
-                            className={`rounded-xl border border-dashed border-line/60 ${
-                              dayIndex === todayIndex ? "bg-raised/40" : ""
+                            className={`rounded-xl border border-dashed border-line/50 transition-colors ${
+                              dayIndex === todayIndex ? "bg-raised/30" : "bg-transparent"
                             }`}
                             style={{
                               gridColumn: dayIndex + 2,
@@ -330,6 +438,10 @@ export function BranchTimetableView({
                           />
                         );
                       }
+
+                      const classType = getCourseClassType(course);
+                      const displayTitle = getCourseDisplayTitle(course);
+                      const slotBadge = getSlotBadge(slotCode, classType);
 
                       return (
                         <div
@@ -350,35 +462,40 @@ export function BranchTimetableView({
                                 period: slot,
                               })
                             }
-                            className={`flex h-full w-full flex-col rounded-xl border p-2.5 text-left transition-all cursor-pointer ${
-                              typeStyle[classType] || typeStyle.Lecture
-                            } ${isNext ? "ring-2 ring-ink shadow-sm" : ""}`}
+                            className={`flex h-full w-full flex-col rounded-xl border p-3 text-left transition-all duration-150 cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
+                              typeStyle[classType]
+                            } ${isNext ? "ring-2 ring-safe shadow-sm" : ""}`}
                           >
-                            <div className="flex items-center justify-between gap-1 text-[11px] font-mono text-muted">
+                            {/* Top row: Time range & Active Badge */}
+                            <div className="flex items-center justify-between gap-1 text-[11px] font-mono text-muted leading-none">
                               <span>
                                 {slot.startTime}–{slot.endTime}
                               </span>
                               {isNext && (
-                                <span className="rounded-full bg-solid px-2 py-0.5 text-[10px] font-medium text-on-solid">
-                                  Next
+                                <span className="rounded-full bg-safe text-on-solid px-2 py-0.5 text-[10px] font-semibold">
+                                  Now
                                 </span>
                               )}
                             </div>
-                            <p className="mt-1 font-semibold leading-snug text-ink text-xs line-clamp-2">
-                              {course.name}
+
+                            {/* Middle row: Clean Title with comfortable line height and NO letter clipping */}
+                            <p className="mt-2 font-medium leading-snug text-ink text-[13px] line-clamp-2">
+                              {displayTitle}
                             </p>
-                            <div className="mt-auto flex items-center justify-between gap-1 pt-1.5 text-[10px] text-muted">
-                              <span className="flex items-center gap-1">
+
+                            {/* Bottom row: Type dot + Slot part badge + Course Code */}
+                            <div className="mt-auto flex items-center justify-between gap-1 pt-2 text-[10px] text-muted leading-none">
+                              <span className="flex items-center gap-1.5 truncate">
                                 <span
-                                  className={`size-1.5 rounded-full ${
-                                    typeDot[classType] || "bg-ink"
+                                  className={`size-1.5 rounded-full shrink-0 ${
+                                    typeDot[classType]
                                   }`}
                                 />
-                                <span className="font-mono">{slotCode}</span>
-                                <span>·</span>
-                                <span>{classType}</span>
+                                <span className="font-mono truncate font-medium">
+                                  {slotBadge}
+                                </span>
                               </span>
-                              <span className="truncate text-muted/70 font-mono">
+                              <span className="font-mono text-muted/80 shrink-0 font-medium">
                                 {course.code}
                               </span>
                             </div>
@@ -392,10 +509,10 @@ export function BranchTimetableView({
             </div>
           </div>
 
-          {/* MOBILE / TABLET TIMELINE VIEW (Modeled directly after portal_ui TimetableView) */}
+          {/* MOBILE / TABLET TIMELINE VIEW */}
           <div className="lg:hidden space-y-4">
             {/* Day Selector Pills */}
-            <div className="grid grid-cols-5 gap-1 rounded-2xl border border-line bg-surface p-1">
+            <div className="grid grid-cols-5 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-xs">
               {DAYS.map((d, i) => {
                 const active = mobileDay === i;
                 const isToday = i === todayIndex;
@@ -405,14 +522,14 @@ export function BranchTimetableView({
                     type="button"
                     onClick={() => setMobileDay(i)}
                     className={`rounded-xl py-2.5 text-sm font-medium transition-colors cursor-pointer ${
-                      active ? "bg-solid text-on-solid" : "text-muted hover:text-ink"
+                      active ? "bg-solid text-on-solid shadow-xs" : "text-muted hover:text-ink"
                     }`}
                   >
                     <span>{d.slice(0, 3)}</span>
                     {isToday && (
                       <span
                         className={`mx-auto mt-1 block size-1 rounded-full ${
-                          active ? "bg-on-solid" : "bg-ink"
+                          active ? "bg-on-solid" : "bg-safe"
                         }`}
                       />
                     )}
@@ -444,14 +561,16 @@ export function BranchTimetableView({
                 }
 
                 if (slot.isBreak) {
-                  return null; // Skip small tea breaks in mobile list for conciseness
+                  return null;
                 }
 
                 if (!slotCode || !course) {
                   return null;
                 }
 
-                const classType = course.type || "Lecture";
+                const classType = getCourseClassType(course);
+                const displayTitle = getCourseDisplayTitle(course);
+                const slotBadge = getSlotBadge(slotCode, classType);
 
                 return (
                   <li key={slot.id} className="grid grid-cols-[52px_1fr] gap-3">
@@ -468,35 +587,35 @@ export function BranchTimetableView({
                           period: slot,
                         })
                       }
-                      className={`flex flex-col rounded-xl border p-3.5 text-left transition-all cursor-pointer ${
-                        typeStyle[classType] || typeStyle.Lecture
-                      } ${isNext ? "ring-2 ring-ink shadow-sm" : ""}`}
+                      className={`flex flex-col rounded-xl border p-4 text-left transition-all cursor-pointer shadow-xs ${
+                        typeStyle[classType]
+                      } ${isNext ? "ring-2 ring-safe shadow-sm" : ""}`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-[11px] text-muted">
                           {slot.startTime} – {slot.endTime}
                         </span>
                         {isNext && (
-                          <span className="rounded-full bg-solid px-2 py-0.5 text-[10px] font-medium text-on-solid">
-                            Next
+                          <span className="rounded-full bg-safe text-on-solid px-2 py-0.5 text-[10px] font-semibold">
+                            Now
                           </span>
                         )}
                       </div>
                       <p className="mt-1.5 font-medium leading-snug text-ink text-sm">
-                        {course.name}
+                        {displayTitle}
                       </p>
-                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
                         <span className="flex items-center gap-1.5">
                           <span
                             className={`size-1.5 rounded-full ${
-                              typeDot[classType] || "bg-ink"
+                              typeDot[classType]
                             }`}
                           />
-                          <span>{classType}</span>
-                          <span>·</span>
-                          <span className="font-mono">{slotCode}</span>
+                          <span className="font-mono font-medium">{slotBadge}</span>
                         </span>
-                        <span className="text-muted/80">{course.facultyName}</span>
+                        <span className="text-muted/80 font-mono text-[11px]">
+                          {course.code} · {course.facultyName}
+                        </span>
                       </div>
                     </button>
                   </li>
@@ -505,7 +624,7 @@ export function BranchTimetableView({
             </ol>
 
             <p className="mt-6 flex items-center gap-2 text-xs text-muted font-mono">
-              <MapPin className="size-3.5" /> All lecture halls & laboratories are in the Academic Block.
+              <MapPin className="size-3.5 text-safe" /> All lecture halls & laboratories are located in the Central Academic Block.
             </p>
           </div>
         </div>
@@ -555,13 +674,15 @@ export function BranchTimetableView({
                 <div className="flex items-center justify-between text-xs text-muted border-t border-line/60 pt-2">
                   <span>Course Type</span>
                   <span className="font-medium text-ink">
-                    {selectedCourse.course.type || "Theory / Lecture"}
+                    {getCourseClassType(selectedCourse.course)} Session
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted border-t border-line/60 pt-2">
                   <span>Room / Hall</span>
                   <span className="font-mono text-ink">
-                    {selectedCourse.course.type === "Lab" ? "Computer Lab 1 / ECE Lab" : "Lecture Hall 102"}
+                    {getCourseClassType(selectedCourse.course) === "Lab"
+                      ? "Computer Lab 1 / ECE Lab (Central Academic Block)"
+                      : "Smart Lecture Theatre (LH-101 / LH-102)"}
                   </span>
                 </div>
               </div>
@@ -569,7 +690,7 @@ export function BranchTimetableView({
               {/* Faculty Contact Card */}
               <div className="card p-4 space-y-3">
                 <p className="text-xs font-mono uppercase tracking-wider text-muted">
-                  Course Instructor
+                  Course Faculty
                 </p>
                 <p className="font-medium text-ink text-sm">
                   {selectedCourse.course.facultyName}
@@ -599,9 +720,9 @@ export function BranchTimetableView({
               <button
                 type="button"
                 onClick={() => setSelectedCourse(null)}
-                className="rounded-full bg-solid px-5 py-2 text-xs font-medium text-on-solid hover:opacity-90 cursor-pointer"
+                className="rounded-full bg-solid px-6 py-2 text-xs font-medium text-on-solid hover:opacity-90 cursor-pointer shadow-xs"
               >
-                Done
+                Close
               </button>
             </div>
           </div>

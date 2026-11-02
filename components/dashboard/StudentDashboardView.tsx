@@ -8,9 +8,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { calculateGuidance } from "@/lib/attendance/calc";
 import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
 import { StudentSubjectDetailModal } from "./StudentSubjectDetailModal";
-import { BranchTimetableView } from "@/components/timetable/BranchTimetableView";
+import { BranchTimetableView, getCourseClassType, getCourseDisplayTitle } from "@/components/timetable/BranchTimetableView";
 import { StudentNoticesView } from "@/components/notices/StudentNoticesView";
-import { resolveBranchFromRollOrEmail, BRANCH_TIMETABLES, PERIOD_SLOTS, type DayOfWeek } from "@/lib/timetable/first-year-data";
+import { resolveBranchFromRollOrEmail, resolveSlotCourse, BRANCH_TIMETABLES, PERIOD_SLOTS, type DayOfWeek } from "@/lib/timetable/first-year-data";
 import { inferStudentFromRollOrEmail } from "@/lib/roster/validate";
 import { useStudentNav, type StudentNavView } from "@/components/layout/StudentAppShell";
 import { AttendanceBar, PageHeader, Percent, StatusPill } from "@/components/ui/PortalUI";
@@ -299,23 +299,25 @@ export function StudentDashboardView({
       const period = PERIOD_SLOTS[idx];
       if (!period || period.isBreak) return;
 
-      const course = timetable.courses[slotCode];
+      const course = resolveSlotCourse(timetable, slotCode);
       if (!course) return;
 
       const [startH, startM] = period.startTime.split(":").map(Number);
       const [endH, endM] = period.endTime.split(":").map(Number);
       const startMinutes = startH * 60 + startM;
       const endMinutes = endH * 60 + endM;
+      const classType = getCourseClassType(course);
+      const displayTitle = getCourseDisplayTitle(course);
 
       sessionsList.push({
         slotId: period.id,
         start: period.startTime,
         end: period.endTime,
         code: course.code,
-        title: course.name,
-        type: course.type,
+        title: displayTitle,
+        type: `${classType} · ${slotCode}`,
         faculty: course.facultyName,
-        room: course.type === "Lab" ? "Computer Lab 1" : "Academic Block 102",
+        room: classType === "Lab" ? "Computer Lab 1 / ECE Lab" : "Lecture Theatre 102",
         isPast: currentMinutes > endMinutes,
         isNext: currentMinutes >= startMinutes && currentMinutes <= endMinutes,
       });
@@ -327,11 +329,11 @@ export function StudentDashboardView({
         slotId: "P1",
         start: "09:20",
         end: "10:10",
-        code: "CS101",
-        title: "Programming in C",
-        type: "Lecture",
-        faculty: "Dr. Faculty",
-        room: "Academic Block 102",
+        code: "CS1101",
+        title: "Intro to Computer Programming",
+        type: "Lecture · C1",
+        faculty: "Dr. Anoop Jacob Thomas",
+        room: "Lecture Theatre 102",
       };
 
     return { todaySessions: sessionsList, upNextSession: next };
