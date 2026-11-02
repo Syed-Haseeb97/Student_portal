@@ -217,6 +217,43 @@ function isSlotApplicable(slotCode: string, studentBatch?: "1" | "2" | "3" | "al
 }
 
 /**
+ * Resolves dayIndex (0 = Sun .. 6 = Sat) and minutes into the day (0..1439) in Indian Standard Time (IST).
+ * IIIT Tiruchirappalli is located in India (IST, UTC+05:30). Anchoring to IST ensures deterministic,
+ * accurate results across all client devices, international travel, and UTC server environments.
+ */
+export function getISTDateParts(date: Date): { dayIndex: number; currentMinutes: number } {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date);
+  let weekdayStr = "";
+  let hourStr = "0";
+  let minStr = "0";
+  for (const p of parts) {
+    if (p.type === "weekday") weekdayStr = p.value;
+    if (p.type === "hour") hourStr = p.value;
+    if (p.type === "minute") minStr = p.value;
+  }
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  const dayIndex = weekdayMap[weekdayStr] ?? date.getDay();
+  const hour = parseInt(hourStr, 10) % 24;
+  const minute = parseInt(minStr, 10);
+  return { dayIndex, currentMinutes: hour * 60 + minute };
+}
+
+/**
  * Real-time authoritative schedule resolution for students.
  * Accurately determines:
  * 1. Today's full chronological session list with live past/ongoing/next status.
@@ -235,8 +272,7 @@ export function resolveUpcomingSchedule(
     BRANCH_TIMETABLES[branchCode] ||
     BRANCH_TIMETABLES["11"];
 
-  const currentMinutes = referenceDate.getHours() * 60 + referenceDate.getMinutes();
-  const dayIndex = referenceDate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const { dayIndex, currentMinutes } = getISTDateParts(referenceDate);
   const isWeekend = dayIndex === 0 || dayIndex === 6;
 
   const dayMap: Record<number, DayOfWeek> = {

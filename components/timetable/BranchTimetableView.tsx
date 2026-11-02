@@ -37,6 +37,7 @@ export {
   getSlotLabBatch,
   inferLabBatchFromRoll,
   getSlotBadge,
+  getISTDateParts,
   type AcademicClassType,
 } from "@/lib/timetable/schedule-resolver";
 
@@ -46,6 +47,7 @@ import {
   getSlotLabBatch,
   inferLabBatchFromRoll,
   getSlotBadge,
+  getISTDateParts,
   type AcademicClassType,
 } from "@/lib/timetable/schedule-resolver";
 
@@ -107,10 +109,10 @@ export function BranchTimetableView({
   const selectedBranch = allowBranchSwitching ? userSelectedBranch : inferredBranch;
   const timetable: BranchTimetable = BRANCH_TIMETABLES[selectedBranch] || BRANCH_TIMETABLES["11"];
 
-  // Today's day index (0 = Monday, 1 = Tuesday ... 4 = Friday)
+  // Today's day index (0 = Monday, 1 = Tuesday ... 4 = Friday) in IST
   const todayIndex = useMemo(() => {
-    const day = new Date().getDay(); // 0 is Sun, 1 is Mon, 5 is Fri
-    if (day >= 1 && day <= 5) return day - 1;
+    const { dayIndex } = getISTDateParts(new Date());
+    if (dayIndex >= 1 && dayIndex <= 5) return dayIndex - 1;
     return 0; // Default to Monday on weekends
   }, []);
 
@@ -131,8 +133,11 @@ export function BranchTimetableView({
     return () => clearInterval(timer);
   }, []);
 
-  const currentMinutes = liveNow.getHours() * 60 + liveNow.getMinutes();
-  const currentDayOfWeek = liveNow.getDay() - 1; // 0 = Monday
+  const { dayIndex: istDayIndex, currentMinutes } = useMemo(
+    () => getISTDateParts(liveNow),
+    [liveNow]
+  );
+  const currentDayOfWeek = istDayIndex >= 1 && istDayIndex <= 5 ? istDayIndex - 1 : -1;
 
   const isPeriodNow = (dayIndex: number, period: PeriodSlot) => {
     if (dayIndex !== currentDayOfWeek) return false;
