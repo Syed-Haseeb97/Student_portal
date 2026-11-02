@@ -53,13 +53,13 @@ import {
 
 const typeStyle: Record<AcademicClassType, string> = {
   Lecture:
-    "bg-surface border-ink/25 dark:border-white/20 text-ink hover:border-ink/70 dark:hover:border-white/70 hover:shadow-lg hover:shadow-ink/10 dark:hover:shadow-black/60",
+    "bg-surface border-[#78716c] dark:border-[#52604e] text-ink hover:border-ink dark:hover:border-white hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/60",
   Lab:
-    "bg-safe-soft/85 border-safe/50 dark:border-safe/45 text-ink hover:border-safe hover:bg-safe-soft hover:shadow-lg hover:shadow-safe/25 dark:hover:shadow-safe/20",
+    "bg-safe-soft border-safe dark:border-safe/80 text-ink hover:border-safe hover:bg-safe-soft hover:shadow-lg hover:shadow-safe/30 dark:hover:shadow-safe/25",
   Tutorial:
-    "bg-warn-soft/85 border-warn/50 dark:border-warn/45 text-ink hover:border-warn hover:bg-warn-soft hover:shadow-lg hover:shadow-warn/25 dark:hover:shadow-warn/20",
+    "bg-warn-soft border-warn dark:border-warn/80 text-ink hover:border-warn hover:bg-warn-soft hover:shadow-lg hover:shadow-warn/30 dark:hover:shadow-warn/25",
   Activity:
-    "bg-surface border-ink/25 dark:border-white/20 text-ink hover:border-ink/70 dark:hover:border-white/70 hover:shadow-lg hover:shadow-ink/10 dark:hover:shadow-black/60",
+    "bg-surface border-[#78716c] dark:border-[#52604e] text-ink hover:border-ink dark:hover:border-white hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/60",
 };
 
 const typeDot: Record<AcademicClassType, string> = {
@@ -320,7 +320,7 @@ export function BranchTimetableView({
           </div>
 
           {/* DESKTOP WEEK GRID: Precision Height & Zero-Clipping Layout */}
-          <div className="card hidden overflow-x-auto p-4 lg:block shadow-xs border-ink/25 dark:border-white/20">
+          <div className="card hidden overflow-x-auto p-4 lg:block shadow-xs border-[#8c8577] dark:border-[#364033] bg-paper/60">
             <div
               className="grid min-w-[960px] gap-2.5"
               style={{
@@ -341,7 +341,7 @@ export function BranchTimetableView({
                     className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                       isToday
                         ? "bg-solid text-on-solid shadow-xs"
-                        : "text-muted bg-surface/90 border border-ink/25 dark:border-white/20 hover:border-ink/50 dark:hover:border-white/40"
+                        : "text-muted bg-surface border border-[#78716c] dark:border-white/20 hover:border-ink dark:hover:border-white"
                     }`}
                   >
                     <span className="font-semibold">{d}</span>
@@ -368,11 +368,11 @@ export function BranchTimetableView({
                       <span className="w-16 text-right font-mono normal-case tracking-normal text-muted font-medium">
                         {slot.startTime}
                       </span>
-                      <span className="h-px flex-1 bg-ink/20 dark:bg-white/15" />
-                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-ink/25 dark:border-white/20 text-xs font-semibold text-ink shadow-xs transition-transform duration-200 hover:scale-105">
+                      <span className="h-px flex-1 bg-[#8c8577]/50 dark:bg-white/20" />
+                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-[#78716c] dark:border-white/25 text-xs font-semibold text-ink shadow-xs transition-transform duration-200 hover:scale-105">
                         <Clock className="size-3.5 text-safe" /> Lunch Break · 13:00 – 14:00
                       </span>
-                      <span className="h-px flex-1 bg-ink/20 dark:bg-white/15" />
+                      <span className="h-px flex-1 bg-[#8c8577]/50 dark:bg-white/20" />
                     </div>
                   );
                 }
@@ -387,11 +387,11 @@ export function BranchTimetableView({
                       <span className="w-16 text-right font-mono normal-case tracking-normal text-muted/70 font-medium">
                         {slot.startTime}
                       </span>
-                      <span className="h-px flex-1 bg-ink/15 dark:bg-white/10" />
-                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface/90 border border-ink/20 dark:border-white/15 text-[11px] text-muted transition-transform duration-200 hover:scale-105">
+                      <span className="h-px flex-1 bg-[#8c8577]/40 dark:bg-white/15" />
+                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface border border-[#78716c] dark:border-white/20 text-[11px] text-muted transition-transform duration-200 hover:scale-105">
                         <Clock className="size-3 text-muted" /> Tea Break · {slot.startTime} – {slot.endTime}
                       </span>
-                      <span className="h-px flex-1 bg-ink/15 dark:bg-white/10" />
+                      <span className="h-px flex-1 bg-[#8c8577]/40 dark:bg-white/15" />
                     </div>
                   );
                 }
@@ -418,7 +418,7 @@ export function BranchTimetableView({
                         return (
                           <div
                             key={`${day}-${slot.id}`}
-                            className={`rounded-xl border border-dashed border-ink/20 dark:border-white/15 transition-all duration-200 hover:border-ink/40 dark:hover:border-white/30 hover:bg-surface/30 ${
+                            className={`rounded-xl border border-dashed border-[#a8a295] dark:border-[#404c3c] transition-all duration-200 hover:border-[#78716c] dark:hover:border-white/30 hover:bg-surface/30 ${
                               dayIndex === todayIndex ? "bg-raised/40" : "bg-transparent"
                             }`}
                             style={{
@@ -448,12 +448,12 @@ export function BranchTimetableView({
                               gridRow: gridRowNumber,
                             }}
                           >
-                            <div className="flex h-full w-full flex-col justify-between rounded-xl border border-dashed border-ink/25 dark:border-white/20 bg-surface/50 p-3 text-left opacity-60 hover:opacity-100 hover:border-ink/50 dark:hover:border-white/40 hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default transform-gpu will-change-transform">
+                            <div className="flex h-full w-full flex-col justify-between rounded-xl border border-dashed border-[#8c8577] dark:border-[#4d5c48] bg-surface/60 p-3 text-left opacity-75 hover:opacity-100 hover:border-[#645e54] dark:hover:border-white/50 hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default transform-gpu will-change-transform">
                               <div className="flex items-center justify-between text-[11px] font-mono text-muted leading-none">
                                 <span>
                                   {slot.startTime}–{slot.endTime}
                                 </span>
-                                <span className="rounded-full bg-paper border border-ink/25 dark:border-white/20 px-1.5 py-0.5 text-[9px] font-mono font-medium text-muted">
+                                <span className="rounded-full bg-paper border border-[#8c8577]/60 dark:border-white/20 px-1.5 py-0.5 text-[9px] font-mono font-medium text-muted">
                                   Physics Lab · Batch {slotLabBatch}
                                 </span>
                               </div>
@@ -617,10 +617,10 @@ export function BranchTimetableView({
                       <span className="pt-3 font-mono text-xs text-muted">
                         {slot.startTime}
                       </span>
-                      <div className="flex flex-col rounded-xl border border-dashed border-ink/25 dark:border-white/20 bg-surface/50 p-3.5 text-left opacity-65 hover:opacity-100 hover:border-ink/40 transition-all duration-200">
+                      <div className="flex flex-col rounded-xl border border-dashed border-[#8c8577] dark:border-[#4d5c48] bg-surface/60 p-3.5 text-left opacity-75 hover:opacity-100 hover:border-[#645e54] transition-all duration-200">
                         <div className="flex items-center justify-between text-xs font-mono text-muted">
                           <span>{slot.startTime} – {slot.endTime}</span>
-                          <span className="rounded-full bg-paper border border-ink/20 dark:border-white/20 px-2 py-0.5 text-[10px]">
+                          <span className="rounded-full bg-paper border border-[#8c8577]/60 dark:border-white/20 px-2 py-0.5 text-[10px]">
                             Physics Lab · Batch {slotLabBatch}
                           </span>
                         </div>

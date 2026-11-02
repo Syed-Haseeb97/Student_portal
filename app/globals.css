@@ -44,12 +44,12 @@
   --mono: var(--font-mono);
   --sans: var(--font-sans);
 
-  /* Default Light Tokens (Matching D:\downloads\portal_ui) */
+  /* Default Light Tokens (Matching D:\downloads\portal_ui with darkened visible borders) */
   --color-paper: #f5f3ee;
   --color-surface: #ffffff;
   --color-ink: #16181d;
   --color-muted: #5f626a;
-  --color-line: #e5e1d8;
+  --color-line: #c8c2b5;
   --color-safe: #1d6b52;
   --color-safe-soft: #e3efe8;
   --color-accent-soft: #e3efe8;
@@ -68,7 +68,7 @@
   --theme-surface: #ffffff;
   --theme-ink: #16181d;
   --theme-muted: #5f626a;
-  --theme-line: #e5e1d8;
+  --theme-line: #c8c2b5;
   --theme-safe: #1d6b52;
   --theme-safe-soft: #e3efe8;
   --theme-accent-soft: #e3efe8;
@@ -139,7 +139,7 @@ html.light,
   --color-surface: #ffffff;
   --color-ink: #16181d;
   --color-muted: #5f626a;
-  --color-line: #e5e1d8;
+  --color-line: #c8c2b5;
   --color-safe: #1d6b52;
   --color-safe-soft: #e3efe8;
   --color-accent-soft: #e3efe8;
@@ -157,7 +157,7 @@ html.light,
   --theme-surface: #ffffff;
   --theme-ink: #16181d;
   --theme-muted: #5f626a;
-  --theme-line: #e5e1d8;
+  --theme-line: #c8c2b5;
   --theme-safe: #1d6b52;
   --theme-safe-soft: #e3efe8;
   --theme-accent-soft: #e3efe8;
