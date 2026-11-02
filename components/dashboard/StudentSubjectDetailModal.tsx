@@ -4,30 +4,55 @@ import React, { useState, useEffect } from "react";
 import type { StudentSummary, StudentSessionRecord } from "@/lib/api/types";
 import { getSubjectSessionHistory } from "@/lib/api/client";
 import { calculateGuidance } from "@/lib/attendance/calc";
-import { AttendanceProgress } from "@/components/ui/AttendanceProgress";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import {
-  X,
-  BookOpen,
-  Calendar,
-  Clock,
-  MapPin,
-  CheckCircle2,
-  AlertTriangle,
-  RotateCcw,
-  Sparkles,
-  Info,
-  CalendarCheck,
-  CalendarX,
-  FileText,
-} from "lucide-react";
+import { AttendanceBar, Percent, StatusPill } from "@/components/ui/PortalUI";
+import { X, Minus, Plus } from "lucide-react";
 
 interface StudentSubjectDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   summary: StudentSummary | null;
   idToken?: string;
+}
+
+function Stepper({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-sm text-muted">{label}</span>
+      <div className="flex items-center gap-1 rounded-full border border-line bg-surface p-1">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(min, value - 1))}
+          disabled={value <= min}
+          className="grid size-8 place-items-center rounded-full text-ink hover:bg-raised disabled:opacity-30 cursor-pointer"
+          aria-label={`Decrease ${label}`}
+        >
+          <Minus className="size-4" />
+        </button>
+        <span className="w-8 text-center font-mono text-sm font-semibold text-ink">{value}</span>
+        <button
+          type="button"
+          onClick={() => onChange(Math.min(max, value + 1))}
+          disabled={value >= max}
+          className="grid size-8 place-items-center rounded-full text-ink hover:bg-raised disabled:opacity-30 cursor-pointer"
+          aria-label={`Increase ${label}`}
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function StudentSubjectDetailModal({
@@ -38,16 +63,19 @@ export function StudentSubjectDetailModal({
 }: StudentSubjectDetailModalProps) {
   const [sessions, setSessions] = useState<StudentSessionRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "present" | "absent" | "scheduled">("all");
+  const [upcoming, setUpcoming] = useState(10);
+  const [skip, setSkip] = useState(2);
 
   const offeringId = summary?.offeringId;
 
   useEffect(() => {
     if (!isOpen || !offeringId) return;
-
+    setUpcoming(10);
+    setSkip(2);
     let active = true;
 
     (async () => {
+      setLoading(true);
       const res = await getSubjectSessionHistory(offeringId, idToken);
       if (!active) return;
       if (res.data) {
@@ -58,287 +86,220 @@ export function StudentSubjectDetailModal({
       setLoading(false);
     })();
 
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+
     return () => {
       active = false;
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
     };
-  }, [isOpen, offeringId, idToken]);
+  }, [isOpen, offeringId, idToken, onClose]);
 
   if (!isOpen || !summary) return null;
 
   const threshold = summary.thresholdPercent ?? 75;
+  const value = summary.percentage ?? (summary.total > 0 ? (summary.attended / summary.total) * 100 : 0);
+  const safe = value >= threshold;
+  const missed = summary.total - summary.attended;
   const guidance = calculateGuidance(summary.attended, summary.total, threshold);
-  const isCompliant = summary.status === "compliant";
-  const isShortfall = summary.status === "shortfall";
 
-  const filteredSessions = sessions.filter((s) => {
-    if (filter === "all") return true;
-    if (filter === "present") return s.status === "completed" && s.mark === "present";
-    if (filter === "absent") return s.status === "completed" && s.mark === "absent";
-    if (filter === "scheduled") return s.status === "scheduled";
-    return true;
-  });
+  // Bunk planner projection
+  const projectedTotal = summary.total + upcoming;
+  const projectedAttended = summary.attended + Math.max(0, upcoming - skip);
+  const projected = projectedTotal > 0 ? (projectedAttended / projectedTotal) * 100 : 0;
+  const projectedSafe = projected >= threshold;
+
+  // History marks representation
+  const completedSessions = sessions.filter((s) => s.status === "completed");
+  const historyList = completedSessions.length > 0
+    ? completedSessions.map((s) => s.mark === "present")
+    : Array.from({ length: summary.total }, (_, i) => i < summary.attended);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="subject-detail-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200"
-    >
-      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-surface border border-line shadow-2xl relative overflow-hidden">
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-line/60 bg-surface flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-accent px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
-                {summary.courseCode ?? summary.offeringId}
-              </span>
-              <span className="text-xs text-muted">Term: {summary.term ?? "Current Term"}</span>
-              {isCompliant && (
-                <Badge variant="compliant" size="sm">
-                  <CheckCircle2 className="size-3" />
-                  Compliant ({summary.percentage != null ? `${summary.percentage.toFixed(1)}%` : "—"})
-                </Badge>
-              )}
-              {isShortfall && (
-                <Badge variant="shortfall" size="sm">
-                  <AlertTriangle className="size-3" />
-                  Shortfall ({summary.percentage != null ? `${summary.percentage.toFixed(1)}%` : "—"})
-                </Badge>
-              )}
-            </div>
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={summary.courseTitle}>
+      {/* Backdrop */}
+      <button
+        type="button"
+        className="drawer-fade absolute inset-0 bg-black/60 backdrop-blur-[2px] cursor-pointer"
+        onClick={onClose}
+        aria-label="Close"
+      />
 
-            <h2 id="subject-detail-title" className="text-xl sm:text-2xl font-bold tracking-tight text-ink truncate">
-              {summary.courseTitle}
-            </h2>
-          </div>
-
+      {/* Slide-out Drawer */}
+      <aside className="drawer-slide absolute inset-y-0 right-0 flex w-full max-w-lg flex-col overflow-y-auto bg-paper shadow-2xl border-l border-line">
+        {/* Drawer Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-6 py-4 backdrop-blur-md">
+          <span className="font-mono text-xs text-muted">
+            {summary.courseCode ?? summary.offeringId} · {summary.term ?? "Active Term"}
+          </span>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full border border-line bg-canvas text-muted hover:text-ink hover:bg-raised transition-colors cursor-pointer shrink-0"
-            aria-label="Close dialog"
+            className="grid size-9 place-items-center rounded-full border border-line text-muted hover:text-ink hover:bg-raised transition-colors cursor-pointer"
+            aria-label="Close details"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-          {/* Quick Metrics & Guidance Card */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Attendance Progress Card */}
-            <div className="p-4 rounded-2xl bg-canvas border border-line flex items-center gap-4">
-              <AttendanceProgress
-                attended={summary.attended}
-                total={summary.total}
-                percentage={summary.percentage}
-                thresholdPercent={threshold}
-                variant="circular"
-                size="md"
-              />
-              <div className="space-y-1 text-xs font-mono">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted">Total Classes:</span>
-                  <strong className="text-ink font-semibold">{summary.total}</strong>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted">Attended:</span>
-                  <strong className="text-accent font-semibold">{summary.attended}</strong>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted">Missed:</span>
-                  <strong className={`font-semibold ${summary.missed > 0 ? "text-risk" : "text-muted"}`}>
-                    {summary.missed}
-                  </strong>
-                </div>
-                <div className="flex items-center justify-between gap-3 pt-0.5 border-t border-line/50 text-[10px]">
-                  <span className="text-muted">Req. Policy:</span>
-                  <span className="text-muted font-medium">{threshold}% minimum</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Presnt Guidance & Bunk Margin Card */}
-            <div className="p-4 rounded-2xl bg-canvas border border-line flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
-                  <Sparkles className="size-3.5 text-accent" />
-                  <span>Presnt Bunk Engine</span>
-                </div>
-                {isCompliant ? (
-                  <div>
-                    <h4 className="text-sm font-semibold text-accent">
-                      {guidance.sessionsCanMiss > 0
-                        ? `Safe Bunk Margin: ${guidance.sessionsCanMiss} ${guidance.sessionsCanMiss === 1 ? "Class" : "Classes"}`
-                        : "Attendance Exactly at 75%"}
-                    </h4>
-                    <p className="mt-1 text-xs text-muted leading-relaxed">
-                      {guidance.sessionsCanMiss > 0
-                        ? `You can safely miss the next ${guidance.sessionsCanMiss} ${guidance.sessionsCanMiss === 1 ? "session" : "sessions"} without dipping below the required 75% mark.`
-                        : "You are currently right at the 75% boundary. Any additional absence will trigger a shortfall."}
-                    </p>
-                  </div>
-                ) : isShortfall ? (
-                  <div>
-                    <h4 className="text-sm font-semibold text-risk">
-                      Recovery Target: {guidance.sessionsToRecover} Consecutive {guidance.sessionsToRecover === 1 ? "Class" : "Classes"}
-                    </h4>
-                    <p className="mt-1 text-xs text-muted leading-relaxed">
-                      To reach examination eligibility (75%), attend the next{" "}
-                      <strong>{guidance.sessionsToRecover}</strong> consecutive class sessions without absence.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted">
-                    No completed sessions recorded yet. Attendance margin will compute once sessions begin.
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1 text-[11px] text-muted/70 pt-2 border-t border-line/40 mt-2">
-                <Info className="size-3 text-accent shrink-0" />
-                <span>Computed per course independently.</span>
-              </div>
-            </div>
+        {/* Content Body */}
+        <div className="space-y-8 p-6">
+          <div>
+            <StatusPill safe={safe} />
+            <h2 className="mt-4 font-serif text-3xl sm:text-4xl leading-tight text-ink">
+              {summary.courseTitle}
+            </h2>
+            {summary.term && (
+              <p className="mt-1 text-sm text-muted">Term: {summary.term}</p>
+            )}
           </div>
 
-          {/* Session Attendance Log (presnt parity) */}
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-bold tracking-tight text-ink flex items-center gap-1.5">
-                  <Calendar className="size-4 text-accent" />
-                  <span>Session Attendance History</span>
-                </h3>
-                <p className="text-xs text-muted">
-                  Roll-call records submitted by faculty for this offering
+          {/* Stats Card */}
+          <div className="card p-6">
+            <Percent value={value} className={`text-6xl sm:text-7xl ${safe ? "text-ink" : "text-risk"}`} />
+            <AttendanceBar value={value} threshold={threshold} className="mt-6" />
+
+            <div className="mt-6 grid grid-cols-3 divide-x divide-line text-center border-t border-line/60 pt-4">
+              {[
+                ["Attended", summary.attended],
+                ["Missed", missed],
+                ["Held", summary.total],
+              ].map(([label, n]) => (
+                <div key={label}>
+                  <p className="font-serif text-3xl text-ink">{n}</p>
+                  <p className="mt-1 text-xs text-muted">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            <p
+              className={`mt-6 rounded-xl px-4 py-3 text-sm leading-relaxed ${
+                safe ? "bg-safe-soft text-safe" : "bg-risk-soft text-risk"
+              }`}
+            >
+              {safe
+                ? guidance.sessionsCanMiss > 0
+                  ? `You can skip up to ${guidance.sessionsCanMiss} classes and stay above the ${threshold}% requirement.`
+                  : `You are on track (≥ ${threshold}%), but cannot afford to miss the next session.`
+                : guidance.sessionsToRecover > 0
+                ? `Attend the next ${guidance.sessionsToRecover} classes in a row to get back to ${threshold}%.`
+                : `Currently below the ${threshold}% statutory attendance requirement.`}
+            </p>
+          </div>
+
+          {/* Bunk Planner Section */}
+          <section>
+            <h3 className="font-serif text-2xl text-ink">Bunk planner</h3>
+            <p className="mt-1 text-sm text-muted">
+              Simulate upcoming attendance before deciding whether to take leave.
+            </p>
+            <div className="card mt-4 space-y-4 p-5">
+              <Stepper
+                label="Upcoming classes"
+                value={upcoming}
+                min={1}
+                max={30}
+                onChange={(v) => {
+                  setUpcoming(v);
+                  setSkip((s) => Math.min(s, v));
+                }}
+              />
+              <Stepper
+                label="Classes I’ll skip"
+                value={skip}
+                min={0}
+                max={upcoming}
+                onChange={setSkip}
+              />
+
+              <div className="flex items-end justify-between border-t border-line pt-4">
+                <div>
+                  <p className="text-xs text-muted">Projected attendance</p>
+                  <Percent
+                    value={projected}
+                    className={`mt-2 block text-5xl ${projectedSafe ? "text-safe" : "text-risk"}`}
+                  />
+                </div>
+                <p
+                  className={`max-w-[11rem] text-right text-xs leading-relaxed ${
+                    projectedSafe ? "text-safe" : "text-risk"
+                  }`}
+                >
+                  {projectedSafe
+                    ? "Safe — you stay above the 75% requirement."
+                    : "This would put you below the 75% requirement."}
                 </p>
               </div>
 
-              {/* Filter tabs */}
-              <div className="flex items-center gap-1 bg-canvas p-1 rounded-full border border-line text-[10px] font-mono">
-                {(["all", "present", "absent", "scheduled"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setFilter(tab)}
-                    className={`px-3 py-1 rounded-full font-bold uppercase transition-colors cursor-pointer ${
-                      filter === tab
-                        ? "bg-[#283226] text-accent border border-accent/40 shadow-xs"
-                        : "text-muted hover:text-ink"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <AttendanceBar value={projected} threshold={threshold} />
+            </div>
+          </section>
+
+          {/* Session History */}
+          <section>
+            <div className="flex items-end justify-between">
+              <h3 className="font-serif text-2xl text-ink">Session history</h3>
+              <div className="flex gap-4 text-xs text-muted font-mono">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-sm bg-safe" /> Present
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-sm bg-risk" /> Absent
+                </span>
               </div>
             </div>
 
             {loading ? (
-              <div className="p-8 text-center text-muted text-xs flex items-center justify-center gap-2">
-                <RotateCcw className="size-4 animate-spin text-accent" />
-                <span>Loading session history...</span>
-              </div>
-            ) : filteredSessions.length === 0 ? (
-              <div className="p-8 text-center rounded-2xl border border-dashed border-line bg-canvas/40">
-                <BookOpen className="size-6 text-muted mx-auto mb-2 opacity-50" />
-                <p className="text-xs text-muted font-medium">No sessions found matching this view.</p>
+              <div className="mt-4 rounded-xl border border-line p-6 text-center text-xs text-muted">
+                Loading session logs...
               </div>
             ) : (
-              <div className="divide-y divide-line/60 rounded-2xl border border-line bg-canvas overflow-hidden">
-                {filteredSessions.map((session) => {
-                  const isPresent = session.status === "completed" && session.mark === "present";
-                  const isAbsent = session.status === "completed" && session.mark === "absent";
-                  const isCancelled = session.status === "cancelled";
-                  const isScheduled = session.status === "scheduled";
+              <>
+                <div className="mt-4 grid grid-cols-12 gap-1.5">
+                  {historyList.map((isPresent, i) => (
+                    <span
+                      key={i}
+                      title={`Session ${i + 1} · ${isPresent ? "Present" : "Absent"}`}
+                      className={`aspect-square rounded-[4px] ${
+                        isPresent ? "bg-safe" : "bg-risk"
+                      }`}
+                    />
+                  ))}
+                </div>
 
-                  return (
-                    <div
-                      key={session.id}
-                      className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-surface/50 transition-colors"
-                    >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap text-xs">
-                          <span className="font-semibold text-ink flex items-center gap-1">
-                            <Calendar className="size-3 text-muted" />
-                            {session.sessionDate}
-                          </span>
-                          {session.startTime && (
-                            <>
-                              <span className="text-muted/40">•</span>
-                              <span className="text-muted flex items-center gap-1">
-                                <Clock className="size-3" />
-                                {session.startTime} {session.endTime ? `– ${session.endTime}` : ""}
-                              </span>
-                            </>
-                          )}
-                          {session.room && (
-                            <>
-                              <span className="text-muted/40">•</span>
-                              <span className="text-muted flex items-center gap-1">
-                                <MapPin className="size-3" />
-                                {session.room}
-                              </span>
-                            </>
-                          )}
+                {completedSessions.length > 0 && (
+                  <div className="mt-4 divide-y divide-line rounded-xl border border-line bg-surface max-h-48 overflow-y-auto">
+                    {completedSessions.slice(-6).reverse().map((s) => (
+                      <div key={s.id} className="flex items-center justify-between p-3 text-xs">
+                        <div className="min-w-0">
+                          <p className="font-medium text-ink font-mono">{s.sessionDate}</p>
+                          <p className="text-muted text-[11px]">{s.room ? `Room ${s.room}` : s.topic || "Lecture Session"}</p>
                         </div>
-
-                        {session.topic && (
-                          <p className="text-xs text-muted flex items-center gap-1.5 pt-0.5">
-                            <FileText className="size-3 text-accent shrink-0" />
-                            <span className="truncate">{session.topic}</span>
-                          </p>
-                        )}
-
-                        {isCancelled && session.cancelReason && (
-                          <p className="text-[11px] text-muted/80 italic pt-0.5">
-                            Cancelled: {session.cancelReason}
-                          </p>
-                        )}
+                        <span
+                          className={`font-mono font-semibold px-2 py-0.5 rounded-full text-[10px] ${
+                            s.mark === "present"
+                              ? "bg-safe-soft text-safe"
+                              : "bg-risk-soft text-risk"
+                          }`}
+                        >
+                          {s.mark?.toUpperCase()}
+                        </span>
                       </div>
-
-                      {/* Status Mark Badge */}
-                      <div className="shrink-0 self-start sm:self-auto">
-                        {isPresent && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                            <CalendarCheck className="size-3.5" />
-                            Present
-                          </span>
-                        )}
-                        {isAbsent && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/25">
-                            <CalendarX className="size-3.5" />
-                            Absent
-                          </span>
-                        )}
-                        {isScheduled && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-sky-500/10 text-sky-400 border border-sky-500/25">
-                            <Clock className="size-3.5" />
-                            Scheduled
-                          </span>
-                        )}
-                        {isCancelled && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-line text-muted border border-line">
-                            Cancelled
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-line/60 bg-surface flex items-center justify-end">
-          <Button variant="secondary" size="sm" onClick={onClose}>
-            Close
-          </Button>
+            <p className="mt-4 text-xs leading-relaxed text-muted">
+              Records are verified by the course instructor. Contact them within 48 hours if a
+              session is marked incorrectly.
+            </p>
+          </section>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

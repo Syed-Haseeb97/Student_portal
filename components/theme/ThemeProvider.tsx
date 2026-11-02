@@ -13,12 +13,17 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_STORAGE_KEY = "iiitt-theme";
+const ALT_THEME_STORAGE_KEY = "student-portal-theme";
 
 function applyThemeClass(t: Theme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  root.classList.remove("dark", "light");
-  root.classList.add(t);
+  root.classList.remove("dark", "light", "theme-dark");
+  if (t === "dark") {
+    root.classList.add("dark", "theme-dark");
+  } else {
+    root.classList.add("light");
+  }
   root.setAttribute("data-theme", t);
   root.style.colorScheme = t;
 }
@@ -27,7 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
       try {
-        const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+        const stored = (localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(ALT_THEME_STORAGE_KEY)) as Theme | null;
         if (stored === "light" || stored === "dark") return stored;
         if (window.matchMedia("(prefers-color-scheme: light)").matches) return "light";
       } catch {
@@ -50,6 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       applyThemeClass(nextTheme);
       try {
         localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        localStorage.setItem(ALT_THEME_STORAGE_KEY, nextTheme);
       } catch {
         // Storage quota / disabled
       }

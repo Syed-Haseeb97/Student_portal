@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AppShell } from "@/components/layout/AppShell";
+import { StudentAppShell } from "@/components/layout/StudentAppShell";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { StudentDashboardView } from "@/components/dashboard/StudentDashboardView";
 import { isMockModeEnabled } from "@/lib/api/client";
@@ -11,9 +11,9 @@ export default function StudentDashboardPage() {
 
   return (
     <RoleGuard allowedRoles={["student", "admin"]}>
-      <AppShell currentPath="/dashboard">
+      <StudentAppShell currentPath="/dashboard">
         <StudentDashboardView isMockDefault={isMock} />
-      </AppShell>
+      </StudentAppShell>
     </RoleGuard>
   );
 }

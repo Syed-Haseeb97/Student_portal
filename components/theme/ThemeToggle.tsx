@@ -17,14 +17,14 @@ export function ThemeToggle({ className = "", showLabel = false }: ThemeTogglePr
     <button
       type="button"
       onClick={toggleTheme}
-      className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-full border border-line bg-canvas hover:bg-raised text-muted hover:text-ink transition-all cursor-pointer touch-manipulation active:scale-95 focus-visible:outline-2 focus-visible:outline-accent ${className}`}
+      className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-full border border-line bg-paper hover:bg-raised text-muted hover:text-ink transition-all cursor-pointer touch-manipulation active:scale-95 focus-visible:outline-2 focus-visible:outline-ink ${className}`}
       title={isDark ? "Switch to light theme" : "Switch to dark theme"}
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
     >
       {isDark ? (
-        <Sun className="size-3.5 sm:size-4 text-amber-300 transition-transform duration-200 rotate-0 hover:rotate-45" />
+        <Sun className="size-3.5 sm:size-4 text-warn transition-transform duration-200 rotate-0 hover:rotate-45" />
       ) : (
-        <Moon className="size-3.5 sm:size-4 text-sky-600 transition-transform duration-200 rotate-0 hover:-rotate-12" />
+        <Moon className="size-3.5 sm:size-4 text-safe transition-transform duration-200 rotate-0 hover:-rotate-12" />
       )}
       {showLabel && (
         <span className="ml-2 text-xs font-mono font-medium">

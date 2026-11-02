@@ -39,14 +39,14 @@ export function AttendanceProgress({
   const colorClass = isNoData
     ? "text-muted"
     : isCompliant
-    ? "text-[#d9fa58] font-bold font-mono"
-    : "text-rose-400 font-bold font-mono";
+    ? "text-safe font-bold font-mono"
+    : "text-risk font-bold font-mono";
 
   const strokeColor = isNoData
-    ? "#3a4537"
+    ? "var(--theme-line)"
     : isCompliant
-    ? "#d9fa58"
-    : "#ef4444";
+    ? "var(--theme-safe)"
+    : "var(--theme-risk)";
 
   if (variant === "linear") {
     const fillPercent = percentage !== null ? Math.min(100, Math.max(0, percentage)) : 0;
@@ -57,7 +57,7 @@ export function AttendanceProgress({
             <span className="text-muted flex items-center gap-1.5 font-mono text-[11px]">
               <span>Attendance</span>
               {showMarkerBadge && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-canvas border border-line text-muted">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-paper border border-line text-muted">
                   Target: {thresholdPercent}%
                 </span>
               )}
@@ -67,20 +67,20 @@ export function AttendanceProgress({
             </span>
           </div>
         )}
-        <div className="relative h-2 w-full rounded-full bg-canvas border border-line overflow-hidden">
+        <div className="relative h-2 w-full rounded-full bg-line overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
               isNoData
                 ? "bg-muted/40"
                 : isCompliant
-                ? "bg-[#d9fa58]"
-                : "bg-rose-500"
+                ? "bg-safe"
+                : "bg-risk"
             }`}
             style={{ width: `${fillPercent}%` }}
           />
           {/* Statutory Threshold Marker */}
           <div
-            className="absolute top-0 bottom-0 w-0.5 bg-white z-10"
+            className="absolute top-0 bottom-0 w-0.5 bg-ink z-10"
             style={{ left: `${thresholdPercent}%` }}
             title={`Required threshold: ${thresholdPercent}%`}
           />
@@ -122,7 +122,7 @@ export function AttendanceProgress({
           cx={dim / 2}
           cy={dim / 2}
           r={radius}
-          stroke="#283226"
+          stroke="var(--theme-line)"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -132,7 +132,7 @@ export function AttendanceProgress({
             cx={dim / 2}
             cy={dim / 2}
             r={radius}
-            stroke="#374151"
+            stroke="var(--theme-muted)"
             strokeWidth={strokeWidth}
             strokeDasharray="4 4"
             fill="none"

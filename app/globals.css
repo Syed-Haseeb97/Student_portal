@@ -1,60 +1,180 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --color-canvas: var(--theme-canvas);
+  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Modern portal_ui tokens */
+  --color-paper: var(--theme-paper);
   --color-surface: var(--theme-surface);
-  --color-raised: var(--theme-raised);
-  --color-line: var(--theme-line);
   --color-ink: var(--theme-ink);
   --color-muted: var(--theme-muted);
+  --color-line: var(--theme-line);
+  --color-safe: var(--theme-safe);
+  --color-safe-soft: var(--theme-safe-soft);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-risk: var(--theme-risk);
+  --color-risk-soft: var(--theme-risk-soft);
+  --color-warn: var(--theme-warn);
+  --color-warn-soft: var(--theme-warn-soft);
+  --color-raised: var(--theme-raised);
+  --color-solid: var(--theme-solid);
+  --color-on-solid: var(--theme-on-solid);
+  --color-hero: var(--theme-hero);
+  --color-on-hero: var(--theme-on-hero);
+
+  /* Legacy & compatibility tokens */
+  --color-canvas: var(--theme-paper);
+  --color-forest: var(--theme-raised);
   --color-accent: var(--theme-accent);
   --color-accent-hover: var(--theme-accent-hover);
   --color-accent-ink: var(--theme-accent-ink);
   --color-olive: #819a35;
-  --color-forest: var(--theme-forest);
   --color-indigo: #819a35;
-  --color-risk: #ef4444;
-  --color-warning: #f59e0b;
+  --color-warning: var(--theme-warn);
 }
 
 :root {
   color-scheme: dark;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
   --mono: var(--font-mono);
-  --sans: var(--font-inter);
+  --sans: var(--font-sans);
 
-  /* Dark Theme Default: Mobility IIITT Dark */
-  --theme-canvas: #171915;
-  --theme-surface: #20261f;
-  --theme-raised: #283226;
-  --theme-line: #2d382b;
-  --theme-ink: #f5f6ed;
-  --theme-muted: #a5b09d;
+  /* Default Dark Tokens (Dark mode is default for IIITT Student Portal) */
+  --theme-paper: #161916;
+  --theme-surface: #20251f;
+  --theme-ink: #f4f1e9;
+  --theme-muted: #a7aea1;
+  --theme-line: #364033;
+  --theme-safe: #8ecf99;
+  --theme-safe-soft: #263b2b;
+  --theme-accent-soft: #263b2b;
+  --theme-risk: #ff9c89;
+  --theme-risk-soft: #482c28;
+  --theme-warn: #e8c77a;
+  --theme-warn-soft: #473b22;
+  --theme-raised: #2a3228;
+  --theme-solid: #34422f;
+  --theme-on-solid: #f4f1e9;
+  --theme-hero: #1d3a2d;
+  --theme-on-hero: #f4f1e9;
+
   --theme-accent: #d9fa58;
   --theme-accent-hover: #e5ff83;
   --theme-accent-ink: #171915;
-  --theme-forest: #20251f;
+
+  /* Direct variable assignments so var(--color-*) works in plain CSS too */
+  --color-paper: var(--theme-paper);
+  --color-surface: var(--theme-surface);
+  --color-ink: var(--theme-ink);
+  --color-muted: var(--theme-muted);
+  --color-line: var(--theme-line);
+  --color-safe: var(--theme-safe);
+  --color-safe-soft: var(--theme-safe-soft);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-risk: var(--theme-risk);
+  --color-risk-soft: var(--theme-risk-soft);
+  --color-warn: var(--theme-warn);
+  --color-warn-soft: var(--theme-warn-soft);
+  --color-raised: var(--theme-raised);
+  --color-solid: var(--theme-solid);
+  --color-on-solid: var(--theme-on-solid);
+  --color-hero: var(--theme-hero);
+  --color-on-hero: var(--theme-on-hero);
+  --color-canvas: var(--theme-paper);
+}
+
+.theme-dark,
+html.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --theme-paper: #161916;
+  --theme-surface: #20251f;
+  --theme-ink: #f4f1e9;
+  --theme-muted: #a7aea1;
+  --theme-line: #364033;
+  --theme-safe: #8ecf99;
+  --theme-safe-soft: #263b2b;
+  --theme-accent-soft: #263b2b;
+  --theme-risk: #ff9c89;
+  --theme-risk-soft: #482c28;
+  --theme-warn: #e8c77a;
+  --theme-warn-soft: #473b22;
+  --theme-raised: #2a3228;
+  --theme-solid: #34422f;
+  --theme-on-solid: #f4f1e9;
+  --theme-hero: #1d3a2d;
+  --theme-on-hero: #f4f1e9;
+  --theme-accent: #d9fa58;
+  --theme-accent-hover: #e5ff83;
+  --theme-accent-ink: #171915;
+
+  --color-paper: var(--theme-paper);
+  --color-surface: var(--theme-surface);
+  --color-ink: var(--theme-ink);
+  --color-muted: var(--theme-muted);
+  --color-line: var(--theme-line);
+  --color-safe: var(--theme-safe);
+  --color-safe-soft: var(--theme-safe-soft);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-risk: var(--theme-risk);
+  --color-risk-soft: var(--theme-risk-soft);
+  --color-warn: var(--theme-warn);
+  --color-warn-soft: var(--theme-warn-soft);
+  --color-raised: var(--theme-raised);
+  --color-solid: var(--theme-solid);
+  --color-on-solid: var(--theme-on-solid);
+  --color-hero: var(--theme-hero);
+  --color-on-hero: var(--theme-on-hero);
+  --color-canvas: var(--theme-paper);
 }
 
 html.light,
-[data-theme="light"] {
+[data-theme="light"]:not(.theme-dark) {
   color-scheme: light;
-
-  /* Light Theme: Crisp, high-contrast institutional aesthetic */
-  --theme-canvas: #f6f8f4;
+  --theme-paper: #f5f3ee;
   --theme-surface: #ffffff;
-  --theme-raised: #edf2e8;
-  --theme-line: #d3decd;
-  --theme-ink: #141812;
-  --theme-muted: #566450;
+  --theme-ink: #16181d;
+  --theme-muted: #5f626a;
+  --theme-line: #e5e1d8;
+  --theme-safe: #1d6b52;
+  --theme-safe-soft: #e3efe8;
+  --theme-accent-soft: #e3efe8;
+  --theme-risk: #b53a26;
+  --theme-risk-soft: #f8e9e4;
+  --theme-warn: #86560d;
+  --theme-warn-soft: #f6ecd9;
+  --theme-raised: #f5f3ee;
+  --theme-solid: #16181d;
+  --theme-on-solid: #f5f3ee;
+  --theme-hero: #16181d;
+  --theme-on-hero: #f5f3ee;
   --theme-accent: #5e800c;
   --theme-accent-hover: #4e6b0a;
   --theme-accent-ink: #ffffff;
-  --theme-forest: #eef3eb;
+
+  --color-paper: var(--theme-paper);
+  --color-surface: var(--theme-surface);
+  --color-ink: var(--theme-ink);
+  --color-muted: var(--theme-muted);
+  --color-line: var(--theme-line);
+  --color-safe: var(--theme-safe);
+  --color-safe-soft: var(--theme-safe-soft);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-risk: var(--theme-risk);
+  --color-risk-soft: var(--theme-risk-soft);
+  --color-warn: var(--theme-warn);
+  --color-warn-soft: var(--theme-warn-soft);
+  --color-raised: var(--theme-raised);
+  --color-solid: var(--theme-solid);
+  --color-on-solid: var(--theme-on-solid);
+  --color-hero: var(--theme-hero);
+  --color-on-hero: var(--theme-on-hero);
+  --color-canvas: var(--theme-paper);
 }
 
 * {
@@ -63,9 +183,10 @@ html.light,
 
 body {
   margin: 0;
-  background-color: var(--theme-canvas);
+  min-width: 320px;
+  background-color: var(--theme-paper);
   color: var(--theme-ink);
-  font-family: var(--sans);
+  font-family: var(--font-sans);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -74,7 +195,45 @@ body {
 }
 
 code, kbd, samp, pre {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: var(--theme-safe-soft);
+  color: var(--theme-ink);
+}
+
+@layer components {
+  .card {
+    border-radius: 1rem;
+    border: 1px solid var(--theme-line);
+    background: var(--theme-surface);
+  }
+}
+
+/* Animations matching portal_ui */
+@keyframes view-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes drawer-slide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.view-enter { animation: view-enter 0.35s ease-out; }
+.drawer-slide { animation: drawer-slide 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.drawer-fade { animation: fade 0.25s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Mobility IIITT micro-interactions & utility classes */
@@ -94,7 +253,7 @@ code, kbd, samp, pre {
   box-shadow: 0 0 18px -3px rgba(239, 68, 68, 0.25);
 }
 
-/* Sharp micro badge styling matching mobility-iiitt-mu.vercel.app */
+/* Sharp micro badge styling */
 .sharp-badge {
   display: inline-flex;
   align-items: center;
@@ -102,7 +261,7 @@ code, kbd, samp, pre {
   padding: 0.2rem 0.55rem;
   border-radius: 3px;
   font-size: 0.72rem;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-weight: 500;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -126,15 +285,15 @@ code, kbd, samp, pre {
 .landing-grid {
   background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(45, 56, 43, 0.35) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(45, 56, 43, 0.35) 1px, transparent 1px);
+    linear-gradient(to right, rgba(54, 64, 51, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(54, 64, 51, 0.35) 1px, transparent 1px);
 }
 
 html.light .landing-grid,
 [data-theme="light"] .landing-grid {
   background-image: 
-    linear-gradient(to right, rgba(180, 195, 175, 0.4) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(180, 195, 175, 0.4) 1px, transparent 1px);
+    linear-gradient(to right, rgba(229, 225, 216, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(229, 225, 216, 0.6) 1px, transparent 1px);
 }
 
 .landing-eyebrow {
@@ -146,11 +305,18 @@ html.light .landing-grid,
   border: 1px solid rgba(217, 250, 88, 0.3);
   background: rgba(217, 250, 88, 0.05);
   color: #d9fa58;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+html.light .landing-eyebrow,
+[data-theme="light"] .landing-eyebrow {
+  border: 1px solid rgba(29, 107, 82, 0.35);
+  background: rgba(29, 107, 82, 0.1);
+  color: #1d6b52;
 }
 
 /* Mobile touch & tap optimization for buttons, links, and controls */
@@ -162,11 +328,4 @@ input[type="submit"],
 input[type="reset"] {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-}
-
-html.light .landing-eyebrow,
-[data-theme="light"] .landing-eyebrow {
-  border: 1px solid rgba(94, 128, 12, 0.35);
-  background: rgba(94, 128, 12, 0.1);
-  color: #5e800c;
 }
