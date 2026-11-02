@@ -103,10 +103,12 @@ test("Timetable: UI helpers correctly format batches, class types, and titles", 
   assert.equal(getCourseDisplayTitle(physicsLab, "F31"), "Physics Lab (Batch 3)");
   assert.equal(getCourseDisplayTitle(programmingTheory, "C1"), "Computer Programming");
 
-  // getSlotLabBatch
+  // getSlotLabBatch: only Physics Lab is divided into batches; Programming & Graphics are common to all
   assert.equal(getSlotLabBatch("F11"), "1");
   assert.equal(getSlotLabBatch("F22"), "2");
   assert.equal(getSlotLabBatch("F33"), "3");
+  assert.equal(getSlotLabBatch("G11"), null);
+  assert.equal(getSlotLabBatch("D11"), null);
   assert.equal(getSlotLabBatch("C1"), null);
 
   // inferLabBatchFromRoll
@@ -118,5 +120,7 @@ test("Timetable: UI helpers correctly format batches, class types, and titles", 
   // getSlotBadge
   assert.equal(getSlotBadge("F11", "Lab"), "F11 · Batch 1 (1/3)");
   assert.equal(getSlotBadge("F22", "Lab"), "F22 · Batch 2 (2/3)");
+  assert.equal(getSlotBadge("G11", "Lab"), "G11 · Lab (1/3)");
+  assert.equal(getSlotBadge("D11", "Lab"), "D11 · Lab (1/3)");
   assert.equal(getSlotBadge("C1", "Lecture"), "C1 · Lecture");
 });

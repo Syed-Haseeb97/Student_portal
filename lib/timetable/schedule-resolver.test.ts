@@ -85,6 +85,32 @@ test("Schedule Resolver: Weekend (Saturday) points to Monday's first class", () 
   assert.equal(result.upNextSession.code, "CS1101");
 });
 
+test("Schedule Resolver: Programming Lab (Wednesday) and Graphics Lab (Monday) are common to all batches", () => {
+  // Wednesday at 10:20 AM (during Programming Lab G11 at 10:10 - 11:00)
+  const wednesdayDuringLab = new Date("2026-11-04T10:20:00+05:30");
+
+  for (const batch of ["1", "2", "3"] as const) {
+    const result = resolveUpcomingSchedule("11", batch, wednesdayDuringLab);
+    assert.ok(result.ongoingSession, `Ongoing session should exist for batch ${batch}`);
+    assert.equal(result.ongoingSession.code, "CS1102");
+    assert.equal(result.ongoingSession.start, "10:10");
+    assert.equal(result.ongoingSession.title, "Programming Lab");
+    assert.equal(result.heroBadge.status, "ongoing");
+  }
+
+  // Monday at 14:20 (during Engineering Graphics D11 at 14:00 - 14:50)
+  const mondayDuringGraphics = new Date("2026-11-02T14:20:00+05:30");
+
+  for (const batch of ["1", "2", "3"] as const) {
+    const result = resolveUpcomingSchedule("11", batch, mondayDuringGraphics);
+    assert.ok(result.ongoingSession, `Ongoing session should exist for batch ${batch}`);
+    assert.equal(result.ongoingSession.code, "ME1101");
+    assert.equal(result.ongoingSession.start, "14:00");
+    assert.equal(result.ongoingSession.title, "Engineering Graphics");
+    assert.equal(result.heroBadge.status, "ongoing");
+  }
+});
+
 test("Schedule Resolver: Friday evening points to Monday's first class", () => {
   // Friday Nov 6, 2026 at 18:00:00 IST (after all classes ended)
   const fridayEvening = new Date("2026-11-06T18:00:00+05:30");

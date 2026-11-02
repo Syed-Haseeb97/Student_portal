@@ -44,22 +44,14 @@ export function getCourseDisplayTitle(course: CourseDetail, slotCode?: string): 
   const code = course.code.toUpperCase().trim();
   const upperSlot = slotCode?.toUpperCase().trim() || "";
 
-  // Batch-specific lab titles
+  // Batch-specific lab titles (Physics Lab only is divided by student practical batches)
   if (upperSlot.startsWith("F1")) return "Physics Lab (Batch 1)";
   if (upperSlot.startsWith("F2")) return "Physics Lab (Batch 2)";
   if (upperSlot.startsWith("F3")) return "Physics Lab (Batch 3)";
-  if (upperSlot.startsWith("G1") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 1)";
-  if (upperSlot.startsWith("G2") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 2)";
-  if (upperSlot.startsWith("G3") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 3)";
-  if (upperSlot.startsWith("D1") && code === "ME1101") return "Graphics Lab (Batch 1)";
-  if (upperSlot.startsWith("D2") && code === "ME1101") return "Graphics Lab (Batch 2)";
-  if (upperSlot.startsWith("D3") && code === "ME1101") return "Graphics Lab (Batch 3)";
-  if (upperSlot.startsWith("E1") && code === "EC1103") return "Electronics Lab (Batch 1)";
-  if (upperSlot.startsWith("E2") && code === "EC1103") return "Electronics Lab (Batch 2)";
-  if (upperSlot.startsWith("H1") && code === "EC1102") return "Electronics Lab (Batch 1)";
 
   if (code === "CS1101") return "Computer Programming";
-  if (code === "CS1102") return "Programming Lab";
+  if (code === "CS1102" || code === "CS1104") return "Programming Lab";
+  if (code === "ME1101") return "Engineering Graphics";
   if (code === "PH1101") return "Physics";
   if (code === "PH1102") return "Physics Lab";
   if (code === "MA1103") return "Calculus & Matrices";
@@ -93,12 +85,15 @@ export function getCourseDisplayTitle(course: CourseDetail, slotCode?: string): 
 
 /**
  * Identifies which lab batch (Batch 1, 2, or 3) a multi-period practical session belongs to.
+ * NOTE: As per institute scheduling, only Physics Laboratory (slots F1x, F2x, F3x) is divided
+ * into student practical batches. Programming Lab (CS1102) and Engineering Graphics (ME1101)
+ * are common to and attended by all batches together.
  */
 export function getSlotLabBatch(slotCode: string): "1" | "2" | "3" | null {
   const upper = slotCode.toUpperCase().trim();
-  if (upper.startsWith("F1") || upper.startsWith("G1") || upper.startsWith("D1") || upper.startsWith("E1") || upper.startsWith("H1")) return "1";
-  if (upper.startsWith("F2") || upper.startsWith("G2") || upper.startsWith("D2") || upper.startsWith("E2") || upper.startsWith("H2")) return "2";
-  if (upper.startsWith("F3") || upper.startsWith("G3") || upper.startsWith("D3") || upper.startsWith("E3") || upper.startsWith("H3")) return "3";
+  if (upper.startsWith("F1")) return "1";
+  if (upper.startsWith("F2")) return "2";
+  if (upper.startsWith("F3")) return "3";
   return null;
 }
 
@@ -124,7 +119,7 @@ export function inferLabBatchFromRoll(rollOrEmail?: string): "1" | "2" | "3" | n
 export function getSlotBadge(slotCode: string, classType: AcademicClassType): string {
   const upper = slotCode.toUpperCase().trim();
 
-  // Multi-slot physics lab batches
+  // Multi-slot physics lab batches (only Physics Lab is divided by practical batch)
   if (upper === "F11") return "F11 · Batch 1 (1/3)";
   if (upper === "F12") return "F12 · Batch 1 (2/3)";
   if (upper === "F13") return "F13 · Batch 1 (3/3)";
@@ -135,19 +130,24 @@ export function getSlotBadge(slotCode: string, classType: AcademicClassType): st
   if (upper === "F32") return "F32 · Batch 3 (2/3)";
   if (upper === "F33") return "F33 · Batch 3 (3/3)";
 
-  // Multi-slot programming lab
-  if (upper === "G11") return "G11 · Batch 1 (1/3)";
-  if (upper === "G12") return "G12 · Batch 1 (2/3)";
-  if (upper === "G13") return "G13 · Batch 1 (3/3)";
+  // Multi-slot programming lab (same for all batches)
+  if (upper === "G11") return "G11 · Lab (1/3)";
+  if (upper === "G12") return "G12 · Lab (2/3)";
+  if (upper === "G13") return "G13 · Lab (3/3)";
 
-  // Graphics lab
-  if (upper === "D11") return "D11 · Batch 1 (1/3)";
-  if (upper === "D12") return "D12 · Batch 1 (2/3)";
-  if (upper === "D13") return "D13 · Batch 1 (3/3)";
+  // Multi-slot engineering graphics (same for all batches)
+  if (upper === "D11") return "D11 · Lab (1/3)";
+  if (upper === "D12") return "D12 · Lab (2/3)";
+  if (upper === "D13") return "D13 · Lab (3/3)";
 
-  // Electronics lab
-  if (upper === "E11") return "E11 · Batch 1 (1/2)";
-  if (upper === "E12") return "E12 · Batch 1 (2/2)";
+  // Electronics session
+  if (upper === "E11") return "E11 · (1/2)";
+  if (upper === "E12") return "E12 · (2/2)";
+
+  // Mechanical / Electronics practical blocks (ECE/VLSI)
+  if (upper === "H11") return "H11 · Lab (1/3)";
+  if (upper === "H12") return "H12 · Lab (2/3)";
+  if (upper === "H13") return "H13 · Lab (3/3)";
 
   // NSS / NCC
   if (upper.startsWith("H") || upper === "NSS" || upper === "NCC") return `${upper} · Activity`;

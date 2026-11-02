@@ -204,7 +204,7 @@ export function BranchTimetableView({
         {/* Lab Practical Batch Filter Switcher */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-line/60">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-muted">Practical Lab Batch:</span>
+            <span className="font-mono text-xs text-muted">Physics Lab Batch:</span>
             <div className="flex items-center gap-1 rounded-xl border border-line bg-paper p-1">
               {(
                 [
@@ -235,6 +235,9 @@ export function BranchTimetableView({
                 );
               })}
             </div>
+            <span className="font-mono text-[11px] text-muted hidden sm:inline">
+              · Programming & Graphics labs are common to all batches
+            </span>
           </div>
           {inferredLabBatch && (
             <span className="font-mono text-xs text-muted">
@@ -445,7 +448,7 @@ export function BranchTimetableView({
                                   {slot.startTime}–{slot.endTime}
                                 </span>
                                 <span className="rounded-full bg-paper border border-line px-1.5 py-0.5 text-[9px] font-mono font-medium text-muted">
-                                  Batch {slotLabBatch} Lab
+                                  Physics Lab · Batch {slotLabBatch}
                                 </span>
                               </div>
                               <div className="my-auto">
@@ -453,7 +456,7 @@ export function BranchTimetableView({
                                   {displayTitle}
                                 </p>
                                 <p className="text-[10px] text-muted/80 font-mono mt-0.5">
-                                  Free for Batch {selectedLabBatch}
+                                  Free for Batch {selectedLabBatch} (Lab held on {slotLabBatch === "1" ? "Mon" : slotLabBatch === "2" ? "Tue" : "Fri"})
                                 </p>
                               </div>
                               <div className="flex items-center justify-between text-[10px] font-mono text-muted/60 leading-none">
@@ -609,14 +612,14 @@ export function BranchTimetableView({
                         <div className="flex items-center justify-between text-xs font-mono text-muted">
                           <span>{slot.startTime} – {slot.endTime}</span>
                           <span className="rounded-full bg-paper border border-line px-2 py-0.5 text-[10px]">
-                            Batch {slotLabBatch} Lab
+                            Physics Lab · Batch {slotLabBatch}
                           </span>
                         </div>
                         <p className="mt-1 font-medium text-muted text-xs">
                           {displayTitle}
                         </p>
                         <p className="mt-1 text-[11px] text-muted/80 font-mono">
-                          Self-study / free session for Batch {selectedLabBatch}
+                          Free for Batch {selectedLabBatch} (Lab held on {slotLabBatch === "1" ? "Mon" : slotLabBatch === "2" ? "Tue" : "Fri"})
                         </p>
                       </div>
                     </li>
