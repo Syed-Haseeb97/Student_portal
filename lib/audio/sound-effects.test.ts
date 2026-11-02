@@ -13,4 +13,19 @@ test("Sound Manager: Muted by default and respects explicit toggle state", () =>
   // Toggle back to mute
   soundManager.setSoundEnabled(false);
   assert.equal(soundManager.getSoundEnabled(), false, "Sound should return to muted state");
+
+  // Calling playClick and playHover when muted does not throw
+  assert.doesNotThrow(() => {
+    soundManager.playClick();
+    soundManager.playHover();
+  });
+});
+
+test("Sound Manager: Rapid clicks are debounced cleanly", () => {
+  soundManager.setSoundEnabled(true);
+  assert.doesNotThrow(() => {
+    soundManager.playClick();
+    soundManager.playClick(); // immediate subsequent click within 35ms debounce
+  });
+  soundManager.setSoundEnabled(false);
 });

@@ -14,6 +14,7 @@ class SoundManager {
   private ctx: AudioContext | null = null;
   private isEnabled: boolean = false;
   private lastHoverTime: number = 0;
+  private lastClickTime: number = 0;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -23,6 +24,19 @@ class SoundManager {
         this.isEnabled = stored === "true";
       } catch {
         this.isEnabled = false;
+      }
+
+      // Attach global capture click listener so all clicks across the portal produce tactile audio feedback when un-muted
+      try {
+        window.addEventListener(
+          "click",
+          () => {
+            this.playClick();
+          },
+          { capture: true, passive: true }
+        );
+      } catch {
+        // ignore
       }
     }
   }
@@ -104,9 +118,13 @@ class SoundManager {
 
   /**
    * Crisp tactile pop for element clicks, buttons, and card selections.
+   * Debounced by 35ms to prevent double-firing on synthetic events while ensuring zero latency.
    */
   public playClick(): void {
     if (!this.isEnabled) return;
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (now - this.lastClickTime < 35) return;
+    this.lastClickTime = now;
 
     try {
       const ctx = this.initContext();
