@@ -15,10 +15,6 @@ import { inferStudentFromRollOrEmail } from "@/lib/roster/validate";
 import { useStudentNav, type StudentNavView } from "@/components/layout/StudentAppShell";
 import { AttendanceBar, PageHeader, Percent, StatusPill } from "@/components/ui/PortalUI";
 import {
-  LayoutDashboard,
-  CalendarDays,
-  ClipboardCheck,
-  Bell,
   ArrowUpRight,
   ChevronRight,
   Clock,
@@ -27,8 +23,7 @@ import {
   TriangleAlert,
   Search,
   CheckCircle2,
-  Sparkles,
-  ShieldCheck,
+  RotateCcw,
   GraduationCap,
 } from "lucide-react";
 
@@ -113,9 +108,7 @@ export function StudentDashboardView({
   const [data, setData] = useState<StudentDashboardData | null>(initialData ?? null);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<string | null>(null);
-  const [isMock, setIsMock] = useState<boolean>(isMockDefault);
   const [selectedCourse, setSelectedCourse] = useState<StudentSummary | null>(null);
-  const [mockScenario, setMockScenario] = useState<MockScenario>("normal");
   const [notices, setNotices] = useState<AcademicNotice[]>([]);
 
   // Attendance tab specific states
@@ -139,16 +132,14 @@ export function StudentDashboardView({
   const setUnreadNoticesCount = navContext?.setUnreadNoticesCount;
 
   const loadDashboard = useCallback(
-    async (scenario?: MockScenario) => {
+    async () => {
       setLoading(true);
       setError(null);
 
       const token = idToken ?? (await getIdToken()) ?? undefined;
       const res = await getStudentDashboard(token, {
-        mockScenario: scenario ?? mockScenario,
+        mockScenario: "normal",
       });
-
-      setIsMock(Boolean(res.isMock));
 
       if (res.data) {
         setData(res.data);
@@ -158,7 +149,7 @@ export function StudentDashboardView({
       }
       setLoading(false);
     },
-    [idToken, getIdToken, mockScenario]
+    [idToken, getIdToken]
   );
 
   useEffect(() => {
@@ -168,12 +159,10 @@ export function StudentDashboardView({
       (async () => {
         const token = idToken ?? (await getIdToken()) ?? undefined;
         const res = await getStudentDashboard(token, {
-          mockScenario,
+          mockScenario: "normal",
         });
 
         if (!active) return;
-
-        setIsMock(Boolean(res.isMock));
 
         if (res.data) {
           setData(res.data);
@@ -188,7 +177,7 @@ export function StudentDashboardView({
     return () => {
       active = false;
     };
-  }, [initialData, idToken, getIdToken, mockScenario]);
+  }, [initialData, idToken, getIdToken]);
 
   // Calculations for summary metrics
   const summaries = useMemo(() => data?.summaries ?? [], [data?.summaries]);
@@ -230,6 +219,18 @@ export function StudentDashboardView({
     if (data?.student?.batch) return data.student.batch;
     return "2026";
   }, [user?.rollNumber, user?.email, data?.student?.rollNumber, data?.student?.email, data?.student?.batch]);
+
+  const studentRoll = useMemo(() => {
+    return user?.rollNumber || data?.student?.rollNumber || (user?.email ? user.email.split("@")[0].toUpperCase() : "261161");
+  }, [user?.rollNumber, data?.student?.rollNumber, user?.email]);
+
+  const branchLabel = useMemo(() => {
+    if (studentBranch === "11") return "CSE Core";
+    if (studentBranch === "12") return "ECE Core";
+    if (studentBranch === "13") return "CSE AI & DS";
+    if (studentBranch === "14") return "VLSI Design";
+    return "CSE Department";
+  }, [studentBranch]);
 
   const isSuperAdmin = useMemo(() => {
     const roll = user?.rollNumber || data?.student?.rollNumber || "";
@@ -384,341 +385,46 @@ export function StudentDashboardView({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
-      {/* Top Banner: Mode Indicator */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-2xl bg-surface border border-line text-xs font-mono">
-        <div className="flex items-center gap-2.5">
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] ${
-              isMock ? "bg-amber-500/10 text-amber-500 border border-amber-500/30" : "bg-safe-soft text-safe border border-safe/30"
-            }`}
-          >
-            {isMock ? (
-              <>
-                <Sparkles className="size-3 text-amber-500" />
-                SYNTHETIC PREVIEW
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="size-3 text-safe" />
-                LIVE INSTITUTE DATA
-              </>
-            )}
-          </span>
-          <span className="text-muted hidden md:inline text-[11px]">
-            {isMock
-              ? "All student records and course offerings below are synthetic simulations."
-              : "Connected to authenticated IIIT Trichy attendance backend."}
-          </span>
-        </div>
-
-        {/* State Simulator Switcher (Visible only in dev mode with flag) */}
-        {isMock && process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_SHOW_DEV_SCENARIOS === "true" && (
-          <div className="flex items-center gap-1.5 self-start sm:self-auto overflow-x-auto">
-            <span className="text-[10px] text-muted whitespace-nowrap uppercase">Preview:</span>
-            {(
-              [
-                ["normal", "Standard"],
-                ["empty", "Empty"],
-                ["unauthorized", "403 Denied"],
-                ["error", "503 Error"],
-              ] as const
-            ).map(([scenario, label]) => (
-              <button
-                key={scenario}
-                type="button"
-                onClick={() => {
-                  setMockScenario(scenario);
-                  loadDashboard(scenario);
-                }}
-                className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold border transition-colors cursor-pointer uppercase ${
-                  mockScenario === scenario
-                    ? "bg-solid border-line text-on-solid shadow-xs"
-                    : "bg-surface border-line text-muted hover:text-ink hover:border-line/80"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* PRIMARY IN-PAGE NAVIGATION TABS (Visible across all devices for instant access) */}
-      <div className="flex items-center gap-2 border-b border-line pb-3 overflow-x-auto scrollbar-none">
-        <button
-          type="button"
-          onClick={() => setView("overview")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
-            view === "overview"
-              ? "bg-solid text-on-solid shadow-xs"
-              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
-          }`}
-        >
-          <LayoutDashboard className="size-3.5" />
-          <span>Overview</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setView("timetable")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
-            view === "timetable"
-              ? "bg-solid text-on-solid shadow-xs"
-              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
-          }`}
-        >
-          <CalendarDays className="size-3.5" />
-          <span>Weekly Timetable</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-safe-soft text-safe font-semibold">
-            Offline / 0 DB Reads
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setView("attendance")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
-            view === "attendance"
-              ? "bg-solid text-on-solid shadow-xs"
-              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
-          }`}
-        >
-          <ClipboardCheck className="size-3.5" />
-          <span>Attendance & Margins {summaries.length > 0 ? `(${summaries.length})` : ""}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setView("notices")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap min-h-[38px] touch-manipulation active:scale-[0.98] ${
-            view === "notices"
-              ? "bg-solid text-on-solid shadow-xs"
-              : "bg-surface border border-line text-muted hover:text-ink hover:bg-raised"
-          }`}
-        >
-          <Bell className="size-3.5" />
-          <span>Notices & Deadlines</span>
-          {notices.length > 0 && (
-            <span className={`size-1.5 rounded-full ${view === "notices" ? "bg-on-solid" : "bg-risk"}`} />
-          )}
-        </button>
-      </div>
-
-      {/* VIEW 1: HARDCODED STATIC TIMETABLE (ZERO FIRESTORE READS, NEVER VANISHES) */}
-      {view === "timetable" && (
-        <div className="space-y-6 view-enter">
-          <PageHeader
-            eyebrow="Hardcoded Institutional Schedule · Zero Database Reads"
-            title="Weekly Timetable"
-          >
-            <div className="flex items-center gap-2 font-mono text-xs text-muted">
-              <span className="size-2 rounded-full bg-safe" />
-              <span>Instant client-side matrix · Saved on Free Tier</span>
-            </div>
-          </PageHeader>
-
-          <BranchTimetableView
-            userRollOrEmail={
-              user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined
-            }
-            defaultBranch={studentBranch}
-            batch={studentBatch}
-            allowBranchSwitching={isSuperAdmin}
-          />
-        </div>
-      )}
-
-      {/* VIEW 2: NOTICES */}
-      {view === "notices" && (
-        <div className="space-y-6 view-enter">
-          <StudentNoticesView
-            branchCode={studentBranch}
-            idToken={idToken}
-            selectedId={navContext?.selectedNoticeId}
-            onSelect={navContext?.setSelectedNoticeId}
-          />
-        </div>
-      )}
-
-      {/* VIEW 3: ATTENDANCE & MARGINS (Exact visual reproduction of portal_ui AttendanceView) */}
-      {view === "attendance" && (
-        <div className="space-y-8 view-enter">
-          <PageHeader eyebrow={`${threshold}% minimum in every subject`} title="Attendance" />
-
-          {/* Loading State */}
-          {loading && <DashboardSkeleton />}
-
-          {/* Error State */}
-          {!loading && error && (
-            <ErrorState title="Could not load attendance data" error={error} onRetry={() => loadDashboard()} />
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && data && summaries.length === 0 && (
-            <EmptyState
-              icon={GraduationCap}
-              title="No Course Enrollments Found"
-              description="Your profile is recognized on the approved roster, but you have no active course registrations for this term. If this is unexpected, contact your department office."
-              actionLabel="Refresh Records"
-              onAction={() => loadDashboard()}
-            />
-          )}
-
-          {/* Attendance Cards Grid */}
-          {!loading && !error && summaries.length > 0 && (
-            <div className="space-y-8">
-              {/* Filter and Search Bar */}
-              <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                <div className="flex rounded-full border border-line bg-surface p-1" role="tablist">
-                  {(
-                    [
-                      ["all", "All", summaries.length],
-                      ["safe", "On track", compliantCourses.length],
-                      ["risk", "At risk", shortfallCourses.length],
-                    ] as const
-                  ).map(([id, label, count]) => (
-                    <button
-                      key={id}
-                      role="tab"
-                      aria-selected={attendanceFilter === id}
-                      onClick={() => setAttendanceFilter(id)}
-                      className={`flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors cursor-pointer md:flex-none ${
-                        attendanceFilter === id ? "bg-solid text-on-solid" : "text-muted hover:text-ink"
-                      }`}
-                    >
-                      {label}
-                      <span
-                        className={`text-xs ${
-                          attendanceFilter === id ? "text-on-solid/70" : "text-muted/70"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <label className="relative flex-1 md:ml-auto md:max-w-xs">
-                  <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted" />
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search subject or code"
-                    className="h-11 w-full rounded-full border border-line bg-surface pr-4 pl-11 text-sm text-ink outline-none placeholder:text-muted/70 focus:border-ink/40 font-mono"
-                  />
-                </label>
-
-                <select
-                  value={attendanceSort}
-                  onChange={(e) => setAttendanceSort(e.target.value as any)}
-                  className="h-11 rounded-full border border-line bg-surface px-4 text-sm text-ink outline-none focus:border-ink/40 cursor-pointer font-mono"
-                  aria-label="Sort subjects"
-                >
-                  <option value="lowest">Lowest first</option>
-                  <option value="highest">Highest first</option>
-                  <option value="name">By name</option>
-                </select>
-              </div>
-
-              {/* Cards Grid */}
-              {visibleAttendanceCourses.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-line py-20 text-center text-sm text-muted font-mono">
-                  No subjects match your search.
-                </div>
-              ) : (
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  {visibleAttendanceCourses.map((c, courseIdx) => {
-                    const val = c.percentage ?? (c.total > 0 ? (c.attended / c.total) * 100 : 0);
-                    const safe = val >= threshold;
-                    const guidance = calculateGuidance(c.attended, c.total, threshold);
-                    const history = buildCourseHistory(c.attended, c.total, courseIdx * 3 + 5);
-
-                    return (
-                      <button
-                        key={c.offeringId}
-                        type="button"
-                        onClick={() => setSelectedCourse(c)}
-                        className="card group flex flex-col p-6 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-12px_rgba(22,24,29,0.18)] cursor-pointer"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs text-muted">
-                            {c.courseCode ?? c.offeringId} · 3 credits
-                          </span>
-                          <StatusPill safe={safe} />
-                        </div>
-                        <h3 className="mt-5 text-lg leading-snug font-semibold text-ink">{c.courseTitle}</h3>
-                        <p className="mt-1 text-sm text-muted">Course Faculty · IIIT Trichy</p>
-
-                        <div className="mt-8 flex items-end justify-between">
-                          <Percent value={val} className={`text-6xl ${safe ? "text-ink" : "text-risk"}`} />
-                          <div className="text-right text-xs text-muted font-mono">
-                            <p>
-                              <span className="font-semibold text-ink">{c.attended}</span> of {c.total} attended
-                            </p>
-                            <p className={`mt-1 font-medium ${safe ? "text-safe" : "text-risk"}`}>
-                              {safe
-                                ? guidance.sessionsCanMiss > 0
-                                  ? `Can skip ${guidance.sessionsCanMiss}`
-                                  : "On track"
-                                : `Attend next ${guidance.sessionsToRecover}`}
-                            </p>
-                          </div>
-                        </div>
-
-                        <AttendanceBar value={val} threshold={threshold} className="mt-5" />
-
-                        {/* Last 12 History Mini-Bars (Exact signature of portal_ui) */}
-                        <div className="mt-6 flex items-center gap-1 border-t border-line pt-4">
-                          <span className="mr-2 text-xs text-muted font-mono">Last 12</span>
-                          {history.slice(-12).map((mark, i) => (
-                            <span
-                              key={i}
-                              className={`h-4 flex-1 rounded-xs transition-opacity ${
-                                mark === "present" ? "bg-safe/80" : "bg-risk"
-                              }`}
-                              title={`Session ${i + 1}: ${mark}`}
-                            />
-                          ))}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* VIEW 4: OVERVIEW (MAIN COMPREHENSIVE HUB - Direct parity with portal_ui Overview.tsx) */}
+    <div className="space-y-8 animate-in fade-in duration-300">
+      {/* VIEW 1: OVERVIEW (Direct reproduction of portal_ui Overview.tsx) */}
       {view === "overview" && (
         <div className="space-y-8 view-enter">
           <PageHeader eyebrow={formattedDate} title={`${greeting}, ${firstName}`}>
             <div className="flex items-center gap-3 rounded-full border border-line bg-surface px-4 py-2 text-sm shadow-xs">
               <span className="text-muted font-mono text-xs">
-                Semester I · {studentBranch === "11" ? "CSE" : studentBranch === "12" ? "ECE" : studentBranch === "13" ? "AI&DS" : "VLSI"}
+                {branchLabel} · {studentRoll}
               </span>
               <span className="h-4 w-px bg-line" />
-              <span className="font-medium text-ink font-mono text-xs">Week 9 of 16</span>
+              <span className="font-medium text-ink font-mono text-xs">
+                Batch {studentBatch} · Week 9 of 16
+              </span>
+              <button
+                type="button"
+                onClick={() => loadDashboard()}
+                disabled={loading}
+                title="Refresh live attendance records"
+                className="ml-1 text-muted hover:text-ink transition-colors cursor-pointer"
+              >
+                <RotateCcw className={`size-3.5 ${loading ? "animate-spin text-safe" : ""}`} />
+              </button>
             </div>
           </PageHeader>
 
-          {/* Non-blocking sync error notification */}
+          {/* Sync status alert if error occurs */}
           {!loading && error && (
             <div className="rounded-2xl border border-warn/30 bg-warn-soft p-4 text-xs font-mono text-warn flex items-center justify-between gap-3">
-              <span>Attendance sync offline ({error}). Your hardcoded timetable below is fully operational.</span>
+              <span>Attendance sync offline ({error}). Cached records displayed.</span>
               <button
                 type="button"
                 onClick={() => loadDashboard()}
                 className="underline hover:text-ink font-bold cursor-pointer"
               >
-                Retry Sync
+                Retry
               </button>
             </div>
           )}
 
-          {/* 2-Column Upper Grid: Overall Attendance & Up Next / Needs Attention */}
+          {/* Upper 2-Column Grid: Overall Attendance & Up Next / Needs Attention */}
           <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
             {/* Overall Attendance Card */}
             <section className="card flex flex-col p-6 sm:p-8 shadow-xs">
@@ -762,7 +468,7 @@ export function StudentDashboardView({
 
             {/* Right Column: Up Next & Needs Attention */}
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
-              {/* Up Next Hero Card */}
+              {/* Up Next Dark Hero Card */}
               <section className="relative overflow-hidden rounded-2xl bg-hero p-6 text-on-hero shadow-xs">
                 <div className="absolute -top-20 -right-20 size-56 rounded-full border-[28px] border-on-hero/5 pointer-events-none" />
                 <div className="relative flex items-center justify-between">
@@ -837,7 +543,7 @@ export function StudentDashboardView({
             </div>
           </div>
 
-          {/* 2-Column Lower Grid: Subjects List & Today's Schedule & Latest Notices */}
+          {/* Lower 2-Column Grid: Subjects List & Today's Schedule & Latest Notices */}
           <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
             {/* Subjects Compact List */}
             <section className="card shadow-xs">
@@ -988,41 +694,191 @@ export function StudentDashboardView({
               </section>
             </div>
           </div>
-
-          {/* FULL DEPARTMENT TIMETABLE SECTION EMBEDDED DIRECTLY ON OVERVIEW (ZERO DB READS) */}
-          <section className="space-y-4 pt-6 border-t border-line">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="font-serif text-2xl sm:text-3xl text-ink">
-                  {studentBatch === "2026" ? "1st Year Department Timetable" : `Academic Timetable · Batch ${studentBatch}`}
-                </h2>
-                <p className="text-xs text-muted font-mono">
-                  Hardcoded static schedule · Stored on device to save Firebase free tier database quota.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setView("timetable")}
-                className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-safe hover:underline self-start sm:self-auto cursor-pointer"
-              >
-                <span>Full Timetable View</span>
-                <ArrowUpRight className="size-3.5" />
-              </button>
-            </div>
-
-            <BranchTimetableView
-              userRollOrEmail={
-                user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined
-              }
-              defaultBranch={studentBranch}
-              batch={studentBatch}
-              allowBranchSwitching={isSuperAdmin}
-            />
-          </section>
         </div>
       )}
 
-      {/* Course Detail Drawer / Modal */}
+      {/* VIEW 2: ATTENDANCE & MARGINS (Exact visual reproduction of portal_ui AttendanceView.tsx) */}
+      {view === "attendance" && (
+        <div className="space-y-8 view-enter">
+          <PageHeader eyebrow={`${threshold}% minimum in every subject`} title="Attendance" />
+
+          {/* Loading State */}
+          {loading && <DashboardSkeleton />}
+
+          {/* Error State */}
+          {!loading && error && (
+            <ErrorState title="Could not load attendance data" error={error} onRetry={() => loadDashboard()} />
+          )}
+
+          {/* Empty State */}
+          {!loading && !error && data && summaries.length === 0 && (
+            <EmptyState
+              icon={GraduationCap}
+              title="No Course Enrollments Found"
+              description="Your profile is recognized on the approved roster, but you have no active course registrations for this term. If this is unexpected, contact your department office."
+              actionLabel="Refresh Records"
+              onAction={() => loadDashboard()}
+            />
+          )}
+
+          {/* Attendance Cards Grid */}
+          {!loading && !error && summaries.length > 0 && (
+            <div className="space-y-8">
+              {/* Filter and Search Bar */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="flex rounded-full border border-line bg-surface p-1" role="tablist">
+                  {(
+                    [
+                      ["all", "All", summaries.length],
+                      ["safe", "On track", compliantCourses.length],
+                      ["risk", "At risk", shortfallCourses.length],
+                    ] as const
+                  ).map(([id, label, count]) => (
+                    <button
+                      key={id}
+                      role="tab"
+                      aria-selected={attendanceFilter === id}
+                      onClick={() => setAttendanceFilter(id)}
+                      className={`flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors cursor-pointer md:flex-none ${
+                        attendanceFilter === id ? "bg-solid text-on-solid" : "text-muted hover:text-ink"
+                      }`}
+                    >
+                      {label}
+                      <span
+                        className={`text-xs ${
+                          attendanceFilter === id ? "text-on-solid/70" : "text-muted/70"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <label className="relative flex-1 md:ml-auto md:max-w-xs">
+                  <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search subject, code or faculty"
+                    className="h-11 w-full rounded-full border border-line bg-surface pr-4 pl-11 text-sm text-ink outline-none placeholder:text-muted/70 focus:border-ink/40 font-mono"
+                  />
+                </label>
+
+                <select
+                  value={attendanceSort}
+                  onChange={(e) => setAttendanceSort(e.target.value as any)}
+                  className="h-11 rounded-full border border-line bg-surface px-4 text-sm text-ink outline-none focus:border-ink/40 cursor-pointer font-mono"
+                  aria-label="Sort subjects"
+                >
+                  <option value="lowest">Lowest first</option>
+                  <option value="highest">Highest first</option>
+                  <option value="name">By name</option>
+                </select>
+              </div>
+
+              {/* Cards Grid */}
+              {visibleAttendanceCourses.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-line py-20 text-center text-sm text-muted font-mono">
+                  No subjects match your search.
+                </div>
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {visibleAttendanceCourses.map((c, courseIdx) => {
+                    const val = c.percentage ?? (c.total > 0 ? (c.attended / c.total) * 100 : 0);
+                    const safe = val >= threshold;
+                    const guidance = calculateGuidance(c.attended, c.total, threshold);
+                    const history = buildCourseHistory(c.attended, c.total, courseIdx * 3 + 5);
+
+                    return (
+                      <button
+                        key={c.offeringId}
+                        type="button"
+                        onClick={() => setSelectedCourse(c)}
+                        className="card group flex flex-col p-6 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-12px_rgba(22,24,29,0.18)] cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs text-muted">
+                            {c.courseCode ?? c.offeringId} · 3 credits
+                          </span>
+                          <StatusPill safe={safe} />
+                        </div>
+                        <h3 className="mt-5 text-lg leading-snug font-semibold text-ink">{c.courseTitle}</h3>
+                        <p className="mt-1 text-sm text-muted">Course Faculty · IIIT Trichy</p>
+
+                        <div className="mt-8 flex items-end justify-between">
+                          <Percent value={val} className={`text-6xl ${safe ? "text-ink" : "text-risk"}`} />
+                          <div className="text-right text-xs text-muted font-mono">
+                            <p>
+                              <span className="font-semibold text-ink">{c.attended}</span> of {c.total} attended
+                            </p>
+                            <p className={`mt-1 font-medium ${safe ? "text-safe" : "text-risk"}`}>
+                              {safe
+                                ? guidance.sessionsCanMiss > 0
+                                  ? `Can skip ${guidance.sessionsCanMiss}`
+                                  : "On track"
+                                : `Attend next ${guidance.sessionsToRecover}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        <AttendanceBar value={val} threshold={threshold} className="mt-5" />
+
+                        {/* Last 12 History Mini-Bars (Exact signature of portal_ui) */}
+                        <div className="mt-6 flex items-center gap-1 border-t border-line pt-4">
+                          <span className="mr-2 text-xs text-muted font-mono">Last 12</span>
+                          {history.slice(-12).map((mark, i) => (
+                            <span
+                              key={i}
+                              className={`h-4 flex-1 rounded-xs transition-opacity ${
+                                mark === "present" ? "bg-safe/80" : "bg-risk"
+                              }`}
+                              title={`Session ${i + 1}: ${mark}`}
+                            />
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* VIEW 3: TIMETABLE (Direct reproduction of portal_ui TimetableView.tsx with branch switcher & zero DB reads) */}
+      {view === "timetable" && (
+        <div className="space-y-6 view-enter">
+          <PageHeader
+            eyebrow={`Semester I · Batch ${studentBatch} · IIIT Tiruchirappalli`}
+            title="Timetable"
+          />
+
+          <BranchTimetableView
+            userRollOrEmail={
+              user?.rollNumber || user?.email || data?.student?.rollNumber || data?.student?.email || undefined
+            }
+            defaultBranch={studentBranch}
+            batch={studentBatch}
+            allowBranchSwitching={isSuperAdmin}
+          />
+        </div>
+      )}
+
+      {/* VIEW 4: NOTICES (Direct reproduction of portal_ui NoticesView.tsx) */}
+      {view === "notices" && (
+        <div className="space-y-6 view-enter">
+          <StudentNoticesView
+            branchCode={studentBranch}
+            idToken={idToken}
+            selectedId={navContext?.selectedNoticeId}
+            onSelect={navContext?.setSelectedNoticeId}
+          />
+        </div>
+      )}
+
+      {/* Course Detail Drawer / Modal (portal_ui CourseDrawer) */}
       <StudentSubjectDetailModal
         isOpen={Boolean(selectedCourse)}
         onClose={() => setSelectedCourse(null)}

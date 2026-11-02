@@ -2,9 +2,11 @@
 
 import React, { createContext, useContext, useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { SignOutConfirmModal } from "@/components/auth/SignOutConfirmModal";
+import { resolveBranchFromRollOrEmail } from "@/lib/timetable/first-year-data";
 import type { StudentSummary } from "@/lib/api/types";
 import {
   LayoutDashboard,
@@ -14,6 +16,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 
 export type StudentNavView = "overview" | "attendance" | "timetable" | "notices";
@@ -86,7 +89,30 @@ export function StudentAppShell({
   const { theme, toggleTheme } = useTheme();
 
   const studentName = user?.name || "Student";
-  const rollNumber = user?.rollNumber || (user?.email ? user.email.split("@")[0].toUpperCase() : "261101");
+  const rollNumber = user?.rollNumber || (user?.email ? user.email.split("@")[0].toUpperCase() : "261161");
+
+  const studentBranch = useMemo(() => {
+    return resolveBranchFromRollOrEmail(rollNumber || user?.email);
+  }, [rollNumber, user?.email]);
+
+  const programmeLabel = useMemo(() => {
+    if (studentBranch === "11") return "B.Tech · Computer Science & Eng.";
+    if (studentBranch === "12") return "B.Tech · Electronics & Comm. Eng.";
+    if (studentBranch === "13") return "B.Tech · CSE (AI & DS)";
+    if (studentBranch === "14") return "B.Tech · ECE (VLSI Design)";
+    return "B.Tech · IIIT Tiruchirappalli";
+  }, [studentBranch]);
+
+  const isAdmin = useMemo(() => {
+    const roll = user?.rollNumber || "";
+    const email = (user?.email || "").toLowerCase();
+    return (
+      user?.role === "admin" ||
+      roll === "261161" ||
+      email.includes("261161") ||
+      email === "syed424892@gmail.com"
+    );
+  }, [user?.role, user?.rollNumber, user?.email]);
 
   const initials = useMemo(() => {
     if (user?.name) {
@@ -94,8 +120,9 @@ export function StudentAppShell({
       if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
       return parts[0].slice(0, 2).toUpperCase();
     }
+    if (rollNumber) return rollNumber.slice(-2).toUpperCase();
     return "ST";
-  }, [user?.name]);
+  }, [user?.name, rollNumber]);
 
   const navValue = useMemo(
     () => ({
@@ -118,7 +145,7 @@ export function StudentAppShell({
   return (
     <StudentNavContext.Provider value={navValue}>
       <div className="min-h-screen bg-paper text-ink selection:bg-safe-soft selection:text-safe font-sans">
-        {/* Desktop Fixed Left Sidebar (w-64) */}
+        {/* Desktop Fixed Left Sidebar (w-64) - Exact portal_ui Sidebar pattern */}
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-paper px-5 py-6 lg:flex">
           <Brand />
 
@@ -162,8 +189,19 @@ export function StudentAppShell({
               </div>
             </div>
             <p className="mt-2.5 text-xs leading-relaxed text-muted font-mono">
-              B.Tech · IIIT Tiruchirappalli
+              {programmeLabel}
             </p>
+
+            {/* Admin Console Shortcut if admin user */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-safe/30 bg-safe-soft py-1.5 text-xs font-mono font-medium text-safe hover:bg-safe/20 transition-colors"
+              >
+                <ShieldCheck className="size-3.5" />
+                <span>Admin Console</span>
+              </Link>
+            )}
 
             {/* Segmented Light/Dark Toggle */}
             <button
@@ -199,7 +237,7 @@ export function StudentAppShell({
           </div>
         </aside>
 
-        {/* Mobile Sticky Top Bar */}
+        {/* Mobile Sticky Top Bar - Exact portal_ui MobileTopBar */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-paper/90 px-5 backdrop-blur-lg lg:hidden">
           <Brand />
           <div className="flex items-center gap-2">
@@ -222,7 +260,7 @@ export function StudentAppShell({
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
 
-        {/* Mobile Fixed Bottom Tab Bar */}
+        {/* Mobile Fixed Bottom Tab Bar - Exact portal_ui MobileTabBar */}
         <nav
           className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden"
           aria-label="Main"
