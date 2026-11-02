@@ -479,7 +479,7 @@ export function BranchTimetableView({
                             </div>
 
                             {/* Middle row: Clean Title with comfortable line height and NO letter clipping */}
-                            <p className="mt-2 font-medium leading-snug text-ink text-[13px] line-clamp-2">
+                            <p className="mt-1.5 font-medium leading-normal pb-0.5 text-ink text-[12.5px] line-clamp-2">
                               {displayTitle}
                             </p>
 

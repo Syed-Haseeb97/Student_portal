@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { StudentDashboardData, StudentSummary, AcademicNotice } from "@/lib/api/types";
 import { normalizeAttendanceStatus } from "@/lib/api/types";
-import { getStudentDashboard, getAcademicNotices } from "@/lib/api/client";
+import { getStudentDashboard, getAcademicNotices, type MockScenario } from "@/lib/api/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { calculateGuidance } from "@/lib/attendance/calc";
 import { DashboardSkeleton, EmptyState, ErrorState } from "@/components/ui/StateFeedback";
@@ -110,13 +110,14 @@ export function StudentDashboardView({
   const [error, setError] = useState<string | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<StudentSummary | null>(null);
   const [notices, setNotices] = useState<AcademicNotice[]>([]);
+  const [mockScenario, setMockScenario] = useState<MockScenario>("normal");
 
   // Attendance tab specific states
   const [attendanceFilter, setAttendanceFilter] = useState<"all" | "safe" | "risk">("all");
   const [attendanceSort, setAttendanceSort] = useState<"lowest" | "highest" | "name">("lowest");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const { user, getIdToken } = useAuth();
+  const { user, getIdToken, isMock } = useAuth();
 
   // Connect to student navigation context if present
   const navContext = useStudentNav();
@@ -127,13 +128,13 @@ export function StudentDashboardView({
   const setUnreadNoticesCount = navContext?.setUnreadNoticesCount;
 
   const loadDashboard = useCallback(
-    async () => {
+    async (scenarioOverride?: MockScenario) => {
       setLoading(true);
       setError(null);
 
       const token = idToken ?? (await getIdToken()) ?? undefined;
       const res = await getStudentDashboard(token, {
-        mockScenario: "normal",
+        mockScenario: scenarioOverride ?? mockScenario,
       });
 
       if (res.data) {
@@ -144,7 +145,7 @@ export function StudentDashboardView({
       }
       setLoading(false);
     },
-    [idToken, getIdToken]
+    [idToken, getIdToken, mockScenario]
   );
 
   useEffect(() => {
@@ -154,7 +155,7 @@ export function StudentDashboardView({
       (async () => {
         const token = idToken ?? (await getIdToken()) ?? undefined;
         const res = await getStudentDashboard(token, {
-          mockScenario: "normal",
+          mockScenario,
         });
 
         if (!active) return;
@@ -172,7 +173,7 @@ export function StudentDashboardView({
     return () => {
       active = false;
     };
-  }, [initialData, idToken, getIdToken]);
+  }, [initialData, idToken, getIdToken, mockScenario]);
 
   // Calculations for summary metrics
   const summaries = useMemo(() => data?.summaries ?? [], [data?.summaries]);
@@ -406,6 +407,42 @@ export function StudentDashboardView({
               </button>
             </div>
           </PageHeader>
+
+          {/* Developer / Mock Mode Scenario Switcher */}
+          {isMock && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-3 text-xs font-mono shadow-xs">
+              <span className="text-muted font-medium">Developer Simulation Scenario:</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    ["normal", "Normal (Live)"],
+                    ["empty", "Empty Enrollments"],
+                    ["unauthorized", "401 Unauth"],
+                    ["error", "503 Failure"],
+                  ] as const
+                ).map(([sc, label]) => {
+                  const active = mockScenario === sc;
+                  return (
+                    <button
+                      key={sc}
+                      type="button"
+                      onClick={() => {
+                        setMockScenario(sc);
+                        void loadDashboard(sc);
+                      }}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                        active
+                          ? "bg-solid text-on-solid shadow-xs"
+                          : "text-muted hover:bg-paper hover:text-ink border border-line"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Sync status alert if error occurs */}
           {!loading && error && (

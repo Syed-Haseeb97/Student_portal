@@ -81,7 +81,7 @@ export function StudentAppShell({
   const [selectedNoticeId, setSelectedNoticeId] = useState<string | null>(null);
   const [showSignOutModal, setShowSignOutModal] = useState<boolean>(false);
 
-  const { user, signOut } = useAuth();
+  const { user, signOut, switchRole, isMock, role } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const studentName = user?.name || "Student";
@@ -199,6 +199,34 @@ export function StudentAppShell({
               </Link>
             )}
 
+            {/* Developer / Mock Mode Role Switcher */}
+            {isMock && switchRole && (
+              <div className="mt-3.5 space-y-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted">
+                  Active Role
+                </span>
+                <div className="flex items-center justify-between rounded-lg border border-line bg-surface p-1 text-xs font-mono">
+                  {(["student", "lecturer", "admin"] as const).map((r) => {
+                    const active = (role ?? "student") === r;
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => switchRole(r)}
+                        className={`flex-1 rounded-md py-1 text-center font-medium transition-colors cursor-pointer capitalize ${
+                          active
+                            ? "bg-solid text-on-solid shadow-xs"
+                            : "text-muted hover:text-ink"
+                        }`}
+                      >
+                        {r === "lecturer" ? "Faculty" : r}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Segmented Light/Dark Toggle */}
             <button
               type="button"
@@ -237,6 +265,27 @@ export function StudentAppShell({
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-paper/90 px-5 backdrop-blur-lg lg:hidden">
           <Brand />
           <div className="flex items-center gap-2">
+            {isMock && switchRole && (
+              <div className="flex items-center rounded-full border border-line bg-surface p-0.5 text-[10px] font-mono">
+                {(["student", "lecturer", "admin"] as const).map((r) => {
+                  const active = (role ?? "student") === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => switchRole(r)}
+                      className={`px-2 py-0.5 rounded-full font-medium transition-colors cursor-pointer capitalize ${
+                        active
+                          ? "bg-solid text-on-solid"
+                          : "text-muted hover:text-ink"
+                      }`}
+                    >
+                      {r === "lecturer" ? "Fac" : r === "student" ? "Stu" : "Adm"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <button
               type="button"
               onClick={toggleTheme}
