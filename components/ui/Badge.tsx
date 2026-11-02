@@ -15,17 +15,17 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  compliant: "bg-[#d9fa58]/15 border-[#d9fa58]/35 text-[#d9fa58]",
-  shortfall: "bg-rose-500/15 border-rose-500/35 text-rose-400",
-  warning: "bg-amber-500/15 border-amber-500/35 text-amber-300",
+  compliant: "bg-safe-soft border-safe/25 text-safe",
+  shortfall: "bg-risk-soft border-risk/25 text-risk",
+  warning: "bg-warn-soft border-warn/25 text-warn",
   neutral: "bg-surface border-line text-muted",
-  preview: "bg-[#d9fa58]/10 border-[#d9fa58]/30 text-[#d9fa58]",
-  indigo: "bg-[#819a35]/20 border-[#819a35]/40 text-[#c9d5b5]",
+  preview: "bg-accent-soft border-line text-safe",
+  indigo: "bg-raised border-line text-ink",
 };
 
 const sizeStyles = {
-  sm: "px-3 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase rounded-full",
-  md: "px-3.5 py-1 text-xs font-bold font-mono tracking-wider uppercase rounded-full",
+  sm: "px-3 py-0.5 text-[10px] font-medium font-mono tracking-wider uppercase rounded-full",
+  md: "px-3.5 py-1 text-xs font-medium font-mono tracking-wider uppercase rounded-full",
 };
 
 export function Badge({

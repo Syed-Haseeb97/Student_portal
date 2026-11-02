@@ -28,17 +28,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             __html: `
               (function() {
                 try {
-                  var t = localStorage.getItem('iiitt-theme') || localStorage.getItem('student-portal-theme');
-                  if (t === 'light' || (!t && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-                    document.documentElement.classList.remove('theme-dark', 'dark');
-                    document.documentElement.classList.add('light');
-                    document.documentElement.setAttribute('data-theme', 'light');
-                    document.documentElement.style.colorScheme = 'light';
-                  } else {
+                  var t = localStorage.getItem('student-portal-theme') || localStorage.getItem('iiitt-theme');
+                  if (t === 'dark') {
                     document.documentElement.classList.remove('light');
                     document.documentElement.classList.add('dark', 'theme-dark');
                     document.documentElement.setAttribute('data-theme', 'dark');
                     document.documentElement.style.colorScheme = 'dark';
+                  } else {
+                    document.documentElement.classList.remove('theme-dark', 'dark');
+                    document.documentElement.classList.add('light');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.style.colorScheme = 'light';
                   }
                 } catch (e) {}
               })();

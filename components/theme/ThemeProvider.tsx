@@ -12,8 +12,8 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = "iiitt-theme";
-const ALT_THEME_STORAGE_KEY = "student-portal-theme";
+const THEME_STORAGE_KEY = "student-portal-theme";
+const ALT_THEME_STORAGE_KEY = "iiitt-theme";
 
 function applyThemeClass(t: Theme) {
   if (typeof document === "undefined") return;
@@ -34,12 +34,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       try {
         const stored = (localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(ALT_THEME_STORAGE_KEY)) as Theme | null;
         if (stored === "light" || stored === "dark") return stored;
-        if (window.matchMedia("(prefers-color-scheme: light)").matches) return "light";
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
       } catch {
         // Fallback
       }
     }
-    return "dark";
+    return "light";
   });
   const [mounted, setMounted] = useState(false);
   const [, startTransition] = useTransition();
@@ -68,7 +68,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme: mounted ? theme : "dark", setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: mounted ? theme : "light", setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

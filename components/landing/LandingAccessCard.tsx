@@ -2,19 +2,17 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useAuth, type UserRole } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { SignOutConfirmModal } from "@/components/auth/SignOutConfirmModal";
 import {
   ArrowRight,
   ShieldCheck,
-  ShieldAlert,
   GraduationCap,
   Briefcase,
   LogOut,
   Users,
   UserCheck,
   BookOpen,
-  Calendar,
 } from "lucide-react";
 
 export function LandingAccessCard() {
@@ -23,7 +21,7 @@ export function LandingAccessCard() {
 
   if (loading) {
     return (
-      <div className="p-6 sm:p-8 rounded-3xl bg-surface border border-line space-y-6 animate-pulse">
+      <div className="card p-6 sm:p-8 space-y-6 animate-pulse">
         <div className="h-5 w-28 bg-raised rounded-full" />
         <div className="space-y-2">
           <div className="h-7 w-48 bg-raised rounded-lg" />
@@ -61,11 +59,11 @@ export function LandingAccessCard() {
       user.name || user.rollNumber || user.staffId || user.email.split("@")[0];
 
     return (
-      <div className="p-6 sm:p-8 rounded-3xl bg-surface border border-line space-y-6">
-        <div className="space-y-2">
+      <div className="card p-6 sm:p-8 space-y-6">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold px-3 py-1 rounded-full bg-accent/10 border border-accent/25 inline-flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-accent animate-ping" />
+            <span className="text-[11px] font-mono tracking-wider text-safe font-semibold px-3 py-1 rounded-full bg-safe-soft border border-safe/25 inline-flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-safe animate-pulse" />
               ACTIVE SESSION · {role?.toUpperCase()}
             </span>
             <button
@@ -74,18 +72,18 @@ export function LandingAccessCard() {
               className="text-xs text-muted hover:text-risk transition-colors flex items-center gap-1 font-mono cursor-pointer touch-manipulation"
               title="Sign Out"
             >
-              <LogOut className="size-3" />
+              <LogOut className="size-3.5" />
               <span>Sign Out</span>
             </button>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-bold uppercase text-ink tracking-tight flex items-center gap-2">
-            <span>Welcome, {displayName}</span>
+          <h2 className="font-serif text-3xl leading-tight text-ink">
+            Welcome, {displayName}
           </h2>
 
           <p className="text-xs text-muted leading-relaxed">
             Authenticated via <span className="text-ink font-mono font-medium">{user.email}</span> with authorized{" "}
-            <span className="text-accent font-mono font-bold">{roleBadge}</span> privileges.
+            <span className="text-safe font-mono font-semibold">{roleBadge}</span> privileges.
           </p>
         </div>
 
@@ -93,7 +91,7 @@ export function LandingAccessCard() {
         <div className="pt-1">
           <Link
             href={roleHome}
-            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm group touch-manipulation min-h-[44px]"
+            className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-solid text-on-solid font-medium text-sm hover:opacity-90 transition-all cursor-pointer shadow-sm group touch-manipulation min-h-[44px]"
           >
             <span>Open {roleTitle}</span>
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
@@ -103,42 +101,42 @@ export function LandingAccessCard() {
         {/* Role-Specific Quick Shortcuts */}
         {role === "admin" && (
           <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
+            <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
               <Link
                 href="/dashboard"
-                className="p-2.5 rounded-2xl bg-canvas border border-accent/40 hover:border-accent text-center flex items-center justify-center gap-1.5 text-accent font-bold transition-colors touch-manipulation min-h-[40px]"
+                className="p-2.5 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex items-center justify-center gap-1.5 text-ink font-medium transition-colors touch-manipulation min-h-[40px]"
               >
-                <GraduationCap className="size-3.5" />
+                <GraduationCap className="size-3.5 text-safe" />
                 <span>My Student Dashboard</span>
               </Link>
               <Link
                 href="/lecturer"
-                className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors touch-manipulation min-h-[40px]"
+                className="p-2.5 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors touch-manipulation min-h-[40px]"
               >
-                <Briefcase className="size-3.5 text-accent" />
+                <Briefcase className="size-3.5 text-safe" />
                 <span>Faculty Portal</span>
               </Link>
             </div>
             <div className="grid grid-cols-3 gap-2 font-mono text-[10px]">
               <Link
                 href="/admin/roster"
-                className="p-2 rounded-xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
+                className="p-2 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
               >
-                <Users className="size-3.5 text-accent" />
+                <Users className="size-3.5 text-safe" />
                 <span>Roster</span>
               </Link>
               <Link
                 href="/admin/staff"
-                className="p-2 rounded-xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
+                className="p-2 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
               >
-                <UserCheck className="size-3.5 text-accent" />
+                <UserCheck className="size-3.5 text-safe" />
                 <span>Staff</span>
               </Link>
               <Link
                 href="/admin/academic"
-                className="p-2 rounded-xl bg-canvas border border-line hover:border-accent/50 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
+                className="p-2 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex flex-col items-center gap-1 text-muted hover:text-ink transition-colors touch-manipulation"
               >
-                <BookOpen className="size-3.5 text-accent" />
+                <BookOpen className="size-3.5 text-safe" />
                 <span>Catalog</span>
               </Link>
             </div>
@@ -146,17 +144,17 @@ export function LandingAccessCard() {
         )}
 
         {role === "student" && (
-          <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
+          <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
             <Link
               href="/dashboard"
-              className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
+              className="p-2.5 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
             >
-              <GraduationCap className="size-3.5 text-accent" />
+              <GraduationCap className="size-3.5 text-safe" />
               <span>My Attendance</span>
             </Link>
             <Link
               href="/dashboard/profile"
-              className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
+              className="p-2.5 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
             >
               <span>Student Profile</span>
             </Link>
@@ -164,34 +162,34 @@ export function LandingAccessCard() {
         )}
 
         {role === "lecturer" && (
-          <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
+          <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
             <Link
               href="/lecturer"
-              className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
+              className="p-2.5 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
             >
-              <Briefcase className="size-3.5 text-accent" />
+              <Briefcase className="size-3.5 text-safe" />
               <span>Mark Attendance</span>
             </Link>
             <Link
               href="/lecturer"
-              className="p-2.5 rounded-2xl bg-canvas border border-line hover:border-accent/50 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
+              className="p-2.5 rounded-xl bg-surface border border-line hover:border-ink/40 text-center flex items-center justify-center gap-1.5 text-muted hover:text-ink transition-colors"
             >
               <span>Class Timetable</span>
             </Link>
           </div>
         )}
 
-        <div className="border-t border-line pt-4 space-y-2 text-[11px] text-muted font-mono">
+        <div className="border-t border-line pt-4 space-y-2 text-xs text-muted font-mono">
           <div className="flex items-center justify-between">
             <span>Security Status</span>
-            <span className="text-accent flex items-center gap-1">
-              <ShieldCheck className="size-3" />
+            <span className="text-safe flex items-center gap-1">
+              <ShieldCheck className="size-3.5" />
               Verified @iiitt.ac.in
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span>Assigned Role</span>
-            <span className="text-ink font-bold uppercase">{role}</span>
+            <span className="text-ink font-semibold uppercase">{role}</span>
           </div>
         </div>
 
@@ -207,12 +205,12 @@ export function LandingAccessCard() {
 
   // When not logged in: Show Institutional Sign In card
   return (
-    <div className="p-6 sm:p-8 rounded-3xl bg-surface border border-line space-y-6">
-      <div className="space-y-2">
-        <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold px-3 py-1 rounded-full bg-accent/10 border border-accent/25 inline-block">
+    <div className="card p-6 sm:p-8 space-y-6">
+      <div className="space-y-3">
+        <span className="text-[11px] font-mono tracking-wider text-safe font-semibold px-3 py-1 rounded-full bg-safe-soft border border-safe/25 inline-block">
           INSTITUTIONAL ACCESS
         </span>
-        <h2 className="text-xl sm:text-2xl font-bold uppercase text-ink tracking-tight">
+        <h2 className="font-serif text-3xl leading-tight text-ink">
           Sign In to Portal
         </h2>
         <p className="text-xs text-muted leading-relaxed">
@@ -225,25 +223,25 @@ export function LandingAccessCard() {
       <div className="pt-2">
         <Link
           href="/sign-in"
-          className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-accent text-[#171915] font-bold text-xs uppercase tracking-wide font-mono hover:bg-[#cbf046] transition-all cursor-pointer shadow-sm"
+          className="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-solid text-on-solid font-medium text-sm hover:opacity-90 transition-all cursor-pointer shadow-sm min-h-[44px]"
         >
           <span>Sign In with @iiitt.ac.in</span>
           <ArrowRight className="size-4" />
         </Link>
       </div>
 
-      <div className="border-t border-line pt-4 space-y-2 text-[11px] text-muted font-mono">
+      <div className="border-t border-line pt-4 space-y-2 text-xs text-muted font-mono">
         <div className="flex items-center justify-between">
-          <span>Authentication Method</span>
+          <span>Authentication</span>
           <span className="text-ink">Passwordless Email Link</span>
         </div>
         <div className="flex items-center justify-between">
           <span>Authorized Domain</span>
-          <span className="text-accent">@iiitt.ac.in</span>
+          <span className="text-safe font-medium">@iiitt.ac.in</span>
         </div>
         <div className="flex items-center justify-between">
-          <span>Statutory Rule</span>
-          <span className="text-ink">75% Attendance Policy</span>
+          <span>Statutory Ordinance</span>
+          <span className="text-ink font-medium">75% Attendance Rule</span>
         </div>
       </div>
     </div>

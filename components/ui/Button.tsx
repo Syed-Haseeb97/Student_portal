@@ -25,15 +25,15 @@ export type LinkButtonProps = ButtonBaseProps &
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-[#d9fa58] text-[#171915] font-extrabold hover:bg-[#e5ff83] hover:-translate-y-0.5 active:translate-y-0 border border-[#d9fa58] shadow-sm tracking-wide",
+    "bg-solid text-on-solid font-medium hover:opacity-90 active:scale-[0.98] border border-solid shadow-xs transition-all",
   secondary:
-    "bg-surface text-ink font-semibold border border-line hover:border-[#819a35]/60 hover:bg-raised active:bg-surface",
+    "bg-surface text-ink font-medium border border-line hover:bg-raised active:bg-surface transition-all",
   outline:
-    "bg-transparent text-ink font-semibold border border-line hover:border-[#d9fa58] hover:text-[#d9fa58] active:bg-surface",
+    "bg-transparent text-ink font-medium border border-line hover:border-ink/40 active:bg-raised transition-all",
   ghost:
-    "bg-transparent text-muted hover:text-ink hover:bg-surface active:bg-raised border border-transparent",
+    "bg-transparent text-muted hover:text-ink hover:bg-surface active:bg-raised border border-transparent transition-all",
   danger:
-    "bg-rose-500/15 text-rose-400 border border-rose-500/35 hover:bg-rose-500/25 active:bg-rose-500/30 font-bold",
+    "bg-risk-soft text-risk border border-risk/30 hover:bg-risk/15 active:bg-risk/20 font-medium transition-all",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

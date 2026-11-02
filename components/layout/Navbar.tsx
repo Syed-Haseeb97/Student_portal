@@ -29,28 +29,29 @@ export function Navbar({ currentPath = "/" }: NavbarProps) {
   const identifier = user?.rollNumber || user?.staffId || (role ? role.toUpperCase() : "");
 
   return (
-    <header className="border-b border-line/80 bg-canvas/90 backdrop-blur-xl sticky top-0 z-40 transition-all">
+    <header className="border-b border-line bg-paper/90 backdrop-blur-lg sticky top-0 z-40 transition-all">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-18 items-center justify-between gap-4">
-          {/* Logo & Institute Branding: Official logo and institute name only */}
+        <div className="flex h-16 items-center justify-between gap-4">
+          {/* Logo & Institute Branding matching portal_ui Brand */}
           <Link
             href="/"
-            className="flex items-center gap-3 group focus-visible:outline-accent shrink-0"
+            className="flex items-center gap-3 group focus-visible:outline-ink shrink-0"
           >
-            <div className="relative size-10 rounded-full bg-surface border border-line p-1.5 shadow-sm transition-all group-hover:border-accent shrink-0 flex items-center justify-center">
+            <div className="grid size-10 place-items-center rounded-xl border border-line bg-white p-1.5 shadow-xs shrink-0">
               <Image
                 src="/images/iiitt-logo.png"
                 alt="IIIT Tiruchirappalli Official Emblem"
                 width={36}
                 height={36}
-                className="w-full h-full object-contain"
+                className="size-full object-contain"
                 priority
               />
             </div>
-            <div className="min-w-0">
-              <span className="text-sm sm:text-base font-extrabold tracking-tight text-ink group-hover:text-accent transition-colors uppercase">
-                IIIT Tiruchirappalli
-              </span>
+            <div className="leading-tight">
+              <p className="text-sm font-semibold text-ink group-hover:text-safe transition-colors">
+                IIIT Trichy
+              </p>
+              <p className="text-xs text-muted">Student portal</p>
             </div>
           </Link>
 
