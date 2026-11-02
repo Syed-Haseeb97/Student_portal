@@ -62,19 +62,33 @@ export function getCourseClassType(course: CourseDetail): AcademicClassType {
 
 /**
  * Concise, high-legibility display titles engineered so they never clip or truncate
- * through letter descenders in the timetable grid.
+ * through letter descenders in the timetable grid or dashboard cards.
  */
-export function getCourseDisplayTitle(course: CourseDetail): string {
+export function getCourseDisplayTitle(course: CourseDetail, slotCode?: string): string {
   const code = course.code.toUpperCase().trim();
-  const name = course.name.trim();
+  const upperSlot = slotCode?.toUpperCase().trim() || "";
 
-  if (code === "CS1101") return "Intro to Computer Programming";
-  if (code === "CS1102") return "Programming Laboratory";
+  // Batch-specific lab titles
+  if (upperSlot.startsWith("F1")) return "Physics Lab (Batch 1)";
+  if (upperSlot.startsWith("F2")) return "Physics Lab (Batch 2)";
+  if (upperSlot.startsWith("F3")) return "Physics Lab (Batch 3)";
+  if (upperSlot.startsWith("G1") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 1)";
+  if (upperSlot.startsWith("G2") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 2)";
+  if (upperSlot.startsWith("G3") && (code === "CS1102" || code === "CS1104")) return "Programming Lab (Batch 3)";
+  if (upperSlot.startsWith("D1") && code === "ME1101") return "Graphics Lab (Batch 1)";
+  if (upperSlot.startsWith("D2") && code === "ME1101") return "Graphics Lab (Batch 2)";
+  if (upperSlot.startsWith("D3") && code === "ME1101") return "Graphics Lab (Batch 3)";
+  if (upperSlot.startsWith("E1") && code === "EC1103") return "Electronics Lab (Batch 1)";
+  if (upperSlot.startsWith("E2") && code === "EC1103") return "Electronics Lab (Batch 2)";
+  if (upperSlot.startsWith("H1") && code === "EC1102") return "Electronics Lab (Batch 1)";
+
+  if (code === "CS1101") return "Computer Programming";
+  if (code === "CS1102") return "Programming Lab";
   if (code === "PH1101") return "Physics";
-  if (code === "PH1102") return "Physics Laboratory";
+  if (code === "PH1102") return "Physics Lab";
   if (code === "MA1103") return "Calculus & Matrices";
   if (code === "ME1101") return "Engineering Graphics";
-  if (code === "EC1103") return "Intro to Electronics Eng.";
+  if (code === "EC1103") return "Intro to Electronics";
   if (code === "HM1102") return "NSS / NCC & Well-Being";
   if (code === "EC1101") return "Digital Logic Design";
   if (code === "EC1102") return "Digital Logic Design Lab";
@@ -84,15 +98,48 @@ export function getCourseDisplayTitle(course: CourseDetail): string {
   if (code === "CS1104") return "AI & Data Science Lab";
   if (code === "VL1101") return "Basic VLSI Design";
   if (code === "VL1102") return "VLSI Design Lab";
+  if (code === "ME1102") return "Engineering Practice";
+  if (code === "ME2101") return "Basics of Mech. Eng.";
+  if (code === "HM1101") return "Technical English";
+  if (code === "MA1101") return "Engineering Maths 1";
 
-  if (name.length > 28) {
+  const name = course.name.trim();
+  if (name.length > 25) {
     return name
-      .replace(/Introduction to /gi, "Intro to ")
+      .replace(/Introduction to /gi, "")
+      .replace(/Introduction of /gi, "")
       .replace(/Laboratory/gi, "Lab")
       .replace(/Engineering/gi, "Eng.")
       .replace(/Differential Calculus and Matrices/gi, "Calculus & Matrices");
   }
   return name;
+}
+
+/**
+ * Identifies which lab batch (Batch 1, 2, or 3) a multi-period practical session belongs to.
+ */
+export function getSlotLabBatch(slotCode: string): "1" | "2" | "3" | null {
+  const upper = slotCode.toUpperCase().trim();
+  if (upper.startsWith("F1") || upper.startsWith("G1") || upper.startsWith("D1") || upper.startsWith("E1") || upper.startsWith("H1")) return "1";
+  if (upper.startsWith("F2") || upper.startsWith("G2") || upper.startsWith("D2") || upper.startsWith("E2") || upper.startsWith("H2")) return "2";
+  if (upper.startsWith("F3") || upper.startsWith("G3") || upper.startsWith("D3") || upper.startsWith("E3") || upper.startsWith("H3")) return "3";
+  return null;
+}
+
+/**
+ * Infers student lab batch (Batch 1: 1-22, Batch 2: 23-45, Batch 3: 46+) from student roll number.
+ */
+export function inferLabBatchFromRoll(rollOrEmail?: string): "1" | "2" | "3" | null {
+  if (!rollOrEmail) return null;
+  const clean = rollOrEmail.toLowerCase().split("@")[0]!;
+  const match = clean.match(/^(?:20)?\d{2}(?:11|12|13|14)(\d{2,3})$/);
+  if (match && match[1]) {
+    const num = parseInt(match[1], 10);
+    if (num <= 22) return "1";
+    if (num <= 45) return "2";
+    return "3";
+  }
+  return null;
 }
 
 /**
@@ -102,9 +149,9 @@ export function getSlotBadge(slotCode: string, classType: AcademicClassType): st
   const upper = slotCode.toUpperCase().trim();
 
   // Multi-slot physics lab batches
-  if (upper === "F11") return "F11 · Lab (1/3)";
-  if (upper === "F12") return "F12 · Lab (2/3)";
-  if (upper === "F13") return "F13 · Lab (3/3)";
+  if (upper === "F11") return "F11 · Batch 1 (1/3)";
+  if (upper === "F12") return "F12 · Batch 1 (2/3)";
+  if (upper === "F13") return "F13 · Batch 1 (3/3)";
   if (upper === "F21") return "F21 · Batch 2 (1/3)";
   if (upper === "F22") return "F22 · Batch 2 (2/3)";
   if (upper === "F23") return "F23 · Batch 2 (3/3)";
@@ -113,21 +160,21 @@ export function getSlotBadge(slotCode: string, classType: AcademicClassType): st
   if (upper === "F33") return "F33 · Batch 3 (3/3)";
 
   // Multi-slot programming lab
-  if (upper === "G11") return "G11 · Lab (1/3)";
-  if (upper === "G12") return "G12 · Lab (2/3)";
-  if (upper === "G13") return "G13 · Lab (3/3)";
+  if (upper === "G11") return "G11 · Batch 1 (1/3)";
+  if (upper === "G12") return "G12 · Batch 1 (2/3)";
+  if (upper === "G13") return "G13 · Batch 1 (3/3)";
 
   // Graphics lab
-  if (upper === "D11") return "D11 · Lab (1/3)";
-  if (upper === "D12") return "D12 · Lab (2/3)";
-  if (upper === "D13") return "D13 · Lab (3/3)";
+  if (upper === "D11") return "D11 · Batch 1 (1/3)";
+  if (upper === "D12") return "D12 · Batch 1 (2/3)";
+  if (upper === "D13") return "D13 · Batch 1 (3/3)";
 
   // Electronics lab
-  if (upper === "E11") return "E11 · Lab (1/2)";
-  if (upper === "E12") return "E12 · Lab (2/2)";
+  if (upper === "E11") return "E11 · Batch 1 (1/2)";
+  if (upper === "E12") return "E12 · Batch 1 (2/2)";
 
   // NSS / NCC
-  if (upper.startsWith("H") || upper === "NSS") return `${upper} · Activity`;
+  if (upper.startsWith("H") || upper === "NSS" || upper === "NCC") return `${upper} · Activity`;
 
   return `${upper} · ${classType}`;
 }
@@ -173,9 +220,19 @@ export function BranchTimetableView({
   const [showReferenceTimetable, setShowReferenceTimetable] = useState(false);
   const [userSelectedBranch, setUserSelectedBranch] = useState<"11" | "12" | "13" | "14">(inferredBranch);
 
+  // Infer student's lab batch from roll number (e.g. 261161 -> Batch 3)
+  const inferredLabBatch = useMemo(() => inferLabBatchFromRoll(userRollOrEmail), [userRollOrEmail]);
+  const [selectedLabBatch, setSelectedLabBatch] = useState<"all" | "1" | "2" | "3">(inferredLabBatch || "all");
+
   useEffect(() => {
     setUserSelectedBranch(inferredBranch);
   }, [inferredBranch]);
+
+  useEffect(() => {
+    if (inferredLabBatch) {
+      setSelectedLabBatch(inferredLabBatch);
+    }
+  }, [inferredLabBatch]);
 
   const selectedBranch = allowBranchSwitching ? userSelectedBranch : inferredBranch;
   const timetable: BranchTimetable = BRANCH_TIMETABLES[selectedBranch] || BRANCH_TIMETABLES["11"];
@@ -214,53 +271,97 @@ export function BranchTimetableView({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Top Header: Department selection & Info */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-serif text-2xl text-ink">
-              {timetable.shortName}
-            </h3>
-            <span className="rounded-full bg-safe-soft px-2.5 py-0.5 font-mono text-[11px] font-semibold text-safe border border-safe/25">
-              Code {timetable.branchCode}
-            </span>
-            <span className="hidden font-mono text-xs text-muted sm:inline">
-              · Semester I (2026–27)
-            </span>
+      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-xs">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-serif text-2xl text-ink">
+                {timetable.shortName}
+              </h3>
+              <span className="rounded-full bg-safe-soft px-2.5 py-0.5 font-mono text-[11px] font-semibold text-safe border border-safe/25">
+                Code {timetable.branchCode}
+              </span>
+              <span className="hidden font-mono text-xs text-muted sm:inline">
+                · Semester I (2026–27)
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted font-mono">
+              Authoritative in-memory schedule · 0 database quota used · Instant sync
+            </p>
           </div>
-          <p className="mt-1 text-xs text-muted font-mono">
-            Authoritative in-memory schedule · 0 database quota used · Instant sync
-          </p>
+
+          {/* Branch Switcher Tabs */}
+          {allowBranchSwitching && (
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-paper p-1">
+              {(
+                [
+                  ["11", "CSE Core"],
+                  ["13", "CSE AI & DS"],
+                  ["12", "ECE Core"],
+                  ["14", "VLSI Design"],
+                ] as const
+              ).map(([code, label]) => {
+                const active = selectedBranch === code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setUserSelectedBranch(code)}
+                    className={`rounded-lg px-3 py-1.5 font-mono text-xs font-medium transition-colors cursor-pointer ${
+                      active
+                        ? "bg-solid text-on-solid shadow-xs"
+                        : "text-muted hover:bg-surface hover:text-ink"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Branch Switcher Tabs */}
-        {allowBranchSwitching && (
-          <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-paper p-1">
-            {(
-              [
-                ["11", "CSE Core"],
-                ["13", "CSE AI & DS"],
-                ["12", "ECE Core"],
-                ["14", "VLSI Design"],
-              ] as const
-            ).map(([code, label]) => {
-              const active = selectedBranch === code;
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => setUserSelectedBranch(code)}
-                  className={`rounded-lg px-3 py-1.5 font-mono text-xs font-medium transition-colors cursor-pointer ${
-                    active
-                      ? "bg-solid text-on-solid shadow-xs"
-                      : "text-muted hover:bg-surface hover:text-ink"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
+        {/* Lab Practical Batch Filter Switcher */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-line/60">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs text-muted">Practical Lab Batch:</span>
+            <div className="flex items-center gap-1 rounded-xl border border-line bg-paper p-1">
+              {(
+                [
+                  ["all", "All Batches"],
+                  ["1", "Batch 1 (Roll 1–22)"],
+                  ["2", "Batch 2 (Roll 23–45)"],
+                  ["3", "Batch 3 (Roll 46+)"],
+                ] as const
+              ).map(([batchKey, label]) => {
+                const active = selectedLabBatch === batchKey;
+                const isAssigned = inferredLabBatch === batchKey;
+                return (
+                  <button
+                    key={batchKey}
+                    type="button"
+                    onClick={() => setSelectedLabBatch(batchKey)}
+                    className={`rounded-lg px-2.5 py-1 font-mono text-xs font-medium transition-colors cursor-pointer ${
+                      active
+                        ? "bg-solid text-on-solid shadow-xs"
+                        : "text-muted hover:bg-surface hover:text-ink"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {isAssigned && (
+                      <span className="ml-1.5 inline-block size-1.5 rounded-full bg-safe align-middle" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
+          {inferredLabBatch && (
+            <span className="font-mono text-xs text-muted">
+              Assigned: <strong className="text-ink">Batch {inferredLabBatch}</strong> based on roll {userRollOrEmail?.split("@")[0]}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Senior Batch Notice Banner */}
@@ -338,7 +439,7 @@ export function BranchTimetableView({
               style={{
                 gridTemplateColumns: "68px repeat(5, minmax(0, 1fr))",
                 gridTemplateRows:
-                  "auto 118px 118px 38px 118px 118px 44px 118px 118px 38px 118px",
+                  "auto 124px 124px 38px 124px 124px 44px 124px 124px 38px 124px",
               }}
             >
               {/* Empty top-left corner */}
@@ -440,8 +541,49 @@ export function BranchTimetableView({
                       }
 
                       const classType = getCourseClassType(course);
-                      const displayTitle = getCourseDisplayTitle(course);
+                      const slotLabBatch = getSlotLabBatch(slotCode);
+                      const isOtherBatch =
+                        selectedLabBatch !== "all" &&
+                        slotLabBatch !== null &&
+                        slotLabBatch !== selectedLabBatch;
+                      const displayTitle = getCourseDisplayTitle(course, slotCode);
                       const slotBadge = getSlotBadge(slotCode, classType);
+
+                      if (isOtherBatch) {
+                        return (
+                          <div
+                            key={`${day}-${slot.id}`}
+                            className="z-10"
+                            style={{
+                              gridColumn: dayIndex + 2,
+                              gridRow: gridRowNumber,
+                            }}
+                          >
+                            <div className="flex h-full w-full flex-col justify-between rounded-xl border border-dashed border-line/60 bg-surface/40 p-3 text-left opacity-50 hover:opacity-100 transition-opacity">
+                              <div className="flex items-center justify-between text-[11px] font-mono text-muted leading-none">
+                                <span>
+                                  {slot.startTime}–{slot.endTime}
+                                </span>
+                                <span className="rounded-full bg-paper border border-line px-1.5 py-0.5 text-[9px] font-mono font-medium text-muted">
+                                  Batch {slotLabBatch} Lab
+                                </span>
+                              </div>
+                              <div className="my-auto">
+                                <p className="font-medium text-muted text-xs line-clamp-1">
+                                  {displayTitle}
+                                </p>
+                                <p className="text-[10px] text-muted/80 font-mono mt-0.5">
+                                  Free for Batch {selectedLabBatch}
+                                </p>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] font-mono text-muted/60 leading-none">
+                                <span>Batch {slotLabBatch} Session</span>
+                                <span>{course.code}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
 
                       return (
                         <div
@@ -462,7 +604,7 @@ export function BranchTimetableView({
                                 period: slot,
                               })
                             }
-                            className={`flex h-full w-full flex-col rounded-xl border p-3 text-left transition-all duration-150 cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
+                            className={`flex h-full w-full flex-col rounded-xl border p-3 text-left transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out cursor-pointer hover:-translate-y-0.5 hover:shadow-md transform-gpu will-change-transform ${
                               typeStyle[classType]
                             } ${isNext ? "ring-2 ring-safe shadow-sm" : ""}`}
                           >
@@ -479,7 +621,7 @@ export function BranchTimetableView({
                             </div>
 
                             {/* Middle row: Clean Title with comfortable line height and NO letter clipping */}
-                            <p className="mt-1.5 font-medium leading-normal pb-0.5 text-ink text-[12.5px] line-clamp-2">
+                            <p className="mt-1 font-semibold leading-snug text-ink text-xs line-clamp-2 select-none">
                               {displayTitle}
                             </p>
 
@@ -569,8 +711,37 @@ export function BranchTimetableView({
                 }
 
                 const classType = getCourseClassType(course);
-                const displayTitle = getCourseDisplayTitle(course);
+                const slotLabBatch = getSlotLabBatch(slotCode);
+                const isOtherBatch =
+                  selectedLabBatch !== "all" &&
+                  slotLabBatch !== null &&
+                  slotLabBatch !== selectedLabBatch;
+                const displayTitle = getCourseDisplayTitle(course, slotCode);
                 const slotBadge = getSlotBadge(slotCode, classType);
+
+                if (isOtherBatch) {
+                  return (
+                    <li key={slot.id} className="grid grid-cols-[52px_1fr] gap-3">
+                      <span className="pt-3 font-mono text-xs text-muted">
+                        {slot.startTime}
+                      </span>
+                      <div className="flex flex-col rounded-xl border border-dashed border-line/60 bg-surface/40 p-3.5 text-left opacity-60">
+                        <div className="flex items-center justify-between text-xs font-mono text-muted">
+                          <span>{slot.startTime} – {slot.endTime}</span>
+                          <span className="rounded-full bg-paper border border-line px-2 py-0.5 text-[10px]">
+                            Batch {slotLabBatch} Lab
+                          </span>
+                        </div>
+                        <p className="mt-1 font-medium text-muted text-xs">
+                          {displayTitle}
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted/80 font-mono">
+                          Self-study / free session for Batch {selectedLabBatch}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                }
 
                 return (
                   <li key={slot.id} className="grid grid-cols-[52px_1fr] gap-3">
@@ -587,7 +758,7 @@ export function BranchTimetableView({
                           period: slot,
                         })
                       }
-                      className={`flex flex-col rounded-xl border p-4 text-left transition-all cursor-pointer shadow-xs ${
+                      className={`flex flex-col rounded-xl border p-4 text-left transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out cursor-pointer shadow-xs transform-gpu will-change-transform ${
                         typeStyle[classType]
                       } ${isNext ? "ring-2 ring-safe shadow-sm" : ""}`}
                     >

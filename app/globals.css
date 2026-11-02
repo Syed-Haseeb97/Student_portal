@@ -180,6 +180,11 @@ html.light,
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -190,6 +195,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   transition: background-color 150ms ease, color 150ms ease;
 }
 
@@ -224,23 +231,46 @@ button:disabled {
   }
 }
 
-/* Animations matching portal_ui */
+/* 60fps Hardware-Accelerated Animations & Transitions */
 @keyframes view-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 @keyframes drawer-slide {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
 }
 @keyframes fade {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.view-enter { animation: view-enter 0.35s ease-out; }
-.drawer-slide { animation: drawer-slide 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.drawer-fade { animation: fade 0.25s ease-out; }
+.view-enter {
+  animation: view-enter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+.drawer-slide {
+  animation: drawer-slide 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+.drawer-fade {
+  animation: fade 0.18s ease-out both;
+  will-change: opacity;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

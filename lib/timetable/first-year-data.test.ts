@@ -79,3 +79,44 @@ test("Timetable: resolveSlotCourse resolves lecture, lab, and activity slot code
   // Empty slot returns null
   assert.equal(resolveSlotCourse(cse, null), null);
 });
+
+test("Timetable: UI helpers correctly format batches, class types, and titles", async () => {
+  const {
+    getCourseDisplayTitle,
+    getCourseClassType,
+    getSlotBadge,
+    getSlotLabBatch,
+    inferLabBatchFromRoll,
+  } = await import("../../components/timetable/BranchTimetableView");
+
+  const cse = BRANCH_TIMETABLES["11"];
+  const physicsLab = cse.courses["F"];
+  const programmingTheory = cse.courses["C"];
+
+  // getCourseClassType
+  assert.equal(getCourseClassType(physicsLab), "Lab");
+  assert.equal(getCourseClassType(programmingTheory), "Lecture");
+
+  // getCourseDisplayTitle handles batch slots cleanly
+  assert.equal(getCourseDisplayTitle(physicsLab, "F11"), "Physics Lab (Batch 1)");
+  assert.equal(getCourseDisplayTitle(physicsLab, "F21"), "Physics Lab (Batch 2)");
+  assert.equal(getCourseDisplayTitle(physicsLab, "F31"), "Physics Lab (Batch 3)");
+  assert.equal(getCourseDisplayTitle(programmingTheory, "C1"), "Computer Programming");
+
+  // getSlotLabBatch
+  assert.equal(getSlotLabBatch("F11"), "1");
+  assert.equal(getSlotLabBatch("F22"), "2");
+  assert.equal(getSlotLabBatch("F33"), "3");
+  assert.equal(getSlotLabBatch("C1"), null);
+
+  // inferLabBatchFromRoll
+  assert.equal(inferLabBatchFromRoll("261105"), "1");
+  assert.equal(inferLabBatchFromRoll("261135"), "2");
+  assert.equal(inferLabBatchFromRoll("261161"), "3");
+  assert.equal(inferLabBatchFromRoll(undefined), null);
+
+  // getSlotBadge
+  assert.equal(getSlotBadge("F11", "Lab"), "F11 · Batch 1 (1/3)");
+  assert.equal(getSlotBadge("F22", "Lab"), "F22 · Batch 2 (2/3)");
+  assert.equal(getSlotBadge("C1", "Lecture"), "C1 · Lecture");
+});

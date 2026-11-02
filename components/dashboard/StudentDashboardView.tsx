@@ -312,7 +312,7 @@ export function StudentDashboardView({
       const startMinutes = startH * 60 + startM;
       const endMinutes = endH * 60 + endM;
       const classType = getCourseClassType(course);
-      const displayTitle = getCourseDisplayTitle(course);
+      const displayTitle = getCourseDisplayTitle(course, slotCode);
 
       sessionsList.push({
         slotId: period.id,
@@ -387,7 +387,7 @@ export function StudentDashboardView({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-8">
       {/* VIEW 1: OVERVIEW (Direct reproduction of portal_ui Overview.tsx) */}
       {view === "overview" && (
         <div className="space-y-8 view-enter">
@@ -833,7 +833,7 @@ export function StudentDashboardView({
                         key={c.offeringId}
                         type="button"
                         onClick={() => setSelectedCourse(c)}
-                        className="card group flex flex-col p-6 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-12px_rgba(22,24,29,0.18)] cursor-pointer"
+                        className="card group flex flex-col p-6 text-left transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md cursor-pointer transform-gpu will-change-transform"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-mono text-xs text-muted">

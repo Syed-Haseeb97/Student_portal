@@ -122,13 +122,13 @@ export function StudentSubjectDetailModal({
       {/* Backdrop */}
       <button
         type="button"
-        className="drawer-fade absolute inset-0 bg-black/60 backdrop-blur-[2px] cursor-pointer"
+        className="drawer-fade absolute inset-0 bg-black/60 cursor-pointer"
         onClick={onClose}
         aria-label="Close"
       />
 
       {/* Slide-out Drawer */}
-      <aside className="drawer-slide absolute inset-y-0 right-0 flex w-full max-w-lg flex-col overflow-y-auto bg-paper shadow-2xl border-l border-line">
+      <aside className="drawer-slide absolute inset-y-0 right-0 flex w-full max-w-lg flex-col overflow-y-auto bg-paper shadow-2xl border-l border-line transform-gpu will-change-transform">
         {/* Drawer Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-paper/95 px-6 py-4 backdrop-blur-md">
           <span className="font-mono text-xs text-muted">

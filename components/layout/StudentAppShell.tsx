@@ -126,7 +126,7 @@ export function StudentAppShell({
       setView: (nextView: StudentNavView) => {
         setView(nextView);
         if (nextView !== "notices") setSelectedNoticeId(null);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo(0, 0);
       },
       unreadNoticesCount,
       setUnreadNoticesCount,
@@ -262,7 +262,7 @@ export function StudentAppShell({
         </aside>
 
         {/* Mobile Sticky Top Bar - Exact portal_ui MobileTopBar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-paper/90 px-5 backdrop-blur-lg lg:hidden">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-paper/90 px-5 backdrop-blur-md transform-gpu lg:hidden">
           <Brand />
           <div className="flex items-center gap-2">
             {isMock && switchRole && (
@@ -307,7 +307,7 @@ export function StudentAppShell({
 
         {/* Mobile Fixed Bottom Tab Bar - Exact portal_ui MobileTabBar */}
         <nav
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md transform-gpu lg:hidden"
           aria-label="Main"
         >
           {navItems.map(({ id, label, icon: Icon }) => {

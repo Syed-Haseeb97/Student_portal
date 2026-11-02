@@ -28,7 +28,7 @@ export function AttendanceBar({
   return (
     <div className={`relative h-1.5 w-full rounded-full bg-line ${className}`}>
       <div
-        className={`h-full rounded-full transition-all duration-300 ${safe ? "bg-safe" : "bg-risk"}`}
+        className={`h-full rounded-full transition-[width,background-color] duration-300 ease-out ${safe ? "bg-safe" : "bg-risk"}`}
         style={{ width: `${Math.min(Math.max(value, 0), 100)}%` }}
       />
       <div
