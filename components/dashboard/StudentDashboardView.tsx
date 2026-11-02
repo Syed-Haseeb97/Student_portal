@@ -133,8 +133,10 @@ export function StudentDashboardView({
       setError(null);
 
       const token = idToken ?? (await getIdToken()) ?? undefined;
+      const rollOrEmail = user?.rollNumber || user?.email || undefined;
       const res = await getStudentDashboard(token, {
         mockScenario: scenarioOverride ?? mockScenario,
+        rollOrEmail,
       });
 
       if (res.data) {
@@ -145,7 +147,7 @@ export function StudentDashboardView({
       }
       setLoading(false);
     },
-    [idToken, getIdToken, mockScenario]
+    [idToken, getIdToken, mockScenario, user?.rollNumber, user?.email]
   );
 
   useEffect(() => {
@@ -154,8 +156,10 @@ export function StudentDashboardView({
     if (!initialData) {
       (async () => {
         const token = idToken ?? (await getIdToken()) ?? undefined;
+        const rollOrEmail = user?.rollNumber || user?.email || undefined;
         const res = await getStudentDashboard(token, {
           mockScenario,
+          rollOrEmail,
         });
 
         if (!active) return;
@@ -173,7 +177,7 @@ export function StudentDashboardView({
     return () => {
       active = false;
     };
-  }, [initialData, idToken, getIdToken, mockScenario]);
+  }, [initialData, idToken, getIdToken, mockScenario, user?.rollNumber, user?.email]);
 
   // Calculations for summary metrics
   const summaries = useMemo(() => data?.summaries ?? [], [data?.summaries]);

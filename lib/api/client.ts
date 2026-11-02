@@ -25,12 +25,12 @@ import type {
 } from "./types";
 import { normalizeAttendanceStatus } from "./types";
 import {
-  SYNTHETIC_STUDENT,
   SYNTHETIC_EMPTY_STUDENT,
   SYNTHETIC_LECTURER_DASHBOARD,
   SYNTHETIC_SESSION_DETAILS,
   SYNTHETIC_STUDENT_ROSTER,
   SYNTHETIC_SUBJECT_SESSIONS,
+  getSyntheticStudentForBranch,
 } from "./mock-data";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -143,7 +143,7 @@ async function extractResponseBody(response: Response): Promise<{ body: unknown;
  */
 export async function getStudentDashboard(
   idToken?: string,
-  options?: { mockScenario?: MockScenario }
+  options?: { mockScenario?: MockScenario; rollOrEmail?: string }
 ): Promise<ApiResponse<StudentDashboardData>> {
   if (isMockModeEnabled()) {
     const scenario = options?.mockScenario ?? "normal";
@@ -164,7 +164,8 @@ export async function getStudentDashboard(
         isMock: true,
       };
     }
-    return { status: 200, data: SYNTHETIC_STUDENT, isMock: true };
+    const data = getSyntheticStudentForBranch(options?.rollOrEmail);
+    return { status: 200, data, isMock: true };
   }
 
   if (!idToken || !idToken.trim()) {

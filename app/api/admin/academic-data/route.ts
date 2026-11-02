@@ -202,18 +202,24 @@ export async function GET(request: Request) {
   if (isMock) {
     return NextResponse.json({
       courses: [
-        { id: "cs201", code: "CS201", title: "Data Structures and Algorithms", credits: 4, active: true },
-        { id: "cs202", code: "CS202", title: "Operating Systems Principles", credits: 4, active: true },
-        { id: "cs203", code: "CS203", title: "Computer System Architecture", credits: 3, active: true },
-        { id: "cs204", code: "CS204", title: "Database Management Systems", credits: 4, active: true },
-        { id: "ma201", code: "MA201", title: "Discrete Mathematics & Linear Algebra", credits: 4, active: true },
+        { id: "cs1101", code: "CS1101", title: "Introduction to Computer Programming", credits: 3, active: true },
+        { id: "cs1102", code: "CS1102", title: "Introduction to Computer Programming Laboratory", credits: 2, active: true },
+        { id: "ma1103", code: "MA1103", title: "Differential Calculus and Matrices", credits: 3, active: true },
+        { id: "ph1101", code: "PH1101", title: "Physics", credits: 3, active: true },
+        { id: "ph1102", code: "PH1102", title: "Physics Laboratory", credits: 2, active: true },
+        { id: "me1101", code: "ME1101", title: "Engineering Graphics", credits: 2, active: true },
+        { id: "ec1103", code: "EC1103", title: "Introduction to Electronics Engineering", credits: 3, active: true },
+        { id: "hm1102", code: "HM1102", title: "NSS / NCC / Emotional Intelligence and Well-Being", credits: 0, active: true },
       ],
       offerings: [
-        { id: "offering-cs201-2026", courseId: "cs201", courseCode: "CS201", courseTitle: "Data Structures and Algorithms", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
-        { id: "offering-cs202-2026", courseId: "cs202", courseCode: "CS202", courseTitle: "Operating Systems Principles", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
-        { id: "offering-cs203-2026", courseId: "cs203", courseCode: "CS203", courseTitle: "Computer System Architecture", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
-        { id: "offering-cs204-2026", courseId: "cs204", courseCode: "CS204", courseTitle: "Database Management Systems", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
-        { id: "offering-ma201-2026", courseId: "ma201", courseCode: "MA201", courseTitle: "Discrete Mathematics & Linear Algebra", term: "Spring 2026", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-cs1101-2026", courseId: "cs1101", courseCode: "CS1101", courseTitle: "Introduction to Computer Programming", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-cs1102-2026", courseId: "cs1102", courseCode: "CS1102", courseTitle: "Introduction to Computer Programming Laboratory", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-ma1103-2026", courseId: "ma1103", courseCode: "MA1103", courseTitle: "Differential Calculus and Matrices", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-ph1101-2026", courseId: "ph1101", courseCode: "PH1101", courseTitle: "Physics", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-ph1102-2026", courseId: "ph1102", courseCode: "PH1102", courseTitle: "Physics Laboratory", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-me1101-2026", courseId: "me1101", courseCode: "ME1101", courseTitle: "Engineering Graphics", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-ec1103-2026", courseId: "ec1103", courseCode: "EC1103", courseTitle: "Introduction to Electronics Engineering", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
+        { id: "offering-hm1102-2026", courseId: "hm1102", courseCode: "HM1102", courseTitle: "NSS / NCC / Emotional Intelligence and Well-Being", term: "Semester I 2026-27", batch: "2026", programme: "Computer Science & Engineering", active: true },
       ],
     });
   }

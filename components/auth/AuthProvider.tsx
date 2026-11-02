@@ -46,9 +46,9 @@ const MOCK_PROFILES: Record<UserRole, AuthProfile> = {
   },
   lecturer: {
     uid: "mock-lecturer-1",
-    email: "fac01@iiitt.ac.in",
+    email: "anoopjt@iiitt.ac.in",
     role: "lecturer",
-    name: "Dr. Faculty Member",
+    name: "Dr. Anoop Jacob Thomas",
     staffId: "FAC-01",
     department: "Computer Science & Engineering",
     active: true,

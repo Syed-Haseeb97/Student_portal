@@ -154,7 +154,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-base font-bold text-ink uppercase">Independent 75% Ordinance</h3>
               <p className="text-xs text-muted leading-relaxed">
-                Each subject is calculated independently. A 95% attendance in Data Structures will never offset a 68% shortfall in Discrete Mathematics.
+                Each subject is calculated independently. A 95% attendance in Introduction to Computer Programming will never offset a 68% shortfall in Differential Calculus.
               </p>
             </div>
 

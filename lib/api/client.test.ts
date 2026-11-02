@@ -35,7 +35,7 @@ test("API client: mock summaries correctly reflect compliance and shortfall stat
   const shortfall = summaries.filter((s) => s.status === "shortfall");
   const noData = summaries.filter((s) => s.status === "no_data");
 
-  assert.equal(compliant.length, 3, "Expected 3 compliant courses");
+  assert.equal(compliant.length, 6, "Expected 3 compliant courses");
   assert.equal(shortfall.length, 1, "Expected 1 shortfall course");
   assert.equal(noData.length, 1, "Expected 1 newly enrolled course with no completed sessions");
 
@@ -177,7 +177,7 @@ test("API client: getSessionDetails returns session metadata and roster in mock 
 test("API client: createSession adds a new scheduled session in mock mode", async () => {
   resetMockLecturerState();
   const createRes = await createSession({
-    offeringId: "cs201-2026s1",
+    offeringId: "cs1101-2026s1",
     sessionDate: "2026-10-30",
     startTime: "11:00",
     endTime: "12:00",
@@ -199,7 +199,7 @@ test("API client: createSession adds a new scheduled session in mock mode", asyn
 test("API client: submitAttendance records attendance and marks session completed in mock mode", async () => {
   resetMockLecturerState();
   const createRes = await createSession({
-    offeringId: "cs201-2026s1",
+    offeringId: "cs1101-2026s1",
     sessionDate: "2026-10-31",
     startTime: "14:00",
     endTime: "15:00",
@@ -302,9 +302,9 @@ test("API client: lecturer endpoints deny requests without token when mock mode 
 });
 
 test("API client: getSubjectSessionHistory returns session log for student offering", async () => {
-  const res = await getSubjectSessionHistory("cs201-2026s1");
+  const res = await getSubjectSessionHistory("cs1101-2026s1");
   assert.equal(res.status, 200);
   assert.ok(Array.isArray(res.data));
   assert.ok(res.data.length > 0);
-  assert.equal(res.data[0].offeringId, "cs201-2026s1");
+  assert.equal(res.data[0].offeringId, "cs1101-2026s1");
 });
